@@ -3,8 +3,11 @@ import { MetadataRoute } from "next";
 // import { ConvexHttpClient } from "convex/browser";
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  // const baseUrl = process.env.NEXTAUTH_URL || "https://my-ai-companion.vercel.app";
-  const baseUrl = process.env.NEXTAUTH_URL;
+  // Resolve a safe, non-undefined base URL for sitemap generation
+  const rawBase =
+    process.env.NEXTAUTH_URL ||
+    (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "https://my-ai-companion.vercel.app");
+  const baseUrl = rawBase.replace(/\/+$/, "");
 
 
   // Static sitemap - temporarily disabled dynamic generation
