@@ -91,6 +91,7 @@ export default function CharacterForm() {
   const upload = useAction(api.image.upload);
   const upsert = useMutation(api.characters.upsert);
   const publish = useMutation(api.characters.publish);
+  const generateUploadUrl = useMutation(api.characters.generateUploadUrl);
   const generateInstruction = useMutation(api.characters.generateInstruction);
   const [visibility, setVisibility] = useState(_visibility);
   const { Popover, PopoverContent, PopoverTrigger, isMobile } =
@@ -180,19 +181,21 @@ export default function CharacterForm() {
       toast.error("File size should be less than 5MB");
       return;
     }
-    const imageBytes = await uploadedImage.arrayBuffer();
-    const characterCardImageUrl = await upload({
-      file: imageBytes,
-      filename: uploadedImage?.name,
-      fileType: uploadedImage?.type,
+    const postUrl = await generateUploadUrl();
+    const result = await fetch(postUrl, {
+      method: "POST",
+      headers: { "Content-Type": uploadedImage.type },
+      body: uploadedImage,
     });
+    const { storageId } = await result.json();
+
     const promise = upsert({
       ...(characterId
         ? { id: characterId }
         : newCharacterId
           ? { id: newCharacterId as Id<"characters"> }
           : {}),
-      cardImageUrl: characterCardImageUrl,
+      cardImageStorageId: storageId,
     });
     toast.promise(promise, {
       loading: "Uploading character card...",
@@ -367,11 +370,10 @@ export default function CharacterForm() {
                 </div>
                 <span className="text-xs">or</span>
                 <Link
-                  href={`/images${
-                    form.getValues()?.description
-                      ? `?prompt=${form.getValues()?.description}`
-                      : ""
-                  }`}
+                  href={`/images${form.getValues()?.description
+                    ? `?prompt=${form.getValues()?.description}`
+                    : ""
+                    }`}
                 >
                   <Button variant="outline">{t("Generate")}</Button>
                 </Link>

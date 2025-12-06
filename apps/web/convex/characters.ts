@@ -43,10 +43,11 @@ export const upsert = mutation({
         ...rest,
         ...(cardImageStorageId
           ? {
-              cardImageUrl: (await ctx.storage.getUrl(
-                cardImageStorageId,
-              )) as string,
-            }
+            cardImageStorageId,
+            cardImageUrl: (await ctx.storage.getUrl(
+              cardImageStorageId,
+            )) as string,
+          }
           : { cardImageUrl }),
         updatedAt,
       });
@@ -65,10 +66,11 @@ export const upsert = mutation({
         instructions: instructions?.substring(0, 1024),
         ...(cardImageStorageId
           ? {
-              cardImageUrl: (await ctx.storage.getUrl(
-                cardImageStorageId,
-              )) as string,
-            }
+            cardImageStorageId,
+            cardImageUrl: (await ctx.storage.getUrl(
+              cardImageStorageId,
+            )) as string,
+          }
           : { cardImageUrl }),
         creatorId: user._id,
         updatedAt,
@@ -173,7 +175,21 @@ export const list = query({
       query = query.filter((q) => q.neq(q.field("isNSFW"), true));
     }
 
-    return await query.order("desc").paginate(args.paginationOpts);
+    const paginationResult = await query.order("desc").paginate(args.paginationOpts);
+
+    return {
+      ...paginationResult,
+      page: await Promise.all(
+        paginationResult.page.map(async (character) => ({
+          ...character,
+          cardImageUrl: character.cardImageStorageId
+            ? ((await ctx.storage.getUrl(
+              character.cardImageStorageId,
+            )) as string)
+            : character.cardImageUrl,
+        })),
+      ),
+    };
   },
 });
 
@@ -235,11 +251,11 @@ export const listWithHides = query({
     // Fetch all the hides for the current user
     const hides = user
       ? await ctx.db
-          .query("hides")
-          .withIndex("byUserId", (q) => q.eq("userId", user._id))
-          .filter((q) => q.eq(q.field("type"), "characters"))
-          .order("desc")
-          .take(256)
+        .query("hides")
+        .withIndex("byUserId", (q) => q.eq("userId", user._id))
+        .filter((q) => q.eq(q.field("type"), "characters"))
+        .order("desc")
+        .take(256)
       : [];
     const hiddenCharacterIds = hides.map((hide: any) => hide.elementId);
 
@@ -250,7 +266,16 @@ export const listWithHides = query({
 
     return {
       ...paginationResult,
-      page: pageWithFilteredCharacters,
+      page: await Promise.all(
+        pageWithFilteredCharacters.map(async (character) => ({
+          ...character,
+          cardImageUrl: character.cardImageStorageId
+            ? ((await ctx.storage.getUrl(
+              character.cardImageStorageId,
+            )) as string)
+            : character.cardImageUrl,
+        })),
+      ),
     };
   },
 });
@@ -292,7 +317,16 @@ export const listBackend = query({
       query = query.filter((q) => q.eq(q.field("model"), args.model));
     }
 
-    return await query.order("desc").take(300);
+    const characters = await query.order("desc").take(300);
+
+    return await Promise.all(
+      characters.map(async (character) => ({
+        ...character,
+        cardImageUrl: character.cardImageStorageId
+          ? ((await ctx.storage.getUrl(character.cardImageStorageId)) as string)
+          : character.cardImageUrl,
+      })),
+    );
   },
 });
 
@@ -314,7 +348,21 @@ export const listModels = query({
       query = query.filter((q) => q.eq(q.field("model"), args.model));
     }
 
-    return await query.order("desc").paginate(args.paginationOpts);
+    const paginationResult = await query.order("desc").paginate(args.paginationOpts);
+
+    return {
+      ...paginationResult,
+      page: await Promise.all(
+        paginationResult.page.map(async (character) => ({
+          ...character,
+          cardImageUrl: character.cardImageStorageId
+            ? ((await ctx.storage.getUrl(
+              character.cardImageStorageId,
+            )) as string)
+            : character.cardImageUrl,
+        })),
+      ),
+    };
   },
 });
 
@@ -374,7 +422,21 @@ export const search = query({
       query = query.filter((q) => q.neq(q.field("isNSFW"), true));
     }
 
-    return await query.paginate(args.paginationOpts);
+    const paginationResult = await query.paginate(args.paginationOpts);
+
+    return {
+      ...paginationResult,
+      page: await Promise.all(
+        paginationResult.page.map(async (character) => ({
+          ...character,
+          cardImageUrl: character.cardImageStorageId
+            ? ((await ctx.storage.getUrl(
+              character.cardImageStorageId,
+            )) as string)
+            : character.cardImageUrl,
+        })),
+      ),
+    };
   },
 });
 
@@ -384,12 +446,26 @@ export const listMy = query({
   },
   handler: async (ctx, args) => {
     const user = await getUser(ctx);
-    return await ctx.db
+    const paginationResult = await ctx.db
       .query("characters")
       .withIndex("byUserId", (q) => q.eq("creatorId", user._id))
       .filter((q) => q.neq(q.field("isArchived"), true))
       .order("desc")
       .paginate(args.paginationOpts);
+
+    return {
+      ...paginationResult,
+      page: await Promise.all(
+        paginationResult.page.map(async (character) => ({
+          ...character,
+          cardImageUrl: character.cardImageStorageId
+            ? ((await ctx.storage.getUrl(
+              character.cardImageStorageId,
+            )) as string)
+            : character.cardImageUrl,
+        })),
+      ),
+    };
   },
 });
 
@@ -407,7 +483,12 @@ export const get = query({
         });
       }
     }
-    return character;
+    return {
+      ...character,
+      cardImageUrl: character?.cardImageStorageId
+        ? ((await ctx.storage.getUrl(character.cardImageStorageId)) as string)
+        : character?.cardImageUrl,
+    };
   },
 });
 
@@ -552,7 +633,7 @@ export const tag = internalMutation(
 
 export const generate = mutation({
   args: {},
-  handler: async (ctx, {}) => {
+  handler: async (ctx, { }) => {
     const user = await getUser(ctx);
     const updatedAt = new Date().toISOString();
     const character = await ctx.db.insert("characters", {
@@ -658,7 +739,7 @@ export const scoreAll = internalMutation({
           (numChats + numUsers * 5) /
           Math.pow(
             (new Date().getTime() - createdAt + 2 * 60 * 60 * 1000) /
-              (7 * 24 * 60 * 60 * 1000),
+            (7 * 24 * 60 * 60 * 1000),
             1.1,
           ),
         updatedAt: new Date().toISOString(),

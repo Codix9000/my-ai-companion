@@ -37,6 +37,7 @@ export const uploadImage = internalMutation({
     )) as string;
     const updatedCharacter = await ctx.db.patch(args.characterId, {
       cardImageUrl,
+      cardImageStorageId: args.cardImageStorageId,
     });
     return updatedCharacter;
   },

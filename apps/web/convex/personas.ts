@@ -19,10 +19,10 @@ export const create = mutation({
       isBlacklisted: false,
       ...(cardImageStorageId
         ? {
-            cardImageUrl: (await ctx.storage.getUrl(
-              cardImageStorageId
-            )) as string,
-          }
+          cardImageUrl: (await ctx.storage.getUrl(
+            cardImageStorageId
+          )) as string,
+        }
         : {}),
       updatedAt: new Date().toISOString(),
     });
@@ -39,10 +39,18 @@ export const listMy = query({
   args: {},
   handler: async (ctx, args) => {
     const user = await getUser(ctx);
-    return await ctx.db
+    const personas = await ctx.db
       .query("personas")
       .filter((q) => q.eq(q.field("creatorId"), user._id))
       .collect();
+    return await Promise.all(
+      personas.map(async (persona) => ({
+        ...persona,
+        cardImageUrl: persona.cardImageStorageId
+          ? ((await ctx.storage.getUrl(persona.cardImageStorageId)) as string)
+          : persona.cardImageUrl,
+      }))
+    );
   },
 });
 
@@ -52,11 +60,18 @@ export const get = query({
   },
   handler: async (ctx, args) => {
     const user = await getUser(ctx);
-    return await ctx.db
+    const persona = await ctx.db
       .query("personas")
       .filter((q) => q.eq(q.field("_id"), args.id))
       .filter((q) => q.eq(q.field("creatorId"), user._id))
       .first();
+    if (!persona) return null;
+    return {
+      ...persona,
+      cardImageUrl: persona.cardImageStorageId
+        ? ((await ctx.storage.getUrl(persona.cardImageStorageId)) as string)
+        : persona.cardImageUrl,
+    };
   },
 });
 
@@ -65,7 +80,14 @@ export const getPersona = internalQuery({
     id: v.id("personas"),
   },
   handler: async (ctx, args) => {
-    return await ctx.db.get(args.id);
+    const persona = await ctx.db.get(args.id);
+    if (!persona) return null;
+    return {
+      ...persona,
+      cardImageUrl: persona.cardImageStorageId
+        ? ((await ctx.storage.getUrl(persona.cardImageStorageId)) as string)
+        : persona.cardImageUrl,
+    };
   },
 });
 
@@ -96,10 +118,10 @@ export const update = mutation({
       ...rest,
       ...(cardImageStorageId
         ? {
-            cardImageUrl: (await ctx.storage.getUrl(
-              cardImageStorageId
-            )) as string,
-          }
+          cardImageUrl: (await ctx.storage.getUrl(
+            cardImageStorageId
+          )) as string,
+        }
         : {}),
       updatedAt: new Date().toISOString(),
     });

@@ -162,7 +162,9 @@ export const metadata = query({
     return {
       title: `${messages[0]?.text} ${character?.name} AI`,
       description: messages[1]?.text,
-      cardImageUrl: character?.cardImageUrl,
+      cardImageUrl: character?.cardImageStorageId
+        ? ((await ctx.storage.getUrl(character.cardImageStorageId)) as string)
+        : character?.cardImageUrl,
     };
   },
 });

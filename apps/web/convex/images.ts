@@ -127,10 +127,10 @@ export const listImages = query({
 
     const likes = user
       ? await ctx.db
-          .query("imageLikes")
-          .withIndex("byUserId", (q) => q.eq("userId", user._id))
-          .order("desc")
-          .collect()
+        .query("imageLikes")
+        .withIndex("byUserId", (q) => q.eq("userId", user._id))
+        .order("desc")
+        .collect()
       : [];
     const likedImageIds = likes
       .filter((like) => like && like !== null)
@@ -174,10 +174,10 @@ export const listMy = query({
 
     const likes = user
       ? await ctx.db
-          .query("imageLikes")
-          .withIndex("byUserId", (q) => q.eq("userId", user._id))
-          .order("desc")
-          .collect()
+        .query("imageLikes")
+        .withIndex("byUserId", (q) => q.eq("userId", user._id))
+        .order("desc")
+        .collect()
       : [];
     const likedImageIds = likes
       .filter((like) => like && like !== null)
@@ -284,11 +284,15 @@ export const imagine = mutation({
     if (user?.crystals < crystalPrice) {
       throw new ConvexError("Not enough crystals.");
     }
+    const referenceImage = character?.cardImageStorageId
+      ? ((await ctx.storage.getUrl(character.cardImageStorageId)) as string)
+      : character?.cardImageUrl;
+
     const image = await ctx.db.insert("images", {
       prompt: message?.text as string,
       model: "daun-io/openroleplay.ai-animagine-v3",
       imageUrl: "",
-      referenceImage: character?.cardImageUrl,
+      referenceImage,
       creatorId: user._id,
       numLikes: 0,
       isNSFW: false,
@@ -303,7 +307,7 @@ export const imagine = mutation({
       prompt: character?.genderTag
         ? `1 ${character?.genderTag}, masterpiece, ${message?.text}`
         : (message?.text as string),
-      referenceImage: character?.cardImageUrl,
+      referenceImage,
       model: "daun-io/openroleplay.ai-animagine-v3",
       isPlus: user?.subscriptionTier === "plus",
     });

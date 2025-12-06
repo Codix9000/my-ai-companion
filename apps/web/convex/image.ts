@@ -405,7 +405,12 @@ export const generateByPrompt = internalAction(
         const last = String((raw.split("/").pop() ?? ""));
         key = String((last.split("?")[0] ?? ""));
       }
-      const publicBaseUrl = String(process.env.R2_PUBLIC_BASE_URL ?? "");
+      const publicBaseUrl = String(
+        (process.env.NODE_ENV === "development" &&
+        process.env.R2_PUBLIC_BASE_URL_DEV
+          ? process.env.R2_PUBLIC_BASE_URL_DEV
+          : process.env.R2_PUBLIC_BASE_URL) ?? "",
+      );
       const imageUrl = `${publicBaseUrl}/${String(key)}`;
       console.log(`Image URL extracted: ${imageUrl}`);
       await ctx.runMutation(internal.images.uploadR2Image, {
@@ -454,7 +459,12 @@ export const upload = action({
       const last = String((raw.split("/").pop() ?? ""));
       key = String((last.split("?")[0] ?? ""));
     }
-    const publicBaseUrl = String(process.env.R2_PUBLIC_BASE_URL ?? "");
+    const publicBaseUrl = String(
+      (process.env.NODE_ENV === "development" &&
+      process.env.R2_PUBLIC_BASE_URL_DEV
+        ? process.env.R2_PUBLIC_BASE_URL_DEV
+        : process.env.R2_PUBLIC_BASE_URL) ?? "",
+    );
     const imageUrl = `${publicBaseUrl}/${String(key)}`;
     console.log(`Image URL extracted: ${imageUrl}`);
     return imageUrl;
