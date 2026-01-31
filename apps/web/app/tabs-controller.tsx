@@ -1,6 +1,8 @@
 "use client";
 import {
   Book,
+  ChevronLeft,
+  ChevronRight,
   Compass,
   Home,
   Image,
@@ -16,108 +18,162 @@ import { useTranslation } from "react-i18next";
 import useMediaQuery from "@repo/ui/src/hooks/use-media-query";
 import { Crystal } from "@repo/ui/src/components/icons";
 import { initializeTranslationStore } from "./lib/hooks/use-machine-translation";
+import { useSidebarStore } from "./lib/hooks/use-sidebar-store";
+import { Button } from "@repo/ui/src/components/button";
+import { Tooltip } from "@repo/ui/src/components";
 
 function TabsController() {
   const { isMobile } = useMediaQuery();
   const pathname = usePathname();
+  const { isCollapsed, toggleCollapsed } = useSidebarStore();
   const getFirstDirectory = (urlString: string): string =>
     `/${new URL(urlString, "http://example.com").pathname.split("/")[1] || ""}`;
   const { t } = useTranslation();
   initializeTranslationStore();
 
+  // Nav item component for cleaner code
+  const NavItem = ({
+    href,
+    value,
+    icon: Icon,
+    label,
+    hideOnMobile = false,
+    isCreate = false,
+  }: {
+    href: string;
+    value: string;
+    icon: React.ElementType;
+    label: string;
+    hideOnMobile?: boolean;
+    isCreate?: boolean;
+  }) => {
+    const content = (
+      <Link href={href}>
+        <TabsTrigger
+          className={`flex items-center gap-3 rounded-xl px-3 py-3 transition-all duration-200 hover:bg-primary/10 ${
+            hideOnMobile ? "hidden lg:flex" : ""
+          } ${
+            isCreate
+              ? "border bg-gradient-to-r from-pink-500 to-purple-500 text-white hover:from-pink-600 hover:to-purple-600 lg:border-none lg:bg-none lg:text-foreground lg:hover:bg-primary/10"
+              : ""
+          } ${
+            isCollapsed && !isMobile
+              ? "w-12 justify-center"
+              : "w-full justify-start"
+          } ${isMobile ? "w-16 flex-col gap-0.5 py-2" : ""}`}
+          value={value}
+        >
+          <Icon
+            className={`shrink-0 ${
+              isMobile ? "h-5 w-5" : "h-6 w-6"
+            } ${isCreate && isMobile ? "text-white" : ""}`}
+          />
+          {(!isCollapsed || isMobile) && (
+            <span
+              className={`${isMobile ? "text-xs" : "text-sm font-medium"} ${
+                isCreate && isMobile ? "hidden" : ""
+              }`}
+            >
+              {label}
+            </span>
+          )}
+        </TabsTrigger>
+      </Link>
+    );
+
+    // Show tooltip when collapsed on desktop
+    if (isCollapsed && !isMobile) {
+      return (
+        <Tooltip content={label} side="right">
+          {content}
+        </Tooltip>
+      );
+    }
+
+    return content;
+  };
+
   return (
     <Tabs value={getFirstDirectory(pathname)}>
       <TabsList
-        className={`shadow-t-2xl fixed bottom-0 left-0 right-0 z-20 mx-auto flex h-20 w-full gap-2 rounded-none border-t py-4 ${
-          isMobile
-            ? "bg-background/90 backdrop-blur-md backdrop-saturate-150"
-            : "bg-none"
-        } lg:static lg:h-full lg:w-32 lg:flex-col lg:items-start lg:justify-start lg:rounded-none lg:border-none lg:shadow-none`}
+        className={`shadow-t-2xl fixed bottom-0 left-0 right-0 z-20 mx-auto flex h-20 w-full items-center justify-around gap-1 rounded-none border-t bg-background/95 py-2 backdrop-blur-md ${
+          isMobile ? "" : "bg-none"
+        } lg:static lg:h-full lg:flex-col lg:items-stretch lg:justify-start lg:gap-1 lg:rounded-none lg:border-none lg:bg-transparent lg:p-3 lg:shadow-none ${
+          isCollapsed ? "lg:w-20" : "lg:w-48"
+        } transition-all duration-300`}
       >
-        {/* Position 1: Feed (Home) */}
-        <Link href="/feed">
-          <TabsTrigger
-            className="flex w-16 flex-col items-center gap-0.5 rounded-full lg:w-full lg:flex-row lg:items-start"
-            value="/feed"
-          >
-            <Home className="h-5 w-5 p-0.5 lg:p-1" />
-            {t("Feed")}
-          </TabsTrigger>
-        </Link>
-        {/* Position 2: Explore (old Discover) */}
-        <Link href="/characters">
-          <TabsTrigger
-            className="flex w-16 flex-col items-center gap-0.5 rounded-full lg:w-full lg:flex-row lg:items-start"
-            value="/characters"
-          >
-            <Compass className="h-5 w-5 p-0.5 lg:p-1" />
-            {t("Explore")}
-          </TabsTrigger>
-        </Link>
-        {/* Position 3: Chats */}
-        <Link href="/chats">
-          <TabsTrigger
-            className="flex w-16 flex-col items-center gap-0.5 rounded-full lg:w-full lg:flex-row lg:items-start"
-            value="/chats"
-          >
-            <MessageSquare className="h-5 w-5 p-0.5 lg:p-1" />
-            {t("Chats")}
-          </TabsTrigger>
-        </Link>
-        <Link href={"/my"}>
-          <TabsTrigger
-            className="flex w-full flex-col items-center gap-0.5 rounded-full border bg-black dark:bg-white sm:border-none sm:bg-transparent sm:dark:bg-transparent lg:flex-row lg:items-start"
-            value={"/my"}
-          >
-            <Plus className="h-6 w-6 p-0.5 text-white dark:text-black sm:text-muted-foreground sm:dark:text-muted-foreground lg:h-5 lg:w-5 lg:p-1" />
-            <span className="hidden lg:inline">{t("My")}</span>
-          </TabsTrigger>
-        </Link>
-        <Link href="/models">
-          <TabsTrigger
-            className="hidden w-full flex-col items-center gap-0.5 rounded-full lg:flex lg:flex-row lg:items-start"
-            value="/models"
-          >
-            <Package className="h-5 w-5 p-0.5 lg:p-1" />
-            {t("Models")}
-          </TabsTrigger>
-        </Link>
-        <Link href="/images">
-          <TabsTrigger
-            className="w-16 flex-col items-center gap-0.5 rounded-full lg:flex lg:w-full lg:flex-row lg:items-start"
-            value="/images"
-          >
-            <Image className="h-5 w-5 p-0.5 lg:p-1" />
-            {t("Images")}
-          </TabsTrigger>
-        </Link>
-        <Link href="/crystals">
-          <TabsTrigger
-            className="w-16 flex-col items-center gap-0.5 rounded-full lg:flex lg:w-full lg:flex-row lg:items-start"
-            value="/crystals"
-          >
-            <Crystal className="h-5 w-5 p-0.5 lg:p-1" />
-            {t("Crystals")}
-          </TabsTrigger>
-        </Link>
-        <Link href="/discord">
-          <TabsTrigger
-            className="hidden w-full flex-col items-center gap-0.5 rounded-full lg:flex lg:flex-row lg:items-start"
-            value="/discord"
-          >
-            <Discord className="h-5 w-5 p-0.5 lg:p-1" />
-            {t("Discord")}
-          </TabsTrigger>
-        </Link>
-        <Link href="/docs">
-          <TabsTrigger
-            className="hidden w-full flex-col items-center gap-0.5 rounded-full lg:flex lg:flex-row lg:items-start"
-            value="/docs"
-          >
-            <Book className="h-5 w-5 p-0.5 lg:p-1" />
-            {t("Docs")}
-          </TabsTrigger>
-        </Link>
+        {/* Collapse Toggle Button - Desktop Only */}
+        {!isMobile && (
+          <div className="mb-4 hidden lg:flex lg:justify-end">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={toggleCollapsed}
+              className="h-8 w-8 rounded-lg hover:bg-primary/10"
+            >
+              {isCollapsed ? (
+                <ChevronRight className="h-4 w-4" />
+              ) : (
+                <ChevronLeft className="h-4 w-4" />
+              )}
+            </Button>
+          </div>
+        )}
+
+        {/* Navigation Items */}
+        <NavItem href="/feed" value="/feed" icon={Home} label={t("Feed")} />
+        <NavItem
+          href="/characters"
+          value="/characters"
+          icon={Compass}
+          label={t("Explore")}
+        />
+        <NavItem
+          href="/chats"
+          value="/chats"
+          icon={MessageSquare}
+          label={t("Chats")}
+        />
+        <NavItem
+          href="/my"
+          value="/my"
+          icon={Plus}
+          label={t("Create")}
+          isCreate
+        />
+        <NavItem
+          href="/models"
+          value="/models"
+          icon={Package}
+          label={t("Models")}
+          hideOnMobile
+        />
+        <NavItem
+          href="/images"
+          value="/images"
+          icon={Image}
+          label={t("Images")}
+        />
+        <NavItem
+          href="/crystals"
+          value="/crystals"
+          icon={Crystal}
+          label={t("Crystals")}
+        />
+        <NavItem
+          href="/discord"
+          value="/discord"
+          icon={Discord}
+          label={t("Discord")}
+          hideOnMobile
+        />
+        <NavItem
+          href="/docs"
+          value="/docs"
+          icon={Book}
+          label={t("Docs")}
+          hideOnMobile
+        />
       </TabsList>
     </Tabs>
   );

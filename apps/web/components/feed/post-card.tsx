@@ -119,11 +119,11 @@ const PostCard = ({
   return (
     <Card className="w-full overflow-hidden rounded-xl border bg-card">
       {/* Header - Author Info */}
-      <div className="flex items-center gap-3 p-4">
+      <div className="flex items-center gap-4 p-4">
         <Link href={`/character/${author?.id}`}>
-          <Avatar className="h-12 w-12 cursor-pointer ring-2 ring-primary/20 transition-all hover:ring-primary/50">
+          <Avatar className="h-14 w-14 cursor-pointer ring-2 ring-pink-500/30 transition-all hover:ring-pink-500/60 sm:h-16 sm:w-16">
             <AvatarImage src={author?.avatarUrl || ""} alt={author?.name || ""} />
-            <AvatarFallback className="bg-gradient-to-br from-pink-400 to-purple-500 text-lg text-white">
+            <AvatarFallback className="bg-gradient-to-br from-pink-400 to-purple-500 text-xl text-white sm:text-2xl">
               {author?.name?.charAt(0) || "?"}
             </AvatarFallback>
           </Avatar>
@@ -131,7 +131,7 @@ const PostCard = ({
         <div className="flex flex-col">
           <Link
             href={`/character/${author?.id}`}
-            className="font-semibold text-foreground hover:underline"
+            className="font-semibold text-foreground hover:text-pink-500 transition-colors"
           >
             {author?.name || "Unknown"}
           </Link>
