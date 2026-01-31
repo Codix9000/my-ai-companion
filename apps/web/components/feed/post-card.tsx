@@ -121,9 +121,9 @@ const PostCard = ({
       {/* Header - Author Info */}
       <div className="flex items-center gap-3 p-4">
         <Link href={`/character/${author?.id}`}>
-          <Avatar className="h-10 w-10 cursor-pointer ring-2 ring-primary/20 transition-all hover:ring-primary/50">
+          <Avatar className="h-12 w-12 cursor-pointer ring-2 ring-primary/20 transition-all hover:ring-primary/50">
             <AvatarImage src={author?.avatarUrl || ""} alt={author?.name || ""} />
-            <AvatarFallback className="bg-gradient-to-br from-pink-400 to-purple-500 text-white">
+            <AvatarFallback className="bg-gradient-to-br from-pink-400 to-purple-500 text-lg text-white">
               {author?.name?.charAt(0) || "?"}
             </AvatarFallback>
           </Avatar>

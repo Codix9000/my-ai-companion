@@ -50,14 +50,14 @@ export default function ProfileHeader({
       {/* Profile Info Section */}
       <div className="relative mx-auto max-w-2xl px-4">
         {/* Avatar - Positioned to overlap banner */}
-        <div className="relative -mt-16 sm:-mt-20">
-          <Avatar className="h-28 w-28 border-4 border-background shadow-xl sm:h-36 sm:w-36">
+        <div className="relative -mt-20 sm:-mt-28">
+          <Avatar className="h-36 w-36 border-4 border-background shadow-xl sm:h-48 sm:w-48">
             <AvatarImage
               src={character.cardImageUrl || ""}
               alt={character.name || ""}
               className="object-cover"
             />
-            <AvatarFallback className="bg-gradient-to-br from-pink-400 to-purple-500 text-3xl text-white">
+            <AvatarFallback className="bg-gradient-to-br from-pink-400 to-purple-500 text-4xl text-white sm:text-5xl">
               {character.name?.charAt(0) || "?"}
             </AvatarFallback>
           </Avatar>
