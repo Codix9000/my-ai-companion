@@ -23,6 +23,7 @@ export const upsert = mutation({
     instructions: v.optional(v.string()),
     cardImageUrl: v.optional(v.string()),
     cardImageStorageId: v.optional(v.id("_storage")),
+    bannerImageStorageId: v.optional(v.id("_storage")),
     greetings: v.optional(v.array(v.string())),
     knowledge: v.optional(v.string()),
     capabilities: v.optional(v.array(v.string())),
@@ -38,7 +39,7 @@ export const upsert = mutation({
           message: "User does not have permission to modify this character.",
         });
       }
-      const { id, cardImageUrl, cardImageStorageId, ...rest } = args;
+      const { id, cardImageUrl, cardImageStorageId, bannerImageStorageId, ...rest } = args;
       const character = await ctx.db.patch(id, {
         ...rest,
         ...(cardImageStorageId
@@ -49,6 +50,14 @@ export const upsert = mutation({
             )) as string,
           }
           : { cardImageUrl }),
+        ...(bannerImageStorageId
+          ? {
+            bannerImageStorageId,
+            bannerImageUrl: (await ctx.storage.getUrl(
+              bannerImageStorageId,
+            )) as string,
+          }
+          : {}),
         updatedAt,
       });
       return character;
@@ -56,6 +65,7 @@ export const upsert = mutation({
       const {
         cardImageStorageId,
         cardImageUrl,
+        bannerImageStorageId,
         description,
         instructions,
         ...rest
@@ -72,6 +82,14 @@ export const upsert = mutation({
             )) as string,
           }
           : { cardImageUrl }),
+        ...(bannerImageStorageId
+          ? {
+            bannerImageStorageId,
+            bannerImageUrl: (await ctx.storage.getUrl(
+              bannerImageStorageId,
+            )) as string,
+          }
+          : {}),
         creatorId: user._id,
         updatedAt,
         numChats: 0,
@@ -488,6 +506,9 @@ export const get = query({
       cardImageUrl: character?.cardImageStorageId
         ? ((await ctx.storage.getUrl(character.cardImageStorageId)) as string)
         : character?.cardImageUrl,
+      bannerImageUrl: character?.bannerImageStorageId
+        ? ((await ctx.storage.getUrl(character.bannerImageStorageId)) as string)
+        : character?.bannerImageUrl,
     };
   },
 });

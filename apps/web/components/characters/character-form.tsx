@@ -9,7 +9,7 @@ import {
 import { Input } from "@repo/ui/src/components/input";
 import { Textarea } from "@repo/ui/src/components/textarea";
 import { Button } from "@repo/ui/src/components/button";
-import { ArrowLeft, Book, Plus, UploadCloud } from "lucide-react";
+import { ArrowLeft, Book, ImageIcon, Plus, UploadCloud } from "lucide-react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
@@ -46,6 +46,7 @@ import { ArchiveButton } from "./archive-button";
 import { useTranslation } from "react-i18next";
 import { Checkbox } from "@repo/ui/src/components/checkbox";
 import { VoiceSelect } from "./voice-select";
+import BannerCropDialog from "./banner-crop-dialog";
 
 const formSchema = z.object({
   name: z.string().max(24),
@@ -81,6 +82,7 @@ export default function CharacterForm() {
     instructions = searchParams.get("instructions") || "",
     greetings = searchParams.get("greetings") || "Hi.",
     cardImageUrl = searchParams.get("cardImageUrl") || "",
+    bannerImageUrl = "",
     model = (searchParams.get("model") as any) || "anthropic/claude-3-haiku",
     voiceId = (searchParams.get("voiceId") as any) || "MjxppkSa4IoDSRGySayZ",
     isDraft = searchParams.get("isDraft") || true,
@@ -102,7 +104,12 @@ export default function CharacterForm() {
     useState(false);
 
   const imageInput = useRef<HTMLInputElement>(null);
+  const bannerInput = useRef<HTMLInputElement>(null);
   const [openPopover, setOpenPopover] = useState(false);
+  
+  // Banner crop dialog state
+  const [bannerCropOpen, setBannerCropOpen] = useState(false);
+  const [bannerImageSrc, setBannerImageSrc] = useState<string>("");
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -202,6 +209,68 @@ export default function CharacterForm() {
       success: (character) => {
         character && setCharacterId(character);
         return `Character card has been uploaded.`;
+      },
+      error: (error) => {
+        return error
+          ? (error.data as { message: string }).message
+          : "Unexpected error occurred";
+      },
+    });
+  }
+
+  // Handle banner file selection - opens the crop dialog
+  function handleBannerFileSelect(file: File) {
+    const validImageTypes = [
+      "image/gif",
+      "image/jpeg",
+      "image/png",
+      "image/webp",
+    ];
+    if (!validImageTypes.includes(file.type)) {
+      toast.error(
+        "Invalid file type. Please upload a valid image file (gif, jpeg, png, webp)",
+      );
+      return;
+    }
+    if (file.size > 10485760) {
+      toast.error("File size should be less than 10MB");
+      return;
+    }
+    
+    // Create a data URL for the crop dialog
+    const reader = new FileReader();
+    reader.onload = () => {
+      setBannerImageSrc(reader.result as string);
+      setBannerCropOpen(true);
+    };
+    reader.readAsDataURL(file);
+  }
+
+  // Handle the cropped banner upload
+  async function handleCroppedBannerUpload(croppedBlob: Blob) {
+    const newCharacterId = await onSubmit(form.getValues());
+    
+    const postUrl = await generateUploadUrl();
+    const result = await fetch(postUrl, {
+      method: "POST",
+      headers: { "Content-Type": "image/jpeg" },
+      body: croppedBlob,
+    });
+    const { storageId } = await result.json();
+
+    const promise = upsert({
+      ...(characterId
+        ? { id: characterId }
+        : newCharacterId
+          ? { id: newCharacterId as Id<"characters"> }
+          : {}),
+      bannerImageStorageId: storageId,
+    });
+    toast.promise(promise, {
+      loading: "Uploading banner...",
+      success: (character) => {
+        character && setCharacterId(character);
+        return `Banner has been uploaded.`;
       },
       error: (error) => {
         return error
@@ -391,6 +460,63 @@ export default function CharacterForm() {
             className="hidden"
           />
         </div>
+        
+        {/* Banner Upload Section */}
+        <div className="my-4 flex w-full flex-col items-center justify-center gap-2">
+          <Label className="text-sm font-medium">{t("Profile Banner")}</Label>
+          <Label
+            htmlFor="banner"
+            className="relative flex h-24 w-full max-w-md cursor-pointer flex-col items-center justify-center gap-1 rounded border border-dashed duration-200 hover:border-border hover:bg-muted/50"
+          >
+            {bannerImageUrl ? (
+              <>
+                <Image
+                  src={bannerImageUrl}
+                  alt={"Preview of banner"}
+                  fill
+                  className="rounded object-cover opacity-80"
+                />
+                <div className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 transition-opacity hover:opacity-100">
+                  <span className="text-sm font-medium text-white">{t("Change Banner")}</span>
+                </div>
+              </>
+            ) : (
+              <>
+                <ImageIcon className="h-6 w-6 text-muted-foreground" />
+                <div className="flex flex-col items-center justify-center text-sm">
+                  {t("Add banner image")}
+                  <span className="text-xs text-muted-foreground">
+                    {t("Recommended: 1200x375 (wide horizontal)")}
+                  </span>
+                </div>
+              </>
+            )}
+          </Label>
+          <Input
+            id="banner"
+            type="file"
+            accept="image/*"
+            ref={bannerInput}
+            onChange={(event: any) => {
+              if (event.target.files?.[0]) {
+                handleBannerFileSelect(event.target.files[0]);
+              }
+            }}
+            className="hidden"
+          />
+          <p className="text-center text-xs text-muted-foreground">
+            {t("You'll be able to position your image after selecting it")}
+          </p>
+        </div>
+
+        {/* Banner Crop Dialog */}
+        <BannerCropDialog
+          open={bannerCropOpen}
+          onOpenChange={setBannerCropOpen}
+          imageSrc={bannerImageSrc}
+          onCropComplete={handleCroppedBannerUpload}
+        />
+        
         <Form {...form}>
           <form
             onSubmit={form.handleSubmit(debouncedSubmitHandle)}

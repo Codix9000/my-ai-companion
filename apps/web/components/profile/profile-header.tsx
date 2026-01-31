@@ -8,7 +8,6 @@ import {
   AvatarImage,
 } from "@repo/ui/src/components/avatar";
 import { nFormatter } from "../../app/lib/utils";
-import ModelBadge from "../characters/model-badge";
 
 interface ProfileHeaderProps {
   character: {
@@ -16,19 +15,15 @@ interface ProfileHeaderProps {
     description?: string;
     cardImageUrl?: string;
     bannerImageUrl?: string;
-    numChats?: number;
-    numUsers?: number;
-    model?: string;
+    numSubscribers?: number;
     isNSFW?: boolean;
   };
   creatorName?: string;
-  isCreator: boolean;
 }
 
 export default function ProfileHeader({
   character,
   creatorName,
-  isCreator,
 }: ProfileHeaderProps) {
   const { t } = useTranslation();
 
@@ -68,10 +63,9 @@ export default function ProfileHeader({
           </Avatar>
         </div>
 
-        {/* Name and Model Badge */}
+        {/* Name and NSFW Badge */}
         <div className="mt-4 flex flex-wrap items-center gap-2">
           <h1 className="text-2xl font-bold">{character.name}</h1>
-          {character.model && <ModelBadge modelName={character.model} />}
           {character.isNSFW && (
             <span className="rounded-full bg-red-500/10 px-2 py-0.5 text-xs font-medium text-red-500">
               18+
@@ -100,15 +94,9 @@ export default function ProfileHeader({
         <div className="mt-4 flex gap-6">
           <div className="flex flex-col">
             <span className="text-lg font-bold">
-              {nFormatter(character.numUsers || 0)}
+              {nFormatter(character.numSubscribers || 0)}
             </span>
-            <span className="text-xs text-muted-foreground">{t("Followers")}</span>
-          </div>
-          <div className="flex flex-col">
-            <span className="text-lg font-bold">
-              {nFormatter(character.numChats || 0)}
-            </span>
-            <span className="text-xs text-muted-foreground">{t("Chats")}</span>
+            <span className="text-xs text-muted-foreground">{t("Subscribers")}</span>
           </div>
         </div>
       </div>

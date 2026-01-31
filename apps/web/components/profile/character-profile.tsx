@@ -47,7 +47,6 @@ export default function CharacterProfile({ characterId }: CharacterProfileProps)
       <ProfileHeader
         character={character}
         creatorName={creatorName}
-        isCreator={isCreator}
       />
 
       {/* Action Buttons - Subscribe, Chat */}

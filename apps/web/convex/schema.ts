@@ -44,6 +44,8 @@ export default defineSchema({
     instructions: v.optional(v.string()),
     cardImageUrl: v.optional(v.string()),
     cardImageStorageId: v.optional(v.id("_storage")),
+    bannerImageUrl: v.optional(v.string()),
+    bannerImageStorageId: v.optional(v.id("_storage")),
     greetings: v.optional(v.array(v.string())),
     knowledge: v.optional(v.string()),
     capabilities: v.optional(v.array(v.string())),
@@ -58,6 +60,7 @@ export default defineSchema({
     visibility: v.optional(v.union(v.literal("private"), v.literal("public"))),
     numChats: v.optional(v.number()),
     numUsers: v.optional(v.number()),
+    numSubscribers: v.optional(v.number()), // Number of subscribers to this character
     score: v.optional(v.number()),
     embedding: v.optional(v.array(v.float64())),
     model: v.optional(v.string()),
