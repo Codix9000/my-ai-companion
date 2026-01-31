@@ -1,9 +1,9 @@
 "use client";
 
-import { Heart, Lock, MessageCircle, Share2 } from "lucide-react";
+import { Heart, Lock, MessageCircle, Play, Share2 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   Avatar,
   AvatarFallback,
@@ -46,6 +46,10 @@ const PostCard = ({
 }: PostCardProps) => {
   const [isLiked, setIsLiked] = useState(false);
   const [localLikesCount, setLocalLikesCount] = useState(likesCount);
+  const [videoEnded, setVideoEnded] = useState(false);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
 
   const handleLikeToggle = () => {
     // Toggle UI only for now - will connect to backend later
@@ -54,6 +58,63 @@ const PostCard = ({
   };
 
   const shouldBlur = isLocked || (isNSFW && nsfwPreference !== "allow");
+
+  // Autoplay video when in viewport using Intersection Observer
+  useEffect(() => {
+    if (mediaType !== "video" || shouldBlur) return;
+
+    const video = videoRef.current;
+    const container = containerRef.current;
+    if (!video || !container) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting && !videoEnded) {
+            video.play().catch(() => {
+              // Autoplay blocked - user needs to interact
+            });
+            setIsPlaying(true);
+          } else {
+            video.pause();
+            setIsPlaying(false);
+          }
+        });
+      },
+      { threshold: 0.5 } // Play when 50% visible
+    );
+
+    observer.observe(container);
+    return () => observer.disconnect();
+  }, [mediaType, shouldBlur, videoEnded]);
+
+  const handleVideoEnded = () => {
+    setVideoEnded(true);
+    setIsPlaying(false);
+  };
+
+  const handleReplay = () => {
+    if (videoRef.current) {
+      videoRef.current.currentTime = 0;
+      videoRef.current.play();
+      setVideoEnded(false);
+      setIsPlaying(true);
+    }
+  };
+
+  const handleVideoClick = () => {
+    if (videoRef.current) {
+      if (videoEnded) {
+        handleReplay();
+      } else if (isPlaying) {
+        videoRef.current.pause();
+        setIsPlaying(false);
+      } else {
+        videoRef.current.play();
+        setIsPlaying(true);
+      }
+    }
+  };
 
   return (
     <Card className="w-full overflow-hidden rounded-xl border bg-card">
@@ -81,28 +142,66 @@ const PostCard = ({
       </div>
 
       {/* Media Display */}
-      <div className="relative aspect-square w-full overflow-hidden bg-muted">
+      <div 
+        ref={containerRef}
+        className="relative w-full overflow-hidden bg-black"
+        style={{ 
+          // Use 4:5 aspect ratio (Instagram-style) for images, flexible for videos
+          aspectRatio: mediaType === "image" ? "4/5" : "auto",
+          minHeight: mediaType === "video" ? "300px" : undefined,
+          maxHeight: mediaType === "video" ? "600px" : undefined,
+        }}
+      >
         {mediaType === "image" ? (
           <Image
             src={mediaUrl}
             alt={caption}
             fill
-            className={`object-cover transition-all duration-300 ${
+            className={`object-contain transition-all duration-300 ${
               shouldBlur ? "blur-xl scale-110" : ""
             }`}
             sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
           />
         ) : (
-          <video
-            src={mediaUrl}
-            className={`h-full w-full object-cover ${
-              shouldBlur ? "blur-xl scale-110" : ""
-            }`}
-            controls={!shouldBlur}
-            muted
-            loop
-            playsInline
-          />
+          <>
+            <video
+              ref={videoRef}
+              src={mediaUrl}
+              className={`h-full w-full object-contain ${
+                shouldBlur ? "blur-xl scale-110" : ""
+              }`}
+              muted
+              playsInline
+              onEnded={handleVideoEnded}
+              onClick={!shouldBlur ? handleVideoClick : undefined}
+              style={{ cursor: shouldBlur ? "default" : "pointer" }}
+            />
+            {/* Replay overlay when video ends */}
+            {videoEnded && !shouldBlur && (
+              <div 
+                className="absolute inset-0 flex items-center justify-center bg-black/30 cursor-pointer"
+                onClick={handleReplay}
+              >
+                <div className="flex flex-col items-center gap-2 text-white">
+                  <div className="rounded-full bg-white/20 p-4 backdrop-blur-sm">
+                    <Play className="h-8 w-8 fill-white" />
+                  </div>
+                  <span className="text-sm font-medium">Tap to replay</span>
+                </div>
+              </div>
+            )}
+            {/* Play indicator when paused (but not ended) */}
+            {!isPlaying && !videoEnded && !shouldBlur && (
+              <div 
+                className="absolute inset-0 flex items-center justify-center bg-black/20 cursor-pointer"
+                onClick={handleVideoClick}
+              >
+                <div className="rounded-full bg-white/20 p-4 backdrop-blur-sm">
+                  <Play className="h-8 w-8 fill-white text-white" />
+                </div>
+              </div>
+            )}
+          </>
         )}
 
         {/* Paywall Overlay */}
