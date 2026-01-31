@@ -137,21 +137,23 @@ export const createPost = mutation({
     }
 
     // Get the media URL - either from direct URL or from storage ID
-    let mediaUrl = args.mediaUrl;
+    let finalMediaUrl: string;
+    
     if (args.mediaStorageId) {
-      mediaUrl = await ctx.storage.getUrl(args.mediaStorageId);
-      if (!mediaUrl) {
+      const storageUrl = await ctx.storage.getUrl(args.mediaStorageId);
+      if (!storageUrl) {
         throw new Error("Storage file not found");
       }
-    }
-
-    if (!mediaUrl) {
+      finalMediaUrl = storageUrl;
+    } else if (args.mediaUrl) {
+      finalMediaUrl = args.mediaUrl;
+    } else {
       throw new Error("Either mediaUrl or mediaStorageId must be provided");
     }
 
     const postId = await ctx.db.insert("posts", {
       authorId: args.authorId,
-      mediaUrl: mediaUrl,
+      mediaUrl: finalMediaUrl,
       mediaType: args.mediaType,
       caption: args.caption,
       likesCount: 0,
