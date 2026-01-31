@@ -8,7 +8,7 @@ import {
   Tooltip,
 } from "@repo/ui/src/components";
 import { AspectRatio } from "@repo/ui/src/components/aspect-ratio";
-import { MessageSquare, MessagesSquare, Repeat, X } from "lucide-react";
+import { ImagePlus, MessageSquare, MessagesSquare, Repeat, X } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { nFormatter } from "../../app/lib/utils";
@@ -59,19 +59,33 @@ const CharacterCard = (props: {
         >
           <Card className="flex h-full w-full items-end rounded-xl p-2 tracking-tight">
             {props.showEdit && (
-              <Link
-                href={`/my-characters/create${
-                  props.id ? `?id=${props.id}` : ""
-                }${props.model ? `&model=${props.model}` : ""}`}
-                className="absolute right-4 top-4 z-[4] hidden items-center group-hover:flex"
-              >
-                <Button
-                  variant="outline"
-                  className="h-5 rounded-full border-none text-xs md:text-[10px]"
+              <div className="absolute right-4 top-4 z-[4] hidden items-center gap-1 group-hover:flex">
+                <Link
+                  href={`/my-characters/${props.id}/post`}
+                  onClick={(e) => e.stopPropagation()}
                 >
-                  {t("Edit")}
-                </Button>
-              </Link>
+                  <Button
+                    variant="outline"
+                    className="h-5 rounded-full border-none text-xs md:text-[10px]"
+                  >
+                    <ImagePlus className="h-3 w-3 p-0.5" />
+                    {t("Post")}
+                  </Button>
+                </Link>
+                <Link
+                  href={`/my-characters/create${
+                    props.id ? `?id=${props.id}` : ""
+                  }${props.model ? `&model=${props.model}` : ""}`}
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <Button
+                    variant="outline"
+                    className="h-5 rounded-full border-none text-xs md:text-[10px]"
+                  >
+                    {t("Edit")}
+                  </Button>
+                </Link>
+              </div>
             )}
             {props.showRemix && (
               <Tooltip

@@ -1,6 +1,7 @@
 import { mutation, query } from "./_generated/server";
 import { v } from "convex/values";
 import { paginationOptsValidator } from "convex/server";
+import { Id } from "./_generated/dataModel";
 
 /**
  * Get the feed of posts with author (character) information joined.
@@ -88,12 +89,40 @@ export const getPost = query({
 });
 
 /**
+ * Get URL from a Convex storage ID.
+ * Use this to convert a storage ID to a URL for createPost.
+ */
+export const getStorageUrl = query({
+  args: {
+    storageId: v.id("_storage"),
+  },
+  handler: async (ctx, args) => {
+    const url = await ctx.storage.getUrl(args.storageId);
+    return url;
+  },
+});
+
+/**
+ * Generate a signed upload URL for post media.
+ */
+export const generateUploadUrl = mutation({
+  args: {},
+  handler: async (ctx) => {
+    return await ctx.storage.generateUploadUrl();
+  },
+});
+
+/**
  * Create a new post (for testing/manual insertion).
+ * You can provide either:
+ * - mediaUrl: A direct URL string
+ * - mediaStorageId: A Convex storage ID (will be converted to URL)
  */
 export const createPost = mutation({
   args: {
     authorId: v.id("characters"),
-    mediaUrl: v.string(),
+    mediaUrl: v.optional(v.string()),
+    mediaStorageId: v.optional(v.id("_storage")),
     mediaType: v.union(v.literal("image"), v.literal("video")),
     caption: v.string(),
     isLocked: v.optional(v.boolean()),
@@ -107,9 +136,22 @@ export const createPost = mutation({
       throw new Error("Character not found");
     }
 
+    // Get the media URL - either from direct URL or from storage ID
+    let mediaUrl = args.mediaUrl;
+    if (args.mediaStorageId) {
+      mediaUrl = await ctx.storage.getUrl(args.mediaStorageId);
+      if (!mediaUrl) {
+        throw new Error("Storage file not found");
+      }
+    }
+
+    if (!mediaUrl) {
+      throw new Error("Either mediaUrl or mediaStorageId must be provided");
+    }
+
     const postId = await ctx.db.insert("posts", {
       authorId: args.authorId,
-      mediaUrl: args.mediaUrl,
+      mediaUrl: mediaUrl,
       mediaType: args.mediaType,
       caption: args.caption,
       likesCount: 0,
