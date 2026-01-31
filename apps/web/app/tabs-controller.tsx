@@ -1,5 +1,13 @@
 "use client";
-import { Book, Home, Image, MessageSquare, Package, Plus } from "lucide-react";
+import {
+  Book,
+  Compass,
+  Home,
+  Image,
+  MessageSquare,
+  Package,
+  Plus,
+} from "lucide-react";
 import { usePathname } from "next/navigation";
 import { Tabs, TabsList, TabsTrigger } from "@repo/ui/src/components/tabs";
 import Link from "next/link";
@@ -26,15 +34,27 @@ function TabsController() {
             : "bg-none"
         } lg:static lg:h-full lg:w-32 lg:flex-col lg:items-start lg:justify-start lg:rounded-none lg:border-none lg:shadow-none`}
       >
-        <Link href="/">
+        {/* Position 1: Feed (Home) */}
+        <Link href="/feed">
           <TabsTrigger
             className="flex w-16 flex-col items-center gap-0.5 rounded-full lg:w-full lg:flex-row lg:items-start"
-            value="/"
+            value="/feed"
           >
             <Home className="h-5 w-5 p-0.5 lg:p-1" />
-            {t("Discover")}
+            {t("Feed")}
           </TabsTrigger>
         </Link>
+        {/* Position 2: Explore (old Discover) */}
+        <Link href="/characters">
+          <TabsTrigger
+            className="flex w-16 flex-col items-center gap-0.5 rounded-full lg:w-full lg:flex-row lg:items-start"
+            value="/characters"
+          >
+            <Compass className="h-5 w-5 p-0.5 lg:p-1" />
+            {t("Explore")}
+          </TabsTrigger>
+        </Link>
+        {/* Position 3: Chats */}
         <Link href="/chats">
           <TabsTrigger
             className="flex w-16 flex-col items-center gap-0.5 rounded-full lg:w-full lg:flex-row lg:items-start"

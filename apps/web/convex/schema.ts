@@ -227,4 +227,24 @@ export default defineSchema({
   })
     .index("byUserId", ["userId"])
     .index("byType", ["type"]),
+  posts: defineTable({
+    authorId: v.id("characters"), // The AI character/creator who owns this post
+    mediaUrl: v.string(), // URL to image or video
+    mediaType: v.union(v.literal("image"), v.literal("video")),
+    caption: v.string(),
+    likesCount: v.number(),
+    isLocked: v.boolean(), // Paywall status
+    format: v.union(v.literal("feed"), v.literal("short")), // Normal post vs vertical video
+    isNSFW: v.boolean(),
+  })
+    .index("byAuthorId", ["authorId"])
+    .index("byFormat", ["format"])
+    .index("byCreationTime", ["_creationTime"]),
+  postLikes: defineTable({
+    postId: v.id("posts"),
+    userId: v.id("users"),
+  })
+    .index("byPostId", ["postId"])
+    .index("byUserId", ["userId"])
+    .index("byPostAndUser", ["postId", "userId"]),
 });
