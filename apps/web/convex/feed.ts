@@ -13,9 +13,9 @@ export const getFeed = query({
     nsfwPreference: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
+    // Query posts ordered by creation time (default order is by _creationTime)
     let postsQuery = ctx.db
       .query("posts")
-      .withIndex("byCreationTime")
       .order("desc");
 
     // Filter by format if specified (feed vs short)

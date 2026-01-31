@@ -238,8 +238,7 @@ export default defineSchema({
     isNSFW: v.boolean(),
   })
     .index("byAuthorId", ["authorId"])
-    .index("byFormat", ["format"])
-    .index("byCreationTime", ["_creationTime"]),
+    .index("byFormat", ["format"]),
   postLikes: defineTable({
     postId: v.id("posts"),
     userId: v.id("users"),
