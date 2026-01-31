@@ -1,6 +1,6 @@
 import { Metadata, ResolvingMetadata, Viewport } from "next";
-import { constructMetadata } from "../../lib/utils";
-import CharacterProfilePage from "./CharacterProfilePage";
+import { constructMetadata } from "../../../lib/utils";
+import ChatWithCharacter from "../ChatWithCharacter";
 
 type Props = {
   params: { id: string };
@@ -20,7 +20,7 @@ export async function generateMetadata(
   ).then((res) => res.json());
 
   return constructMetadata({
-    title: character.name,
+    title: `Chat with ${character.name}`,
     description: character.description,
     image: character.cardImageUrl ? character.cardImageUrl : undefined,
     icon: character.cardImageUrl ? character.cardImageUrl : undefined,
@@ -35,5 +35,9 @@ export const viewport: Viewport = {
 };
 
 export default function Page({ params }: { params: { id: string } }) {
-  return <CharacterProfilePage params={params} />;
+  return (
+    <div className="h-full w-full overflow-x-hidden">
+      <ChatWithCharacter params={params} />
+    </div>
+  );
 }

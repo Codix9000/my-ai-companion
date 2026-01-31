@@ -781,26 +781,6 @@ export function Dialog({
 
   return (
     <div className="h-full w-full lg:fixed lg:left-0 lg:right-0 lg:top-16 lg:h-[calc(100%-0.875rem)] lg:overflow-hidden lg:rounded-xl lg:border lg:bg-background">
-      {cardImageUrl && (
-        <>
-          <Image
-            src={cardImageUrl}
-            alt={`Character card of ${name}`}
-            width={300}
-            height={525}
-            quality={60}
-            className="pointer-events-none fixed left-0 top-0 -z-10 h-[100vh] w-[100vw] object-cover opacity-50 lg:inset-0 lg:top-20 lg:mx-auto lg:w-auto lg:opacity-75"
-          />
-          <Image
-            src={cardImageUrl}
-            alt={`Character card of ${name}`}
-            width={300}
-            height={525}
-            quality={60}
-            className="pointer-events-none fixed left-0 top-0 -z-20 hidden w-[100vw] opacity-15 blur-md lg:inset-0 lg:top-20 lg:mx-auto lg:block"
-          />
-        </>
-      )}
       {chatId && (
         <div className="fixed top-0 z-50 flex h-12 w-full items-center justify-between border-b bg-background p-2 px-4 lg:sticky lg:rounded-t-lg lg:px-6">
           <div className="flex items-center gap-2 text-[10px] font-medium text-muted-foreground lg:text-xs">
