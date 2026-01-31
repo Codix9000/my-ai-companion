@@ -10,20 +10,17 @@ import {
 import { nFormatter } from "../../app/lib/utils";
 import ModelBadge from "../characters/model-badge";
 
-interface Character {
-  _id: string;
-  name?: string;
-  description?: string;
-  cardImageUrl?: string;
-  bannerImageUrl?: string;
-  numChats?: number;
-  numUsers?: number;
-  model?: string;
-  isNSFW?: boolean;
-}
-
 interface ProfileHeaderProps {
-  character: Character;
+  character: {
+    name?: string;
+    description?: string;
+    cardImageUrl?: string;
+    bannerImageUrl?: string;
+    numChats?: number;
+    numUsers?: number;
+    model?: string;
+    isNSFW?: boolean;
+  };
   creatorName?: string;
   isCreator: boolean;
 }
