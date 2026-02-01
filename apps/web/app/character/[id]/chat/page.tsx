@@ -1,9 +1,12 @@
 import { Metadata, ResolvingMetadata, Viewport } from "next";
 import { constructMetadata } from "../../../lib/utils";
 import ChatWithCharacter from "../ChatWithCharacter";
+import ChatHistorySidebar from "../../../../components/chats/chat-history-sidebar";
+import { Id } from "../../../../convex/_generated/dataModel";
 
 type Props = {
   params: { id: string };
+  searchParams: { chatId?: string };
 };
 
 export async function generateMetadata(
@@ -34,9 +37,9 @@ export const viewport: Viewport = {
   userScalable: false,
 };
 
-export default function Page({ params }: { params: { id: string } }) {
+export default function Page({ params, searchParams }: Props) {
   return (
-    <div className="h-full w-full overflow-x-hidden">
+    <div className="flex h-full w-full overflow-x-hidden">
       <ChatWithCharacter params={params} />
     </div>
   );

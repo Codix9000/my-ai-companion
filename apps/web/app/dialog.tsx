@@ -81,6 +81,7 @@ import { Textarea } from "@repo/ui/src/components/textarea";
 import { useResponsivePopover } from "@repo/ui/src/hooks/use-responsive-popover";
 import { CustomModelSelect } from "../components/characters/custom-model-select";
 import { ErrorBoundary } from "next/dist/client/components/error-boundary";
+import ChatHistorySidebar from "../components/chats/chat-history-sidebar";
 
 export const Message = ({
   index,
@@ -195,251 +196,7 @@ export const Message = ({
               />
             )
           )}
-          {message?.characterId && chatId && !isRegenerating && (
-            <div className="flex w-fit items-center justify-start rounded-full bg-background/25 p-1 backdrop-blur">
-              <Tooltip
-                content={t("Copy message to clipboard")}
-                desktopOnly={true}
-              >
-                <Button
-                  variant="ghost"
-                  className="h-8 w-8 rounded-full p-1 hover:bg-foreground/10 disabled:opacity-90 lg:h-6 lg:w-6"
-                  onClick={() => {
-                    navigator.clipboard.writeText(message?.text);
-                    toast.success("Message copied to clipboard");
-                  }}
-                >
-                  <ClipboardIcon className="h-5 w-5 lg:h-4 lg:w-4" />
-                </Button>
-              </Tooltip>
-              <Button
-                size="icon"
-                variant="ghost"
-                className="h-8 w-8 rounded-full p-1 hover:bg-foreground/10 disabled:opacity-90 lg:h-6 lg:w-6"
-                disabled={message?.reaction === "like"}
-                onClick={async () => {
-                  await react({
-                    messageId: message?._id as Id<"messages">,
-                    type: "like",
-                  });
-                }}
-              >
-                {message?.reaction === "like" ? (
-                  <ThumbsUp className="h-6 w-6 text-green-500 lg:h-4 lg:w-4" />
-                ) : (
-                  <ThumbsUp className="h-5 w-5 lg:h-4 lg:w-4" />
-                )}
-              </Button>
-              <Button
-                size="icon"
-                variant="ghost"
-                className="h-8 w-8 rounded-full p-1 hover:bg-foreground/10 disabled:opacity-90 lg:h-6 lg:w-6"
-                disabled={message?.reaction === "dislike"}
-                onClick={async () => {
-                  await react({
-                    messageId: message?._id as Id<"messages">,
-                    type: "dislike",
-                  });
-                  setIsRegenerating(true);
-                  await regenerate({
-                    messageId: message?._id as Id<"messages">,
-                    chatId,
-                    characterId: message?.characterId,
-                  });
-                  setIsRegenerating(false);
-                }}
-              >
-                {isRegenerating ? (
-                  <Spinner className="h-5 w-5 lg:h-4 lg:w-4" />
-                ) : message?.reaction === "dislike" ? (
-                  <ThumbsDown className="h-6 w-6 text-rose-500 lg:h-4 lg:w-4" />
-                ) : (
-                  <ThumbsDown className="h-5 w-5 lg:h-4 lg:w-4" />
-                )}
-              </Button>
-              {message?.characterId && chatId && (
-                <Drawer>
-                  <DrawerTrigger asChild>
-                    <Button
-                      size="icon"
-                      variant="ghost"
-                      className="h-8 w-8 rounded-full p-1 hover:bg-foreground/10 disabled:opacity-90 lg:h-6 lg:w-6"
-                    >
-                      <Edit className="h-5 w-5 lg:h-4 lg:w-4" />
-                    </Button>
-                  </DrawerTrigger>
-                  <DrawerContent>
-                    <div className="mx-auto w-full">
-                      <DrawerHeader>
-                        <DrawerTitle>{t("Edit message")}</DrawerTitle>
-                        <DrawerDescription>
-                          {t("Change the story as you wish.")}
-                        </DrawerDescription>
-                      </DrawerHeader>
-                      <form
-                        onSubmit={async (e) => {
-                          e.preventDefault();
-                          const formData = new FormData(
-                            e.target as HTMLFormElement,
-                          );
-                          const editedText = formData.get("editedText");
-                          if (
-                            typeof editedText === "string" &&
-                            editedText.trim() !== ""
-                          ) {
-                            try {
-                              await edit({
-                                messageId: message?._id as Id<"messages">,
-                                editedText,
-                              });
-                              toast.success(t("Message updated successfully"));
-                            } catch (error) {
-                              toast.error(t("Failed to update message"));
-                            }
-                          }
-                        }}
-                      >
-                        <div className="flex w-full justify-center px-4">
-                          <Button
-                            variant="outline"
-                            onClick={() => {
-                              const textarea = document.querySelector(
-                                'textarea[name="editedText"]',
-                              ) as HTMLTextAreaElement;
-                              if (textarea) {
-                                textarea.value = "";
-                                textarea.focus();
-                              }
-                            }}
-                            className="w-fit gap-0.5"
-                          >
-                            <Eraser className="h-4 w-4" />
-                            {t("Clear")}
-                          </Button>
-                        </div>
-                        <div className="p-4">
-                          <Textarea
-                            name="editedText"
-                            defaultValue={message?.text.trim()}
-                            className="resize-none"
-                            rows={5}
-                          />
-                        </div>
-                        <DrawerFooter className="flex w-full items-center gap-2">
-                          <DrawerClose className="w-full">
-                            <Button type="submit" className="w-full">
-                              {t("Save")}
-                            </Button>
-                          </DrawerClose>
-                          <DrawerClose className="w-full">
-                            <Button variant="outline" className="w-full">
-                              {t("Cancel")}
-                            </Button>
-                          </DrawerClose>
-                        </DrawerFooter>
-                      </form>
-                    </div>
-                  </DrawerContent>
-                </Drawer>
-              )}
-              <Tooltip
-                content={
-                  <span className="flex gap-1 p-2">
-                    {t("Listen")} (<Crystal className="h-4 w-4" /> x 15 )
-                  </span>
-                }
-                desktopOnly={true}
-              >
-                <Button
-                  variant="ghost"
-                  className="h-8 w-8 rounded-full p-1 hover:bg-foreground/10 disabled:opacity-90 lg:h-6 lg:w-6"
-                  onClick={async () => {
-                    if (isSpeaking) {
-                      setIsSpeaking(false);
-                    } else {
-                      try {
-                        await speech({
-                          messageId: message?._id as Id<"messages">,
-                          characterId: message?.characterId,
-                          text: message?.translation
-                            ? message?.translation
-                            : message?.text,
-                        });
-                        setIsSpeaking(true);
-                      } catch (error) {
-                        setIsSpeaking(false);
-                        if (error instanceof ConvexError) {
-                          openDialog();
-                        } else {
-                          toast.error("An unknown error occurred");
-                        }
-                      }
-                    }
-                  }}
-                >
-                  {isSpeaking ? (
-                    <Pause className="h-5 w-5 lg:h-4 lg:w-4" />
-                  ) : (
-                    <span className="flex w-full items-center justify-center gap-1">
-                      <Headphones className="h-5 w-5 lg:h-4 lg:w-4" />
-                    </span>
-                  )}
-                </Button>
-              </Tooltip>
-              {message?.speechUrl && (isSpeaking || isVoicePlaying) && (
-                <audio
-                  autoPlay
-                  controls
-                  hidden
-                  onEnded={() => {
-                    setIsSpeaking(false);
-                    stopVoice();
-                  }}
-                >
-                  <source src={message?.speechUrl} type="audio/mpeg" />
-                </audio>
-              )}
-              {message?.characterId && chatId && !isRegenerating && (
-                <Tooltip
-                  content={
-                    <span className="flex gap-1 p-2">
-                      {t(`Selfie`)} ( <Crystal className="h-4 w-4" /> x 4 )
-                    </span>
-                  }
-                  desktopOnly={true}
-                >
-                  <Button
-                    size="icon"
-                    variant="ghost"
-                    className="h-8 w-8 rounded-full p-1 hover:bg-foreground/10 disabled:opacity-90 lg:h-6 lg:w-6"
-                    onClick={async () => {
-                      setIsImagining(true);
-                      try {
-                        await imagine({
-                          messageId: message?._id as Id<"messages">,
-                        });
-                        posthog.capture("imagine");
-                      } catch (error) {
-                        setIsImagining(false);
-                        if (error instanceof ConvexError) {
-                          openDialog();
-                        } else {
-                          toast.error("An unknown error occurred");
-                        }
-                      }
-                    }}
-                    disabled={message?.imageUrl || isImagining}
-                  >
-                    {isImagining ? (
-                      <Spinner className="h-5 w-5 lg:h-4 lg:w-4" />
-                    ) : (
-                      <Camera className="h-5 w-5 lg:h-4 lg:w-4" />
-                    )}
-                  </Button>
-                </Tooltip>
-              )}
-            </div>
-          )}
+          {/* Message actions removed for cleaner UI */}
         </>
       )}
     </div>
@@ -780,24 +537,47 @@ export function Dialog({
   const isLastMessageLoaded = lastMessage?.length > 0 ?? false;
 
   return (
-    <div className="h-full w-full lg:fixed lg:left-0 lg:right-0 lg:top-16 lg:h-[calc(100%-0.875rem)] lg:overflow-hidden lg:rounded-xl lg:border lg:bg-background">
+    <div className="flex h-full w-full lg:fixed lg:left-0 lg:right-0 lg:top-16 lg:h-[calc(100%-0.875rem)] lg:overflow-hidden">
+      {/* Chat History Sidebar - Desktop Only */}
+      <ChatHistorySidebar
+        characterId={characterId}
+        currentChatId={chatId}
+        characterName={name}
+        cardImageUrl={cardImageUrl}
+      />
+      
+      {/* Main Chat Area */}
+      <div className="flex-1 lg:rounded-xl lg:border lg:bg-background">
       {chatId && (
-        <div className="fixed top-0 z-50 flex h-12 w-full items-center justify-between border-b bg-background p-2 px-4 lg:sticky lg:rounded-t-lg lg:px-6">
-          <div className="flex items-center gap-2 text-[10px] font-medium text-muted-foreground lg:text-xs">
+        <div className="fixed top-0 z-50 flex h-16 w-full items-center justify-between border-b bg-background p-2 px-4 lg:sticky lg:rounded-t-lg lg:px-6">
+          <div className="flex items-center gap-3">
             <Link href="/chats" className="lg:hidden">
               <Button size="icon" variant="ghost">
                 <ArrowLeft className="h-4 w-4" />
               </Button>
             </Link>
-            <div>
-              <LanguageSelect isCompact />
-            </div>
-            <Badge variant="model">
-              <Headphones className="h-4 w-4 p-0.5" /> /
-              <Crystal className="h-4 w-4 p-0.5" /> x 15
-            </Badge>
+            {/* Character Profile Image and Info */}
+            <Link href={`/character/${characterId}`} className="flex items-center gap-3">
+              <Avatar className="h-10 w-10 ring-2 ring-pink-500/30">
+                <AvatarImage
+                  src={cardImageUrl || ""}
+                  alt={name}
+                  className="object-cover"
+                />
+                <AvatarFallback className="bg-gradient-to-br from-pink-400 to-purple-500 text-white">
+                  {name?.[0] || "?"}
+                </AvatarFallback>
+              </Avatar>
+              <div className="flex flex-col">
+                <span className="font-semibold text-foreground">{name}</span>
+                <span className="text-xs text-muted-foreground">
+                  by @{creatorName || "anonymous"}
+                </span>
+              </div>
+            </Link>
           </div>
           <div className="flex items-center gap-1">
+            <LanguageSelect isCompact />
             <ChatOptionsPopover
               characterId={characterId}
               chatId={chatId}
@@ -813,7 +593,7 @@ export function Dialog({
                 toast.promise(promise, {
                   loading: "Creating new chat...",
                   success: (chatId) => {
-                    router.push(`/character/${characterId}?chatId=${chatId}`);
+                    router.push(`/character/${characterId}/chat?chatId=${chatId}`);
                     return `New chat has been created.`;
                   },
                   error: (error) => {
@@ -923,10 +703,10 @@ export function Dialog({
         <div className="mb-[11rem] lg:mb-16" />
       </div>
       <form
-        className="fixed bottom-0 z-50 flex h-32 min-h-fit w-full flex-col items-center border-0 border-t-[1px] border-solid bg-background pb-6 lg:rounded-br-lg"
+        className="fixed bottom-0 z-50 flex h-20 w-full items-center border-0 border-t-[1px] border-solid bg-background px-4 lg:static lg:rounded-b-lg"
         onSubmit={(event) => void handleSend(event)}
       >
-        <div className="flex h-full w-full items-center justify-center gap-4 px-4">
+        <div className="flex h-full w-full items-center justify-center gap-4">
           <input
             className="h-10 w-full resize-none border-none bg-background text-[16px] scrollbar-hide focus-visible:ring-0 lg:text-base"
             autoFocus
@@ -943,24 +723,12 @@ export function Dialog({
               }
             }}
           />
-          <Button disabled={input === ""} size="icon">
+          <Button disabled={input === ""} size="icon" className="bg-gradient-to-r from-pink-500 to-purple-500 hover:from-pink-600 hover:to-purple-600">
             <Send className="h-5 w-5" />
           </Button>
         </div>
-        <div className="flex w-full items-end justify-end px-4">
-          {characterId && (
-            <ErrorBoundary
-              children={
-                <CustomModelSelect
-                  initialModel={model as string}
-                  characterId={characterId}
-                />
-              }
-              errorComponent={() => ""}
-            />
-          )}
-        </div>
       </form>
+      </div>{/* End Main Chat Area */}
     </div>
   );
 }
