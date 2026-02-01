@@ -1,6 +1,5 @@
 "use client";
 
-import { useQuery } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import { Id } from "../../convex/_generated/dataModel";
 import Link from "next/link";
@@ -11,48 +10,55 @@ import {
   AvatarImage,
 } from "@repo/ui/src/components/avatar";
 import { Button } from "@repo/ui/src/components/button";
-import { MessageSquare, Plus, ChevronLeft, ChevronRight } from "lucide-react";
+import { MessageSquare, ChevronLeft, ChevronRight } from "lucide-react";
 import { useTranslation } from "react-i18next";
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { cn } from "@repo/ui/src/utils";
 import { useStablePaginatedQuery, useStableQuery } from "../../app/lib/hooks/use-stable-query";
 
 interface ChatHistorySidebarProps {
-  characterId: Id<"characters">;
+  currentCharacterId: Id<"characters">;
   currentChatId?: Id<"chats">;
-  characterName: string;
-  cardImageUrl?: string;
 }
 
-interface ChatItemProps {
+interface CharacterChatItemProps {
   chatId: Id<"chats">;
   characterId: Id<"characters">;
   isActive: boolean;
   isCollapsed: boolean;
 }
 
-function ChatItem({ chatId, characterId, isActive, isCollapsed }: ChatItemProps) {
+function CharacterChatItem({ chatId, characterId, isActive, isCollapsed }: CharacterChatItemProps) {
+  const character = useStableQuery(api.characters.get, { id: characterId });
   const message = useStableQuery(api.messages.mostRecentMessage, { chatId });
   const recentMessageAt = message?._creationTime as number;
+
+  if (!character) return null;
 
   return (
     <Link
       href={`/character/${characterId}/chat?chatId=${chatId}`}
       className={cn(
-        "flex items-center gap-3 rounded-lg p-3 transition-colors hover:bg-primary/10",
+        "flex items-center gap-3 rounded-lg p-2 transition-colors hover:bg-primary/10",
         isActive && "bg-primary/15 ring-1 ring-pink-500/30"
       )}
     >
-      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-pink-400/20 to-purple-500/20">
-        <MessageSquare className="h-4 w-4 text-pink-500" />
-      </div>
+      <Avatar className={cn("shrink-0 ring-2 ring-pink-500/20", isCollapsed ? "h-10 w-10" : "h-10 w-10")}>
+        <AvatarImage src={character.cardImageUrl || ""} alt={character.name || ""} className="object-cover" />
+        <AvatarFallback className="bg-gradient-to-br from-pink-400 to-purple-500 text-sm text-white">
+          {character.name?.[0] || "?"}
+        </AvatarFallback>
+      </Avatar>
       {!isCollapsed && (
         <div className="flex-1 overflow-hidden">
-          <p className="truncate text-sm text-foreground">
-            {message?.text ? message.text.substring(0, 40) + (message.text.length > 40 ? "..." : "") : "New conversation"}
+          <p className="truncate text-sm font-medium text-foreground">
+            {character.name || "Unknown"}
+          </p>
+          <p className="truncate text-xs text-muted-foreground">
+            {message?.text ? message.text.substring(0, 30) + (message.text.length > 30 ? "..." : "") : "Start chatting..."}
           </p>
           {recentMessageAt && !isNaN(new Date(recentMessageAt).getTime()) && (
-            <p className="text-xs text-muted-foreground">
+            <p className="text-xs text-muted-foreground/70">
               {formatDistanceToNow(new Date(recentMessageAt), { addSuffix: true })}
             </p>
           )}
@@ -63,25 +69,35 @@ function ChatItem({ chatId, characterId, isActive, isCollapsed }: ChatItemProps)
 }
 
 export default function ChatHistorySidebar({
-  characterId,
+  currentCharacterId,
   currentChatId,
-  characterName,
-  cardImageUrl,
 }: ChatHistorySidebarProps) {
   const { t } = useTranslation();
   const [isCollapsed, setIsCollapsed] = useState(false);
   
-  // Fetch chats for this specific character
+  // Fetch all user's chats
   const { results: chats } = useStablePaginatedQuery(
     api.chats.list,
     {},
-    { initialNumItems: 20 }
+    { initialNumItems: 50 }
   );
 
-  // Filter chats for this character only
-  const characterChats = chats?.filter(
-    (chat) => chat.characterId === characterId
-  ) || [];
+  // Group chats by character - keep only the most recent chat per character
+  const characterChats = useMemo(() => {
+    if (!chats) return [];
+    
+    const chatsByCharacter = new Map<string, typeof chats[0]>();
+    
+    // Since chats are already sorted by recency, the first one we encounter per character is the most recent
+    for (const chat of chats) {
+      const charId = chat.characterId as string;
+      if (!chatsByCharacter.has(charId)) {
+        chatsByCharacter.set(charId, chat);
+      }
+    }
+    
+    return Array.from(chatsByCharacter.values());
+  }, [chats]);
 
   return (
     <div
@@ -94,13 +110,8 @@ export default function ChatHistorySidebar({
       <div className="flex items-center justify-between border-b p-3">
         {!isCollapsed && (
           <div className="flex items-center gap-2">
-            <Avatar className="h-8 w-8 ring-2 ring-pink-500/20">
-              <AvatarImage src={cardImageUrl || ""} alt={characterName} className="object-cover" />
-              <AvatarFallback className="bg-gradient-to-br from-pink-400 to-purple-500 text-sm text-white">
-                {characterName?.[0] || "?"}
-              </AvatarFallback>
-            </Avatar>
-            <span className="font-medium text-sm">{t("Chats")}</span>
+            <MessageSquare className="h-5 w-5 text-pink-500" />
+            <span className="font-medium text-sm">{t("Conversations")}</span>
           </div>
         )}
         <Button
@@ -117,16 +128,16 @@ export default function ChatHistorySidebar({
         </Button>
       </div>
 
-      {/* Chat List */}
+      {/* Chat List - One per character */}
       <div className="flex-1 overflow-y-auto p-2">
         {characterChats.length > 0 ? (
           <div className="flex flex-col gap-1">
             {characterChats.map((chat) => (
-              <ChatItem
+              <CharacterChatItem
                 key={chat._id}
                 chatId={chat._id}
-                characterId={characterId}
-                isActive={currentChatId === chat._id}
+                characterId={chat.characterId as Id<"characters">}
+                isActive={currentCharacterId === chat.characterId}
                 isCollapsed={isCollapsed}
               />
             ))}
@@ -136,25 +147,11 @@ export default function ChatHistorySidebar({
             <div className="flex flex-col items-center justify-center py-8 text-center text-sm text-muted-foreground">
               <MessageSquare className="mb-2 h-8 w-8 opacity-50" />
               <p>{t("No conversations yet")}</p>
+              <p className="text-xs mt-1">{t("Start chatting with characters!")}</p>
             </div>
           )
         )}
       </div>
-
-      {/* New Chat Button */}
-      {!isCollapsed && (
-        <div className="border-t p-3">
-          <Link href={`/character/${characterId}/chat`}>
-            <Button
-              variant="outline"
-              className="w-full gap-2 border-pink-500/30 hover:bg-pink-500/10"
-            >
-              <Plus className="h-4 w-4" />
-              {t("New Chat")}
-            </Button>
-          </Link>
-        </div>
-      )}
     </div>
   );
 }

@@ -537,13 +537,11 @@ export function Dialog({
   const isLastMessageLoaded = lastMessage?.length > 0 ?? false;
 
   return (
-    <div className="flex h-full w-full lg:fixed lg:left-0 lg:right-0 lg:top-16 lg:h-[calc(100%-0.875rem)] lg:overflow-hidden">
-      {/* Chat History Sidebar - Desktop Only */}
+    <div className="flex h-full w-full lg:h-[calc(100vh-4rem)] lg:overflow-hidden">
+      {/* Chat History Sidebar - Desktop Only - Shows all character conversations */}
       <ChatHistorySidebar
-        characterId={characterId}
+        currentCharacterId={characterId}
         currentChatId={chatId}
-        characterName={name}
-        cardImageUrl={cardImageUrl}
       />
       
       {/* Main Chat Area */}
