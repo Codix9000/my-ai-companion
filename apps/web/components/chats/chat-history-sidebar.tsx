@@ -14,7 +14,7 @@ import { Button } from "@repo/ui/src/components/button";
 import { MessageSquare, Plus, ChevronLeft, ChevronRight } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { useState } from "react";
-import { cn } from "@repo/ui/lib/utils";
+import { cn } from "@repo/ui/src/utils";
 import { useStablePaginatedQuery, useStableQuery } from "../../app/lib/hooks/use-stable-query";
 
 interface ChatHistorySidebarProps {
