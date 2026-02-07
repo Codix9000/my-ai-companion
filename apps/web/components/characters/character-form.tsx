@@ -51,7 +51,7 @@ import BannerCropDialog from "./banner-crop-dialog";
 const formSchema = z.object({
   name: z.string().max(24),
   description: z.string().max(128),
-  instructions: z.string().max(512),
+  instructions: z.string().max(2048),
   greetings: z.optional(z.string().max(1024)),
   model: z.string(),
   isNSFW: z.boolean(),

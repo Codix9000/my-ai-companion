@@ -131,6 +131,13 @@ export default defineSchema({
     instruction: v.optional(v.string()),
     isStale: v.optional(v.boolean()),
   }).index("byChatId", ["chatId"]),
+  userFacts: defineTable({
+    userId: v.id("users"),
+    characterId: v.id("characters"),
+    fact: v.string(),
+    category: v.optional(v.string()),
+  })
+    .index("byUserAndCharacter", ["userId", "characterId"]),
   usage: defineTable({
     userId: v.id("users"),
     name: v.string(),

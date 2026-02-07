@@ -73,7 +73,7 @@ export const upsert = mutation({
       const character = await ctx.db.insert("characters", {
         ...rest,
         description: description?.substring(0, 128),
-        instructions: instructions?.substring(0, 1024),
+        instructions: instructions?.substring(0, 4096),
         ...(cardImageStorageId
           ? {
             cardImageStorageId,
