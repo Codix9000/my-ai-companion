@@ -90,51 +90,49 @@ export const extractFacts = internalAction({
       const apiKey = getAPIKey(model);
       const openai = new OpenAI({ baseURL, apiKey });
 
-      const extractionPrompt = `You are a fact extraction assistant. Your job is to extract personal facts about the USER from their messages in a conversation.
+      // Simple, robust extraction prompt designed for creative/roleplay models
+      // Instead of asking for JSON, we ask for a simple line-by-line list
+      const extractionPrompt = `Read the user's messages below and list any personal facts about them.
+Write each fact on its own line starting with "FACT:" 
+Only include concrete facts (name, age, job, likes, dislikes, pets, hobbies, relationships, location, etc).
+If there are no personal facts, write "NONE"
 
-${existingFactStrings.length > 0 ? `Facts already known (DO NOT repeat these):\n${existingFactStrings.map((f: string) => `- ${f}`).join("\n")}\n` : ""}
-From the user's messages below, extract any NEW personal facts. Focus on:
-- Personal details (name, age, location, job, hobbies)
-- Preferences (likes, dislikes, favorites)
-- Relationships (family, friends, pets)
-- Emotional state or important life events
-- Anything they explicitly share about themselves
-
-User's recent messages:
-${userMessages}
-
-Respond ONLY with a JSON array of fact strings. If no new facts found, respond with [].
-Example: ["User has a dog named Buster", "User works as a software engineer", "User dislikes mushrooms"]`;
+${existingFactStrings.length > 0 ? `Already known (skip these):\n${existingFactStrings.map((f: string) => `- ${f}`).join("\n")}\n\n` : ""}User's messages:
+${userMessages}`;
 
       const response = await openai.chat.completions.create({
         model,
         stream: false,
         messages: [
-          { role: "system", content: "You extract personal facts from conversations. Respond ONLY with valid JSON arrays." },
           { role: "user", content: extractionPrompt },
         ],
-        max_tokens: 256,
+        max_tokens: 200,
       });
 
       const content = response?.choices?.[0]?.message?.content?.trim();
-      if (!content) return;
+      console.log("Fact extraction raw response:", content);
+      if (!content || content.toUpperCase().includes("NONE")) return;
 
-      // Parse the JSON response
+      // Parse line-by-line FACT: format (much more robust than JSON for creative models)
       let newFacts: string[] = [];
-      try {
-        // Handle cases where the model wraps in markdown code blocks
-        const jsonString = content
-          .replace(/```json\n?/g, "")
-          .replace(/```\n?/g, "")
-          .trim();
-        newFacts = JSON.parse(jsonString);
-      } catch {
-        // If JSON parsing fails, skip this extraction round
-        console.log("Failed to parse facts JSON, skipping:", content);
-        return;
+      const lines = content.split("\n");
+      for (const line of lines) {
+        const trimmed = line.trim();
+        // Match lines starting with "FACT:" or "- " or numbered lists
+        let fact = "";
+        if (trimmed.toUpperCase().startsWith("FACT:")) {
+          fact = trimmed.substring(5).trim();
+        } else if (trimmed.startsWith("- ")) {
+          fact = trimmed.substring(2).trim();
+        } else if (/^\d+[\.\)]\s/.test(trimmed)) {
+          fact = trimmed.replace(/^\d+[\.\)]\s*/, "").trim();
+        }
+        if (fact && fact.length > 5 && fact.length < 200) {
+          newFacts.push(fact);
+        }
       }
 
-      if (!Array.isArray(newFacts) || newFacts.length === 0) return;
+      if (newFacts.length === 0) return;
 
       // Store each new fact (deduplicated against existing)
       for (const fact of newFacts) {
