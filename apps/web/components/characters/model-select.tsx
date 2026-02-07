@@ -21,7 +21,7 @@ import { DEFAULT_MODEL } from "../../convex/constants";
 // Single default model for all characters
 const defaultModelOption = {
   value: DEFAULT_MODEL,
-  description: "Dolphin Mistral 24B (Venice Edition)",
+  description: "MythoMax L2 13B",
 };
 
 export const ModelSelect = ({

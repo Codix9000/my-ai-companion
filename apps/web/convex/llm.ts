@@ -58,10 +58,6 @@ const initializeModel = async (character: any, userId: string, ctx: any) => {
   const openai = new OpenAI({
     baseURL,
     apiKey,
-    defaultHeaders: {
-      "HTTP-Referer": "https://openroleplay.ai",
-      "X-Title": "Openroleplay.ai",
-    },
   });
   let updatedModel = model;
   if (model === "gpt-4-1106-preview") {

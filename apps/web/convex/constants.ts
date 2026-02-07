@@ -1,6 +1,6 @@
 export const SIGN_UP_FREE_CRYSTALS = 50;
 export const DIVIDEND_RATE = 0.25;
-export const DEFAULT_MODEL = "cognitivecomputations/dolphin-mistral-24b-venice-edition:free";
+export const DEFAULT_MODEL = "Gryphe/MythoMax-L2-13b";
 export const PERPLEXITY_API_URL = "https://api.perplexity.ai";
 export const OPENAI_API_URL = "https://api.openai.com/v1";
 export const FIREWORK_API_URL = "https://api.fireworks.ai/inference/v1";
@@ -8,6 +8,7 @@ export const STABILITY_AI_API_URL =
   "https://api.stability.ai/v1/generation/stable-diffusion-xl-1024-v1-0/text-to-image";
 export const MISTRAL_AI_API_URL = "https://api.mistral.ai/v1";
 export const OPENROUTER_API_URL = "https://openrouter.ai/api/v1";
+export const DEEPINFRA_API_URL = "https://api.deepinfra.com/v1/openai";
 
 export const getBaseURL = (modelName: string) => {
   switch (modelName) {
@@ -26,8 +27,10 @@ export const getBaseURL = (modelName: string) => {
     case "pplx-70b-online":
     case "pplx-70b-chat":
       return PERPLEXITY_API_URL;
+    case "Gryphe/MythoMax-L2-13b":
+      return DEEPINFRA_API_URL;
     default:
-      return OPENROUTER_API_URL;
+      return DEEPINFRA_API_URL;
   }
 };
 
@@ -48,8 +51,10 @@ export const getAPIKey = (modelName: string) => {
     case "mistral-small":
     case "mistral-medium":
       return process.env.MISTRAL_API_KEY;
+    case "Gryphe/MythoMax-L2-13b":
+      return process.env.DEEPINFRA_API_KEY;
     default:
-      return process.env.OPENROUTER_API_KEY;
+      return process.env.DEEPINFRA_API_KEY;
   }
 };
 
@@ -72,8 +77,8 @@ export const getImageModelCrystalPrice = (modelName: string) => {
 // Model metadata is hard-coded due to frequent updates in open-source LLM.
 export const modelData = [
   {
-    value: "cognitivecomputations/dolphin-mistral-24b-venice-edition:free",
-    description: "Dolphin Mistral 24B (Venice Edition)",
+    value: "Gryphe/MythoMax-L2-13b",
+    description: "MythoMax L2 13B (DeepInfra)",
     crystalPrice: 0,
     isNSFW: true,
   },

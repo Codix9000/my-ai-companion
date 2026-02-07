@@ -83,7 +83,7 @@ export default function CharacterForm() {
     greetings = searchParams.get("greetings") || "Hi.",
     cardImageUrl = searchParams.get("cardImageUrl") || "",
     bannerImageUrl = "",
-    model = (searchParams.get("model") as any) || "cognitivecomputations/dolphin-mistral-24b-venice-edition:free",
+    model = (searchParams.get("model") as any) || "Gryphe/MythoMax-L2-13b",
     voiceId = (searchParams.get("voiceId") as any) || "MjxppkSa4IoDSRGySayZ",
     isDraft = searchParams.get("isDraft") || true,
     isNSFW = Boolean(searchParams.get("isNSFW")) || false,
