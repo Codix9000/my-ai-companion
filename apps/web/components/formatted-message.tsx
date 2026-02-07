@@ -49,7 +49,7 @@ export const FormattedMessage = ({
         } px-3 py-2 md:max-w-[36rem] lg:max-w-[48rem]`}
       >
         <MemoizedReactMarkdown
-          className="prose break-words text-base text-foreground dark:prose-invert prose-p:m-0 prose-p:leading-relaxed prose-em:select-text prose-em:pr-0.5 prose-em:text-foreground/50 prose-pre:p-0 prose-ol:my-0 prose-ol:flex prose-ol:flex-col prose-ol:gap-1 prose-ul:my-0 prose-ul:flex prose-ul:flex-col prose-ul:gap-1 prose-li:my-0"
+          className="prose break-words text-base text-foreground dark:prose-invert prose-p:m-0 prose-p:leading-relaxed prose-em:select-text prose-em:pr-0.5 prose-em:text-foreground/50 prose-pre:p-0"
           remarkPlugins={[remarkGfm]}
           components={{
             a: ({ children, href, target, rel }) => (
@@ -57,6 +57,10 @@ export const FormattedMessage = ({
                 {children}
               </a>
             ),
+            // Disable list rendering — model output should look like plain text, not formatted lists
+            ol: ({ children }) => <>{children}</>,
+            ul: ({ children }) => <>{children}</>,
+            li: ({ children }) => <p className="m-0 leading-relaxed">{children}</p>,
             code: ({ node, className, children, ...props }) => {
               const match = /language-(\w+)/.exec(className || "");
               return (
