@@ -17,8 +17,8 @@ import { cn } from "@repo/ui/src/utils";
 import { useStablePaginatedQuery, useStableQuery } from "../../app/lib/hooks/use-stable-query";
 
 interface ChatHistorySidebarProps {
-  currentCharacterId: Id<"characters">;
-  currentChatId?: Id<"chats">;
+  currentCharacterId?: Id<"characters"> | null;
+  onSelectCharacter?: (characterId: string) => void;
 }
 
 interface CharacterChatItemProps {
@@ -37,13 +37,13 @@ function CharacterChatItem({ chatId, characterId, isActive, isCollapsed }: Chara
 
   return (
     <Link
-      href={`/character/${characterId}/chat?chatId=${chatId}`}
+      href={`/chats?characterId=${characterId}`}
       className={cn(
         "flex items-center gap-3 rounded-lg p-2 transition-colors hover:bg-primary/10",
         isActive && "bg-primary/15 ring-1 ring-pink-500/30"
       )}
     >
-      <Avatar className={cn("shrink-0 ring-2 ring-pink-500/20", isCollapsed ? "h-10 w-10" : "h-10 w-10")}>
+      <Avatar className="h-10 w-10 shrink-0 ring-2 ring-pink-500/20">
         <AvatarImage src={character.cardImageUrl || ""} alt={character.name || ""} className="object-cover" />
         <AvatarFallback className="bg-gradient-to-br from-pink-400 to-purple-500 text-sm text-white">
           {character.name?.[0] || "?"}
@@ -70,7 +70,6 @@ function CharacterChatItem({ chatId, characterId, isActive, isCollapsed }: Chara
 
 export default function ChatHistorySidebar({
   currentCharacterId,
-  currentChatId,
 }: ChatHistorySidebarProps) {
   const { t } = useTranslation();
   const [isCollapsed, setIsCollapsed] = useState(false);
@@ -88,7 +87,6 @@ export default function ChatHistorySidebar({
     
     const chatsByCharacter = new Map<string, typeof chats[0]>();
     
-    // Since chats are already sorted by recency, the first one we encounter per character is the most recent
     for (const chat of chats) {
       const charId = chat.characterId as string;
       if (!chatsByCharacter.has(charId)) {

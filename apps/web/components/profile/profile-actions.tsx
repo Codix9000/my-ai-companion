@@ -42,7 +42,7 @@ export default function ProfileActions({
         </Button>
 
         {/* Chat Button */}
-        <Link href={`/character/${characterId}/chat`} className="flex-1">
+        <Link href={`/chats?characterId=${characterId}`} className="flex-1">
           <Button variant="outline" className="w-full">
             <MessageSquare className="mr-2 h-4 w-4" />
             {t("Chat")}

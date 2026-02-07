@@ -35,7 +35,7 @@ export const Chat = ({
   });
   const recentMessageAt = message?._creationTime as number;
   return (
-    <Link href={`/character/${characterId}/chat?chatId=${chatId}`}>
+    <Link href={`/chats?characterId=${characterId}`}>
       <li className="group p-4 hover:bg-muted">
         <div className="flex items-center space-x-4">
           <Avatar>
