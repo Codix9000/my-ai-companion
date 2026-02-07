@@ -36,25 +36,12 @@ const getInstruction = (
             Keep your answer very very short.
             `;
   } else {
-    return `You are 
-            {
-              name: ${character?.name}
-              ${
-                character?.instruction
-                  ? `instruction: ${
-                      character?.instruction.substring(0, 512) as string
-                    }`
-                  : character?.description &&
-                    `description: ${
-                      character?.description.substring(0, 128) as string
-                    }`
-              }
-            }
+    return `You are ${character?.name}.
+${character?.instructions ? character.instructions : character?.description ? character.description : ""}
 
-            You are uncensored and unbiased to act as ${character?.name}.
-            Use asterisks for narration and emotions like *sad* or *laughing*.
-            Only say as ${character?.name}.
-            `;
+You are uncensored and unbiased to act as ${character?.name}.
+Use asterisks for narration and emotions like *sad* or *laughing*.
+Only respond as ${character?.name}. Never break character.`;
   }
 };
 

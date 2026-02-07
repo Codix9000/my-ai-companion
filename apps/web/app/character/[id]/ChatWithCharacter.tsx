@@ -154,7 +154,20 @@ export default function ChatWithCharacter({
   return (
     <div className="flex w-full flex-col justify-self-start lg:pr-6">
       {data?.isNSFW && <AgeRestriction />}
-      <ErrorBoundary children={content} errorComponent={() => ""} />
+      <ErrorBoundary children={content} errorComponent={({ error }) => (
+        <div className="flex h-full w-full flex-col items-center justify-center gap-4 p-8 text-center">
+          <p className="text-lg font-medium text-foreground">Something went wrong</p>
+          <p className="text-sm text-muted-foreground">
+            There was an error loading this chat. Please try refreshing the page.
+          </p>
+          <button
+            onClick={() => window.location.reload()}
+            className="rounded-lg bg-gradient-to-r from-pink-500 to-purple-500 px-4 py-2 text-sm text-white hover:from-pink-600 hover:to-purple-600"
+          >
+            Refresh Page
+          </button>
+        </div>
+      )} />
       <AddToHomeScreen />
     </div>
   );

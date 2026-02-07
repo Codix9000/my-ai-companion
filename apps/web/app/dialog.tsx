@@ -691,13 +691,7 @@ export function Dialog({
             )}
           </AnimatePresence>
         </div>
-        <FollowUps
-          followUps={followUps}
-          sendAndReset={sendAndReset}
-          setScrolled={setScrolled}
-          isLastMessageLoaded={isLastMessageLoaded}
-          query={`${name}: ${messages[messages.length - 1]?.text}` || ""}
-        />
+        {/* Follow-up suggestions disabled for now */}
         <div className="mb-[11rem] lg:mb-16" />
       </div>
       <form
