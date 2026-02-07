@@ -15,9 +15,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@repo/ui/src/components/select";
-import Link from "next/link";
 import { useTranslation } from "react-i18next";
-import useModelData from "../../app/lib/hooks/use-model-data";
+import { DEFAULT_MODEL } from "../../convex/constants";
+
+// Single default model for all characters
+const defaultModelOption = {
+  value: DEFAULT_MODEL,
+  description: "Dolphin Mistral 24B (Venice Edition)",
+};
 
 export const ModelSelect = ({
   form,
@@ -29,26 +34,14 @@ export const ModelSelect = ({
   isNSFW?: boolean;
 }) => {
   const { t } = useTranslation();
-  let modelData = useModelData();
-  if (isNSFW) {
-    modelData = modelData?.filter((model: any) => model.isNSFW);
-  } else {
-    modelData = modelData?.filter((model: any) => !model.isNSFW);
-  }
-  if (modelData?.every((modelItem: any) => modelItem.value !== model)) {
-    form.setValue("model", modelData[0].value);
-  }
-  if (
-    !modelData?.some(
-      (modelItem: any) => modelItem.value === form.getValues("model"),
-    )
-  ) {
-    form.setValue("model", modelData?.[0].value);
+
+  // Always force the model to the default
+  if (form.getValues("model") !== DEFAULT_MODEL) {
+    form.setValue("model", DEFAULT_MODEL);
   }
 
   return (
     <FormField
-      key={modelData}
       control={form.control}
       name="model"
       render={({ field }) => (
@@ -56,7 +49,8 @@ export const ModelSelect = ({
           <FormLabel>{t("AI Model")}</FormLabel>
           <Select
             onValueChange={field.onChange}
-            defaultValue={field.value ? field.value : model}
+            defaultValue={DEFAULT_MODEL}
+            value={DEFAULT_MODEL}
           >
             <FormControl>
               <SelectTrigger>
@@ -64,34 +58,13 @@ export const ModelSelect = ({
               </SelectTrigger>
             </FormControl>
             <SelectContent>
-              {modelData && modelData?.length > 0 ? (
-                modelData.map(
-                  (model: {
-                    value: string;
-                    description: any;
-                    crystalPrice: number;
-                  }) => (
-                    <SelectItem value={model.value}>
-                      {model.description} ({model.crystalPrice}x Crystals per
-                      message)
-                    </SelectItem>
-                  ),
-                )
-              ) : (
-                <SelectItem value="openrouter/auto">Loading...</SelectItem>
-              )}
+              <SelectItem value={defaultModelOption.value}>
+                {defaultModelOption.description}
+              </SelectItem>
             </SelectContent>
           </Select>
           <FormDescription>
-            {t(
-              "Choose an AI model for your character. Each model has unique traits.",
-            )}{" "}
-            <Link
-              href="/models"
-              className="text-foreground underline duration-200 hover:opacity-50"
-            >
-              {t("Test your model here.")}
-            </Link>
+            {t("The AI model powering your character.")}
           </FormDescription>
           <FormMessage />
         </FormItem>

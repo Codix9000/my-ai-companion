@@ -1,6 +1,6 @@
 export const SIGN_UP_FREE_CRYSTALS = 50;
 export const DIVIDEND_RATE = 0.25;
-export const DEFAULT_MODEL = "openrouter/auto";
+export const DEFAULT_MODEL = "cognitivecomputations/dolphin-mistral-24b-venice-edition:free";
 export const PERPLEXITY_API_URL = "https://api.perplexity.ai";
 export const OPENAI_API_URL = "https://api.openai.com/v1";
 export const FIREWORK_API_URL = "https://api.fireworks.ai/inference/v1";
@@ -71,6 +71,12 @@ export const getImageModelCrystalPrice = (modelName: string) => {
 
 // Model metadata is hard-coded due to frequent updates in open-source LLM.
 export const modelData = [
+  {
+    value: "cognitivecomputations/dolphin-mistral-24b-venice-edition:free",
+    description: "Dolphin Mistral 24B (Venice Edition)",
+    crystalPrice: 0,
+    isNSFW: true,
+  },
   {
     value: "anthropic/claude-3-haiku",
     description: "Anthropic Haiku",

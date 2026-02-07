@@ -227,15 +227,9 @@ export const answer = internalAction({
           originalQuery = conversations[conversations.length - 1].text;
         }
 
-        const modelWithFallback =
-          originalQuery &&
-          model !== "nousresearch/nous-hermes-2-mixtral-8x7b-dpo"
-            ? "nousresearch/nous-hermes-2-mixtral-8x7b-dpo"
-            : originalQuery
-              ? "gryphe/mythomax-l2-13b"
-              : model;
+        // Always use the selected model (no more hardcoded fallbacks)
         const response = await openai.chat.completions.create({
-          model: modelWithFallback,
+          model,
           stream: false,
           messages: [
             {

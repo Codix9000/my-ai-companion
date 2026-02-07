@@ -1,8 +1,6 @@
 import { Metadata, ResolvingMetadata, Viewport } from "next";
 import { constructMetadata } from "../../../lib/utils";
 import ChatWithCharacter from "../ChatWithCharacter";
-import ChatHistorySidebar from "../../../../components/chats/chat-history-sidebar";
-import { Id } from "../../../../convex/_generated/dataModel";
 
 type Props = {
   params: { id: string };
