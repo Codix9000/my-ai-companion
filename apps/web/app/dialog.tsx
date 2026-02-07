@@ -110,26 +110,7 @@ export const Message = ({
   const [isRegenerating, setIsRegenerating] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [isImagining, setIsImagining] = useState(false);
-  const [thinkingDots, setThinkingDots] = useState("");
-  const [thinkingMessage, setThinkingMessage] = useState(t("Thinking"));
   const { openDialog } = useCrystalDialog();
-
-  useEffect(() => {
-    const startTime = Date.now();
-    const interval = setInterval(() => {
-      setThinkingDots((prevDots) => {
-        if (prevDots.length < 3) {
-          return prevDots + ".";
-        } else {
-          return "";
-        }
-      });
-      if (Date.now() - startTime >= 3000) {
-        setThinkingMessage(t("Warming up AI"));
-      }
-    }, 200);
-    return () => clearInterval(interval);
-  }, []);
 
   useEffect(() => {
     message?.imageUrl && setIsImagining(false);
@@ -163,9 +144,10 @@ export const Message = ({
         {message?.characterId ? <>{name}</> : <>{username}</>}
       </div>
       {message?.text === "" ? (
-        <div className="whitespace-pre-wrap rounded-xl bg-gradient-to-b from-background to-muted px-3 py-2 shadow-lg md:max-w-[36rem] lg:max-w-[48rem]">
-          {thinkingMessage}
-          {thinkingDots}
+        <div className="flex items-center gap-1 rounded-xl bg-gradient-to-b from-background to-muted px-4 py-3 shadow-lg">
+          <span className="h-2 w-2 animate-bounce rounded-full bg-pink-400" style={{ animationDelay: "0ms" }} />
+          <span className="h-2 w-2 animate-bounce rounded-full bg-pink-400" style={{ animationDelay: "150ms" }} />
+          <span className="h-2 w-2 animate-bounce rounded-full bg-pink-400" style={{ animationDelay: "300ms" }} />
         </div>
       ) : (
         <>
