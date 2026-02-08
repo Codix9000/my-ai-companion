@@ -15,7 +15,6 @@ import {
   Headphones,
   MoreHorizontal,
   Pause,
-  Plus,
   Repeat,
   Send,
   Share,
@@ -53,7 +52,7 @@ import { Badge } from "@repo/ui/src/components/badge";
 import { ConvexError } from "convex/values";
 import { useCrystalDialog } from "./lib/hooks/use-crystal-dialog";
 import { usePostHog } from "posthog-js/react";
-import { LanguageSelect, useLanguage } from "./lang-select";
+import { useLanguage } from "./lang-select";
 import { Label } from "@repo/ui/src/components/label";
 import {
   useStablePaginatedQuery,
@@ -140,7 +139,6 @@ export const Message = ({
             {message?.characterId ? name?.[0] : username?.[0]}
           </AvatarFallback>
         </Avatar>
-        {message?.characterId ? <>{name}</> : <>{username}</>}
       </div>
       {message?.text === "" ? (
         <div className="flex items-center gap-1 rounded-xl bg-gradient-to-b from-background to-muted px-4 py-3 shadow-lg">
@@ -406,7 +404,7 @@ export function Dialog({
   const { t } = useTranslation();
   const router = useRouter();
   const params = useSearchParams();
-  const newChat = useMutation(api.chats.create);
+
   const { translations } = useTranslationStore();
   const { mt } = useMachineTranslation();
   const urlChatId = params.get("chatId") as Id<"chats">;
@@ -550,39 +548,12 @@ export function Dialog({
             </Link>
           </div>
           <div className="flex items-center gap-1">
-            <LanguageSelect isCompact />
             <ChatOptionsPopover
               characterId={characterId}
               chatId={chatId}
               name={name}
               showEdit={userId == creatorId}
             />
-            <Button
-              onClick={() => {
-                const promise = newChat({
-                  characterId,
-                  isNew: true,
-                });
-                toast.promise(promise, {
-                  loading: "Creating new chat...",
-                  success: (chatId) => {
-                    router.push(`/chats?characterId=${characterId}`);
-                    return `New chat has been created.`;
-                  },
-                  error: (error) => {
-                    console.log("error:::", error);
-                    return error
-                      ? (error.data as { message: string })?.message
-                      : "Unexpected error occurred";
-                  },
-                });
-              }}
-              className="flex aspect-square h-8 gap-0.5 lg:aspect-auto"
-              variant="outline"
-            >
-              <Plus className="h-4 w-4" />
-              <span className="hidden lg:inline"> {t("New chat")}</span>
-            </Button>
           </div>
         </div>
       )}

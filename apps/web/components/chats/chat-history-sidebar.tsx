@@ -55,7 +55,13 @@ function CharacterChatItem({ chatId, characterId, isActive, isCollapsed }: Chara
             {character.name || "Unknown"}
           </p>
           <p className="truncate text-xs text-muted-foreground">
-            {message?.text ? message.text.substring(0, 30) + (message.text.length > 30 ? "..." : "") : "Start chatting..."}
+            {message?.text
+              ? (() => {
+                  // Strip markdown list prefixes (e.g. "1. ", "2. ", "- ")
+                  const cleaned = message.text.replace(/^\d+\.\s*/, "").replace(/^[-*]\s*/, "");
+                  return cleaned.substring(0, 30) + (cleaned.length > 30 ? "..." : "");
+                })()
+              : "Start chatting..."}
           </p>
           {recentMessageAt && !isNaN(new Date(recentMessageAt).getTime()) && (
             <p className="text-xs text-muted-foreground/70">
