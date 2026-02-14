@@ -36,8 +36,8 @@ export default function CharacterProfile({ characterId }: CharacterProfileProps)
     <div className="w-full pb-24">
       {character.isNSFW && <AgeRestriction />}
       
-      {/* Profile Header - Avatar, Name, Description */}
-      <ProfileHeader character={character} />
+      {/* Profile Header - Avatar, Name, Description, Stats */}
+      <ProfileHeader character={character} characterId={characterId} />
 
       {/* Action Buttons - Message, Image, Video */}
       <ProfileActions characterId={characterId} />

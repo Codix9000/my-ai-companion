@@ -820,3 +820,28 @@ export const removeOldCharacters = internalMutation({
     return { removed: oldCharacters.length };
   },
 });
+
+// Get stats for a character profile (total messages, unique chatters)
+export const getProfileStats = query({
+  args: {
+    characterId: v.id("characters"),
+  },
+  handler: async (ctx, args) => {
+    // Count total messages sent to/from this character
+    const messages = await ctx.db
+      .query("messages")
+      .withIndex("byCharacterId", (q) => q.eq("characterId", args.characterId))
+      .collect();
+
+    // Count unique chats (each chat = a user conversation)
+    const chats = await ctx.db
+      .query("chats")
+      .withIndex("byCharacterId", (q) => q.eq("characterId", args.characterId))
+      .collect();
+
+    return {
+      totalMessages: messages.length,
+      totalChats: chats.length,
+    };
+  },
+});
