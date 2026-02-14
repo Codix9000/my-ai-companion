@@ -3,6 +3,7 @@ import {
   Compass,
   Gem,
   Home,
+  Images,
   MessageSquare,
   Sparkles,
   Users,
@@ -162,6 +163,12 @@ function TabsController() {
         value="/chats"
         icon={MessageSquare}
         label={t("Chats")}
+      />
+      <NavItem
+        href="/collection"
+        value="/collection"
+        icon={Images}
+        label={t("Collection")}
       />
       <NavItem
         href="/subscriptions"

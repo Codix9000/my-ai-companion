@@ -262,6 +262,16 @@ export default defineSchema({
   })
     .index("byActive", ["isActive"])
     .index("bySortOrder", ["sortOrder"]),
+  userMedia: defineTable({
+    userId: v.id("users"),
+    characterId: v.id("characters"),
+    mediaUrl: v.string(),
+    mediaStorageId: v.optional(v.id("_storage")),
+    mediaType: v.union(v.literal("image"), v.literal("video")),
+    prompt: v.optional(v.string()),
+  })
+    .index("byUserId", ["userId"])
+    .index("byUserAndCharacter", ["userId", "characterId"]),
   postLikes: defineTable({
     postId: v.id("posts"),
     userId: v.id("users"),
