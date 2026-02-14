@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { ChevronLeft, ChevronRight, Sparkles } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
@@ -19,29 +19,40 @@ interface HeroCarouselProps {
 
 export default function HeroCarousel({ banners }: HeroCarouselProps) {
   const [currentIndex, setCurrentIndex] = useState(0);
+  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  const resetTimer = useCallback(() => {
+    if (timerRef.current) clearInterval(timerRef.current);
+    if (banners.length > 1) {
+      timerRef.current = setInterval(() => {
+        setSlideDirection("left");
+        setCurrentIndex((prev) => (prev + 1) % banners.length);
+      }, 5000);
+    }
+  }, [banners.length]);
 
   const goNext = useCallback(() => {
     setCurrentIndex((prev) => (prev + 1) % banners.length);
-  }, [banners.length]);
+    resetTimer();
+  }, [banners.length, resetTimer]);
 
   const goPrev = useCallback(() => {
     setCurrentIndex((prev) => (prev - 1 + banners.length) % banners.length);
-  }, [banners.length]);
+    resetTimer();
+  }, [banners.length, resetTimer]);
 
-  // Auto-advance every 5 seconds
+  // Auto-advance
   useEffect(() => {
-    if (banners.length <= 1) return;
-    const interval = setInterval(goNext, 5000);
-    return () => clearInterval(interval);
-  }, [goNext, banners.length]);
+    resetTimer();
+    return () => {
+      if (timerRef.current) clearInterval(timerRef.current);
+    };
+  }, [resetTimer]);
 
   if (banners.length === 0) {
-    // Placeholder when no banners exist — 4:1 ratio
     return (
-      <div className="relative w-full overflow-hidden rounded-2xl bg-gradient-to-r from-pink-600/30 via-purple-600/30 to-pink-600/30"
-        style={{ aspectRatio: "4 / 1" }}
-      >
-        <div className="flex h-full items-center justify-center">
+      <div className="relative w-full overflow-hidden rounded-2xl bg-gradient-to-r from-pink-600/30 via-purple-600/30 to-pink-600/30">
+        <div className="flex h-32 items-center justify-center sm:h-40 lg:h-48">
           <div className="text-center">
             <Sparkles className="mx-auto mb-3 h-10 w-10 text-pink-400" />
             <h2 className="text-xl font-bold text-foreground sm:text-2xl">
@@ -56,54 +67,33 @@ export default function HeroCarousel({ banners }: HeroCarouselProps) {
     );
   }
 
-  const wrapBanner = (banner: Banner, children: React.ReactNode) => {
-    if (banner?.linkUrl) {
-      return <Link href={banner.linkUrl}>{children}</Link>;
-    }
-    return <>{children}</>;
-  };
-
   return (
-    <div className="relative w-full overflow-hidden rounded-2xl" style={{ aspectRatio: "4 / 1" }}>
-      {/* All banners stacked, using opacity for smooth crossfade */}
-      {banners.map((banner, i) => (
-        <div
-          key={banner._id}
-          className={`absolute inset-0 transition-opacity duration-700 ease-in-out ${
-            i === currentIndex ? "opacity-100 z-[1]" : "opacity-0 z-0"
-          }`}
-        >
-          {wrapBanner(banner,
-            <div className="relative h-full w-full">
-              <Image
-                src={banner.imageUrl}
-                alt={banner.title || "Promo banner"}
-                fill
-                className="object-cover"
-                priority={i === 0}
-              />
-              {/* Gradient overlay */}
-              <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
-
-              {/* Text overlay */}
-              {(banner.title || banner.subtitle) && (
-                <div className="absolute bottom-4 left-4 right-16 z-10">
-                  {banner.title && (
-                    <h2 className="text-lg font-bold text-white drop-shadow-lg sm:text-2xl lg:text-3xl">
-                      {banner.title}
-                    </h2>
-                  )}
-                  {banner.subtitle && (
-                    <p className="mt-1 text-xs text-white/80 drop-shadow sm:text-sm">
-                      {banner.subtitle}
-                    </p>
-                  )}
-                </div>
-              )}
-            </div>
-          )}
-        </div>
-      ))}
+    <div className="relative w-full overflow-hidden rounded-2xl">
+      {/* Slide track — all banners side by side, translateX to slide */}
+      <div
+        className="flex transition-transform duration-600 ease-in-out"
+        style={{
+          width: `${banners.length * 100}%`,
+          transform: `translateX(-${(currentIndex * 100) / banners.length}%)`,
+          transitionDuration: "600ms",
+        }}
+      >
+        {banners.map((banner, i) => (
+          <div
+            key={banner._id}
+            className="relative w-full shrink-0"
+            style={{ width: `${100 / banners.length}%` }}
+          >
+            {banner.linkUrl ? (
+              <Link href={banner.linkUrl} className="block">
+                <BannerSlide banner={banner} priority={i === 0} />
+              </Link>
+            ) : (
+              <BannerSlide banner={banner} priority={i === 0} />
+            )}
+          </div>
+        ))}
+      </div>
 
       {/* Navigation Arrows */}
       {banners.length > 1 && (
@@ -141,6 +131,7 @@ export default function HeroCarousel({ banners }: HeroCarouselProps) {
                 e.preventDefault();
                 e.stopPropagation();
                 setCurrentIndex(i);
+                resetTimer();
               }}
               className={`h-1.5 rounded-full transition-all duration-300 ${
                 i === currentIndex
@@ -149,6 +140,39 @@ export default function HeroCarousel({ banners }: HeroCarouselProps) {
               }`}
             />
           ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function BannerSlide({ banner, priority }: { banner: Banner; priority: boolean }) {
+  return (
+    <div className="relative w-full" style={{ aspectRatio: "4 / 1" }}>
+      <Image
+        src={banner.imageUrl}
+        alt={banner.title || "Promo banner"}
+        fill
+        className="object-cover"
+        priority={priority}
+        sizes="100vw"
+      />
+      {/* Gradient overlay */}
+      <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+
+      {/* Text overlay */}
+      {(banner.title || banner.subtitle) && (
+        <div className="absolute bottom-4 left-4 right-16 z-10">
+          {banner.title && (
+            <h2 className="text-lg font-bold text-white drop-shadow-lg sm:text-2xl lg:text-3xl">
+              {banner.title}
+            </h2>
+          )}
+          {banner.subtitle && (
+            <p className="mt-1 text-xs text-white/80 drop-shadow sm:text-sm">
+              {banner.subtitle}
+            </p>
+          )}
         </div>
       )}
     </div>

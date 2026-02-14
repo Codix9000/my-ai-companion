@@ -1,6 +1,6 @@
 "use client";
 
-import { Heart, Lock, MessageCircle, Play, Share2 } from "lucide-react";
+import { Heart, Lock, Play } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
@@ -128,17 +128,12 @@ const PostCard = ({
             </AvatarFallback>
           </Avatar>
         </Link>
-        <div className="flex flex-col">
-          <Link
-            href={`/character/${author?.id}`}
-            className="font-semibold text-foreground hover:text-pink-500 transition-colors"
-          >
-            {author?.name || "Unknown"}
-          </Link>
-          <span className="text-sm text-muted-foreground">
-            {author?.handle || "@unknown"}
-          </span>
-        </div>
+        <Link
+          href={`/character/${author?.id}`}
+          className="text-lg font-bold text-foreground hover:text-pink-500 transition-colors"
+        >
+          {author?.name || "Unknown"}
+        </Link>
       </div>
 
       {/* Media Display */}
@@ -250,12 +245,6 @@ const PostCard = ({
                   : "text-foreground hover:text-red-500"
               }`}
             />
-          </Button>
-          <Button variant="ghost" size="icon" className="h-9 w-9 rounded-full">
-            <MessageCircle className="h-6 w-6 text-foreground hover:text-primary" />
-          </Button>
-          <Button variant="ghost" size="icon" className="h-9 w-9 rounded-full">
-            <Share2 className="h-6 w-6 text-foreground hover:text-primary" />
           </Button>
         </div>
 

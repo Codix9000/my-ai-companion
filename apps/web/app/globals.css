@@ -88,8 +88,10 @@
 
   * {
     user-select: none;
+    cursor: default;
   }
 
+  /* Only allow text selection and text cursor on actual text content and inputs */
   p,
   h1,
   h2,
@@ -97,14 +99,21 @@
   h4,
   h5,
   h6,
-  ul,
-  ol,
-  li,
-  div,
-  span,
-  input,
-  button {
+  li {
     user-select: text;
+  }
+
+  input,
+  textarea,
+  [contenteditable="true"] {
+    user-select: text;
+    cursor: text;
+  }
+
+  a,
+  button,
+  [role="button"] {
+    cursor: pointer;
   }
 }
 

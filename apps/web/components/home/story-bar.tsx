@@ -182,26 +182,26 @@ export default function StoryBar({ characters }: StoryBarProps) {
   return (
     <>
       <div className="w-full overflow-x-auto scrollbar-hide">
-        <div className="flex gap-4 py-3">
+        <div className="flex gap-5 py-4 sm:gap-6">
           {characters.map((char) => (
             <button
               key={char._id}
               onClick={() => setViewingStory(char)}
-              className="flex shrink-0 flex-col items-center gap-1.5"
+              className="flex shrink-0 flex-col items-center gap-2"
             >
-              <div className="rounded-full bg-gradient-to-tr from-pink-500 via-purple-500 to-pink-400 p-[2px]">
-                <Avatar className="h-16 w-16 border-2 border-background sm:h-[4.5rem] sm:w-[4.5rem]">
+              <div className="rounded-full bg-gradient-to-tr from-pink-500 via-purple-500 to-pink-400 p-[3px]">
+                <Avatar className="h-20 w-20 border-[3px] border-background sm:h-24 sm:w-24">
                   <AvatarImage
                     src={char.cardImageUrl}
                     alt={char.name}
                     className="object-cover"
                   />
-                  <AvatarFallback className="bg-gradient-to-br from-pink-400 to-purple-500 text-lg text-white">
+                  <AvatarFallback className="bg-gradient-to-br from-pink-400 to-purple-500 text-2xl text-white sm:text-3xl">
                     {char.name[0]}
                   </AvatarFallback>
                 </Avatar>
               </div>
-              <span className="max-w-[4.5rem] truncate text-xs text-foreground/80">
+              <span className="max-w-[6rem] truncate text-sm font-medium text-foreground/90">
                 {char.name}
               </span>
             </button>
