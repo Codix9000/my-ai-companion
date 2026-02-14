@@ -1,5 +1,6 @@
 import { query, mutation } from "./_generated/server";
 import { v } from "convex/values";
+import { Id } from "./_generated/dataModel";
 
 /**
  * Get all active promo banners, sorted by sortOrder.
@@ -85,10 +86,10 @@ export const getCharactersWithPosts = query({
     // Fetch character details
     const characters = await Promise.all(
       Array.from(characterMap.entries()).map(async ([charId, info]) => {
-        const character = await ctx.db.get(charId as any);
+        const character = await ctx.db.get(charId as Id<"characters">);
         if (!character || !character.name) return null;
 
-        let cardImageUrl = character.cardImageUrl;
+        let cardImageUrl: string | undefined = character.cardImageUrl;
         if (character.cardImageStorageId) {
           const url = await ctx.storage.getUrl(character.cardImageStorageId);
           if (url) cardImageUrl = url;
