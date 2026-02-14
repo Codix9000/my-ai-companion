@@ -9,7 +9,6 @@ import {
 import { api } from "../../convex/_generated/api";
 import { Id } from "../../convex/_generated/dataModel";
 import { nFormatter } from "../../app/lib/utils";
-import { MessageCircle, Users } from "lucide-react";
 
 interface ProfileHeaderProps {
   character: {
@@ -64,8 +63,7 @@ export default function ProfileHeader({ character, characterId }: ProfileHeaderP
 
           {/* Stats row */}
           <div className="mt-3 flex items-center gap-6">
-            <div className="flex items-center gap-1.5 text-foreground/80">
-              <MessageCircle className="h-4 w-4 sm:h-5 sm:w-5" />
+            <div className="flex items-center gap-1.5">
               <span className="text-base font-bold sm:text-lg">
                 {nFormatter(stats?.totalMessages ?? 0)}
               </span>
@@ -73,8 +71,7 @@ export default function ProfileHeader({ character, characterId }: ProfileHeaderP
                 messages
               </span>
             </div>
-            <div className="flex items-center gap-1.5 text-foreground/80">
-              <Users className="h-4 w-4 sm:h-5 sm:w-5" />
+            <div className="flex items-center gap-1.5">
               <span className="text-base font-bold sm:text-lg">
                 {nFormatter(stats?.totalChats ?? 0)}
               </span>

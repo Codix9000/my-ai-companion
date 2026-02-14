@@ -48,8 +48,8 @@ function PostThumbnail({
 
   return (
     <div
-      className="group relative cursor-pointer overflow-hidden bg-muted"
-      style={{ aspectRatio: "9/16" }}
+      className="group relative cursor-pointer overflow-hidden rounded-sm bg-muted"
+      style={{ aspectRatio: "3/4" }}
       onClick={onClick}
     >
       {/* Thumbnail: image or video first-frame */}
@@ -232,7 +232,7 @@ function PostDetailCard({
       {/* Media */}
       <div className="relative w-full overflow-hidden bg-black">
         {post.mediaType === "image" ? (
-          <div className="relative w-full" style={{ aspectRatio: "9/16" }}>
+          <div className="relative w-full" style={{ aspectRatio: "3/4" }}>
             <Image
               src={post.mediaUrl}
               alt={post.caption || "Post"}
@@ -322,10 +322,10 @@ export default function ProfilePosts({
 
   return (
     <>
-      {/* Posts Grid — 3 columns, 9:16 aspect ratio, full-width */}
-      <div className="mt-6 px-0.5">
+      {/* Posts Grid — 3 columns, 3:4 aspect ratio, with side margins */}
+      <div className="mx-auto mt-6 max-w-5xl px-3 sm:px-6">
         {posts.length > 0 ? (
-          <div className="grid grid-cols-3 gap-0.5">
+          <div className="grid grid-cols-3 gap-1">
             {posts.map((post, index) => (
               <PostThumbnail
                 key={post._id}
