@@ -46,7 +46,7 @@ const FeedPage = () => {
       <div className="mx-auto max-w-xl px-4 lg:px-0">
         {/* Header */}
         <div className="sticky top-0 z-10 bg-background/95 backdrop-blur-sm py-4 mb-4">
-          <h1 className="text-xl font-bold">{t("Feed")}</h1>
+          <h1 className="text-xl font-bold">{t("Home")}</h1>
         </div>
 
         {/* Posts Feed */}

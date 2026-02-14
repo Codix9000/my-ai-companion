@@ -8,7 +8,7 @@ import UserDropdown from "../components/user/user-dropdown";
 import { Button, Tooltip } from "@repo/ui/src/components";
 import { SignedOut } from "@clerk/nextjs";
 import { useConvexAuth } from "convex/react";
-import { Plus } from "lucide-react";
+import { Sparkles } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import useCurrentUser from "./lib/hooks/use-current-user";
 import { Search } from "@repo/ui/src/components/icons";
@@ -24,8 +24,8 @@ export default function NavBar({}: {}) {
     <>
       <div
         className={`absolute top-0 flex w-full justify-center ${
-          scrolled ? "border-b bg-background/50 backdrop-blur-xl" : "bg-white/0"
-        } z-30 transition-opacity`}
+          scrolled ? "bg-background/80 backdrop-blur-xl" : "bg-background/60 backdrop-blur-sm"
+        } z-30 border-b border-border/60 transition-opacity`}
       >
         <div className={`mx-5 flex h-16 w-full items-center justify-between `}>
           <div className="flex items-center gap-4 font-display text-2xl">
@@ -73,7 +73,7 @@ export default function NavBar({}: {}) {
             {isAuthenticated && (
               <Link href="/my-characters/create" className="hidden lg:block">
                 <Button className="gap-0.5 rounded-full px-3" variant="cta">
-                  <Plus className="h-4 w-4" />
+                  <Sparkles className="h-4 w-4" />
                   {t("Create")}
                 </Button>
               </Link>

@@ -1,14 +1,15 @@
 "use client";
 import {
-  Book,
   ChevronLeft,
   ChevronRight,
   Compass,
+  Diamond,
+  Heart,
   Home,
-  Image,
   MessageSquare,
-  Package,
-  Plus,
+  Sparkles,
+  Users,
+  Mail,
 } from "lucide-react";
 import { usePathname } from "next/navigation";
 import { Tabs, TabsList, TabsTrigger } from "@repo/ui/src/components/tabs";
@@ -16,11 +17,12 @@ import Link from "next/link";
 import { Discord } from "@repo/ui/src/components/social-icons";
 import { useTranslation } from "react-i18next";
 import useMediaQuery from "@repo/ui/src/hooks/use-media-query";
-import { Crystal } from "@repo/ui/src/components/icons";
 import { initializeTranslationStore } from "./lib/hooks/use-machine-translation";
 import { useSidebarStore } from "./lib/hooks/use-sidebar-store";
 import { Button } from "@repo/ui/src/components/button";
 import { Tooltip } from "@repo/ui/src/components";
+import { useState } from "react";
+import { toast } from "sonner";
 
 function TabsController() {
   const { isMobile } = useMediaQuery();
@@ -39,6 +41,8 @@ function TabsController() {
     label,
     hideOnMobile = false,
     isCreate = false,
+    isPremium = false,
+    isComingSoon = false,
   }: {
     href: string;
     value: string;
@@ -46,9 +50,18 @@ function TabsController() {
     label: string;
     hideOnMobile?: boolean;
     isCreate?: boolean;
+    isPremium?: boolean;
+    isComingSoon?: boolean;
   }) => {
+    const handleComingSoon = (e: React.MouseEvent) => {
+      if (isComingSoon) {
+        e.preventDefault();
+        toast.info("Coming soon!");
+      }
+    };
+
     const content = (
-      <Link href={href}>
+      <Link href={isComingSoon ? "#" : href} onClick={handleComingSoon}>
         <TabsTrigger
           className={`flex items-center gap-3 rounded-xl px-3 py-3 transition-all duration-200 hover:bg-primary/10 ${
             hideOnMobile ? "hidden lg:flex" : ""
@@ -66,13 +79,15 @@ function TabsController() {
           <Icon
             className={`shrink-0 ${
               isMobile ? "h-5 w-5" : "h-6 w-6"
-            } ${isCreate && isMobile ? "text-white" : ""}`}
+            } ${isCreate && isMobile ? "text-white" : ""} ${
+              isPremium ? "text-amber-400" : ""
+            }`}
           />
           {(!isCollapsed || isMobile) && (
             <span
               className={`${isMobile ? "text-xs" : "text-sm font-medium"} ${
                 isCreate && isMobile ? "hidden" : ""
-              }`}
+              } ${isPremium ? "text-amber-400" : ""}`}
             >
               {label}
             </span>
@@ -98,8 +113,8 @@ function TabsController() {
       <TabsList
         className={`shadow-t-2xl fixed bottom-0 left-0 right-0 z-20 mx-auto flex h-20 w-full items-center justify-around gap-1 rounded-none border-t bg-background/95 py-2 backdrop-blur-md ${
           isMobile ? "" : "bg-none"
-        } lg:static lg:h-full lg:flex-col lg:items-stretch lg:justify-start lg:gap-1 lg:rounded-none lg:border-none lg:bg-transparent lg:p-3 lg:shadow-none ${
-          isCollapsed ? "lg:w-20" : "lg:w-48"
+        } lg:static lg:h-full lg:flex-col lg:items-stretch lg:justify-start lg:gap-1 lg:rounded-none lg:border-t-0 lg:border-r lg:border-border/60 lg:bg-background/40 lg:p-3 lg:shadow-none ${
+          isCollapsed ? "lg:w-20" : "lg:w-52"
         } transition-all duration-300`}
       >
         {/* Collapse Toggle Button - Desktop Only */}
@@ -120,13 +135,20 @@ function TabsController() {
           </div>
         )}
 
-        {/* Navigation Items */}
-        <NavItem href="/feed" value="/feed" icon={Home} label={t("Feed")} />
+        {/* Main Navigation Items */}
+        <NavItem href="/feed" value="/feed" icon={Home} label={t("Home")} />
         <NavItem
           href="/characters"
           value="/characters"
           icon={Compass}
-          label={t("Explore")}
+          label={t("Discover")}
+        />
+        <NavItem
+          href="/my"
+          value="/my"
+          icon={Sparkles}
+          label={t("Create")}
+          isCreate
         />
         <NavItem
           href="/chats"
@@ -135,44 +157,47 @@ function TabsController() {
           label={t("Chats")}
         />
         <NavItem
-          href="/my"
-          value="/my"
-          icon={Plus}
-          label={t("Create")}
-          isCreate
-        />
-        <NavItem
-          href="/models"
-          value="/models"
-          icon={Package}
-          label={t("Models")}
-          hideOnMobile
-        />
-        <NavItem
-          href="/images"
-          value="/images"
-          icon={Image}
-          label={t("Images")}
-        />
-        <NavItem
           href="/crystals"
           value="/crystals"
-          icon={Crystal}
-          label={t("Crystals")}
+          icon={Diamond}
+          label={t("Premium")}
+          isPremium
         />
+
+        {/* Spacer to push bottom section down - Desktop Only */}
+        {!isMobile && <div className="flex-1" />}
+
+        {/* Bottom Section Separator - Desktop Only */}
+        {!isMobile && (
+          <div className="hidden lg:block">
+            <div className="mx-2 mb-2 border-t border-border/60" />
+          </div>
+        )}
+
+        {/* Bottom Navigation Items - Desktop Only */}
         <NavItem
           href="/discord"
           value="/discord"
           icon={Discord}
           label={t("Discord")}
           hideOnMobile
+          isComingSoon
         />
         <NavItem
-          href="/docs"
-          value="/docs"
-          icon={Book}
-          label={t("Docs")}
+          href="/contact"
+          value="/contact"
+          icon={Mail}
+          label={t("Contact Us")}
           hideOnMobile
+          isComingSoon
+        />
+        <NavItem
+          href="/affiliate"
+          value="/affiliate"
+          icon={Users}
+          label={t("Affiliate")}
+          hideOnMobile
+          isComingSoon
         />
       </TabsList>
     </Tabs>
