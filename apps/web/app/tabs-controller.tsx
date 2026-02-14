@@ -17,7 +17,6 @@ import { initializeTranslationStore } from "./lib/hooks/use-machine-translation"
 import { useSidebarStore } from "./lib/hooks/use-sidebar-store";
 import { Tooltip } from "@repo/ui/src/components";
 import { toast } from "sonner";
-import { useEffect, useState } from "react";
 
 function TabsController() {
   const { isMobile } = useMediaQuery();
@@ -26,21 +25,13 @@ function TabsController() {
   const { t } = useTranslation();
   initializeTranslationStore();
 
-  const currentSection = `/${pathname.split("/")[1] || ""}`;
-
-  // Delayed state for text visibility — text appears/disappears in sync with width animation
-  const [showText, setShowText] = useState(!isCollapsed);
-  useEffect(() => {
-    if (isCollapsed) {
-      // Fade out text first, then width collapses
-      const timer = setTimeout(() => setShowText(false), 150);
-      return () => clearTimeout(timer);
-    } else {
-      // Width expands first, then text fades in
-      const timer = setTimeout(() => setShowText(true), 350);
-      return () => clearTimeout(timer);
-    }
-  }, [isCollapsed]);
+  // Match current path to nav value
+  const firstDir = `/${pathname.split("/")[1] || ""}`;
+  const currentSection =
+    firstDir === "/feed" ? "/" :
+    firstDir === "/my" ? "/create" :
+    firstDir === "/crystals" ? "/subscriptions" :
+    firstDir;
 
   // Nav item component
   const NavItem = ({
@@ -73,16 +64,13 @@ function TabsController() {
       }
     };
 
-    const content = (
+    // Desktop content
+    const desktopContent = (
       <Link
         href={isComingSoon ? "#" : href}
         onClick={handleClick}
-        className={`flex items-center gap-3 rounded-xl px-3 py-3 transition-colors duration-200 ${
+        className={`flex items-center overflow-hidden rounded-xl px-3 py-3 transition-all duration-500 ease-in-out ${
           hideOnMobile ? "hidden lg:flex" : "flex"
-        } ${
-          isCollapsed && !isMobile
-            ? "w-12 justify-center"
-            : "w-full justify-start"
         } ${isMobile ? "w-16 flex-col gap-0.5 py-2 justify-center" : ""} ${
           isActive
             ? "bg-primary/15 text-foreground"
@@ -109,20 +97,26 @@ function TabsController() {
             {label}
           </span>
         ) : (
-          showText && (
+          <>
+            {/* Text — always in DOM, clipped by overflow-hidden on parent */}
             <span
-              className={`whitespace-nowrap text-sm font-medium transition-opacity duration-200 ${
-                showText ? "opacity-100" : "opacity-0"
+              className={`ml-3 whitespace-nowrap text-sm font-medium transition-all duration-500 ease-in-out ${
+                isCollapsed ? "w-0 opacity-0 ml-0" : "w-auto opacity-100"
               } ${isPremium ? "text-amber-400" : ""}`}
             >
               {label}
             </span>
-          )
-        )}
-        {badge && showText && !isMobile && (
-          <span className="ml-auto whitespace-nowrap rounded-md bg-red-600 px-1.5 py-0.5 text-[10px] font-bold leading-none text-white">
-            {badge}
-          </span>
+            {/* Badge — always in DOM */}
+            {badge && (
+              <span
+                className={`whitespace-nowrap rounded-md bg-red-600 px-1.5 py-0.5 text-[10px] font-bold leading-none text-white transition-all duration-500 ease-in-out ${
+                  isCollapsed ? "w-0 overflow-hidden opacity-0 px-0 ml-0" : "ml-auto opacity-100"
+                }`}
+              >
+                {badge}
+              </span>
+            )}
+          </>
         )}
       </Link>
     );
@@ -131,25 +125,25 @@ function TabsController() {
     if (isCollapsed && !isMobile) {
       return (
         <Tooltip content={label} side="right">
-          {content}
+          {desktopContent}
         </Tooltip>
       );
     }
 
-    return content;
+    return desktopContent;
   };
 
   return (
     <nav
       className={`
         fixed bottom-0 left-0 right-0 z-20 flex h-20 items-center justify-around border-t bg-background/95 backdrop-blur-md
-        lg:sticky lg:top-16 lg:bottom-auto lg:right-auto lg:z-10 lg:h-[calc(100vh-4rem)] lg:flex-col lg:items-stretch lg:justify-start lg:gap-1 lg:border-t-0 lg:border-r-[3px] lg:border-border/40 lg:bg-background/40 lg:p-3
+        lg:sticky lg:top-16 lg:bottom-auto lg:right-auto lg:z-10 lg:h-[calc(100vh-4rem)] lg:flex-col lg:items-stretch lg:justify-start lg:gap-1 lg:border-t-0 lg:border-r-[3px] lg:border-border/40 lg:bg-background/40 lg:p-3 lg:overflow-hidden
         ${isCollapsed ? "lg:w-[4.5rem]" : "lg:w-52"}
         transition-all duration-500 ease-in-out
       `}
     >
       {/* Main Navigation Items */}
-      <NavItem href="/feed" value="/feed" icon={Home} label={t("Home")} />
+      <NavItem href="/" value="/" icon={Home} label={t("Home")} />
       <NavItem
         href="/characters"
         value="/characters"
@@ -157,8 +151,8 @@ function TabsController() {
         label={t("Discover")}
       />
       <NavItem
-        href="/my"
-        value="/my"
+        href="/create"
+        value="/create"
         icon={Sparkles}
         label={t("Create")}
         isCreate
@@ -170,8 +164,8 @@ function TabsController() {
         label={t("Chats")}
       />
       <NavItem
-        href="/crystals"
-        value="/crystals"
+        href="/subscriptions"
+        value="/subscriptions"
         icon={Gem}
         label={t("Premium")}
         isPremium

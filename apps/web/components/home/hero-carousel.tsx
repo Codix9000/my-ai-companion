@@ -36,10 +36,12 @@ export default function HeroCarousel({ banners }: HeroCarouselProps) {
   }, [goNext, banners.length]);
 
   if (banners.length === 0) {
-    // Placeholder when no banners exist
+    // Placeholder when no banners exist — 4:1 ratio
     return (
-      <div className="relative w-full overflow-hidden rounded-2xl bg-gradient-to-r from-pink-600/30 via-purple-600/30 to-pink-600/30">
-        <div className="flex h-48 items-center justify-center sm:h-56 lg:h-64">
+      <div className="relative w-full overflow-hidden rounded-2xl bg-gradient-to-r from-pink-600/30 via-purple-600/30 to-pink-600/30"
+        style={{ aspectRatio: "4 / 1" }}
+      >
+        <div className="flex h-full items-center justify-center">
           <div className="text-center">
             <Sparkles className="mx-auto mb-3 h-10 w-10 text-pink-400" />
             <h2 className="text-xl font-bold text-foreground sm:text-2xl">
@@ -54,38 +56,54 @@ export default function HeroCarousel({ banners }: HeroCarouselProps) {
     );
   }
 
-  const banner = banners[currentIndex];
+  const wrapBanner = (banner: Banner, children: React.ReactNode) => {
+    if (banner?.linkUrl) {
+      return <Link href={banner.linkUrl}>{children}</Link>;
+    }
+    return <>{children}</>;
+  };
 
-  const inner = (
-    <div className="relative w-full overflow-hidden rounded-2xl">
-      {/* Banner Image */}
-      <div className="relative h-48 w-full sm:h-56 lg:h-64">
-        <Image
-          src={banner?.imageUrl || ""}
-          alt={banner?.title || "Promo banner"}
-          fill
-          className="object-cover"
-          priority
-        />
-        {/* Gradient overlay for text readability */}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
+  return (
+    <div className="relative w-full overflow-hidden rounded-2xl" style={{ aspectRatio: "4 / 1" }}>
+      {/* All banners stacked, using opacity for smooth crossfade */}
+      {banners.map((banner, i) => (
+        <div
+          key={banner._id}
+          className={`absolute inset-0 transition-opacity duration-700 ease-in-out ${
+            i === currentIndex ? "opacity-100 z-[1]" : "opacity-0 z-0"
+          }`}
+        >
+          {wrapBanner(banner,
+            <div className="relative h-full w-full">
+              <Image
+                src={banner.imageUrl}
+                alt={banner.title || "Promo banner"}
+                fill
+                className="object-cover"
+                priority={i === 0}
+              />
+              {/* Gradient overlay */}
+              <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
 
-        {/* Text overlay */}
-        {(banner?.title || banner?.subtitle) && (
-          <div className="absolute bottom-4 left-4 right-16 z-10">
-            {banner.title && (
-              <h2 className="text-lg font-bold text-white drop-shadow-lg sm:text-2xl lg:text-3xl">
-                {banner.title}
-              </h2>
-            )}
-            {banner.subtitle && (
-              <p className="mt-1 text-xs text-white/80 drop-shadow sm:text-sm">
-                {banner.subtitle}
-              </p>
-            )}
-          </div>
-        )}
-      </div>
+              {/* Text overlay */}
+              {(banner.title || banner.subtitle) && (
+                <div className="absolute bottom-4 left-4 right-16 z-10">
+                  {banner.title && (
+                    <h2 className="text-lg font-bold text-white drop-shadow-lg sm:text-2xl lg:text-3xl">
+                      {banner.title}
+                    </h2>
+                  )}
+                  {banner.subtitle && (
+                    <p className="mt-1 text-xs text-white/80 drop-shadow sm:text-sm">
+                      {banner.subtitle}
+                    </p>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      ))}
 
       {/* Navigation Arrows */}
       {banners.length > 1 && (
@@ -96,7 +114,7 @@ export default function HeroCarousel({ banners }: HeroCarouselProps) {
               e.stopPropagation();
               goPrev();
             }}
-            className="absolute left-2 top-1/2 z-10 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full bg-black/50 text-white transition-colors hover:bg-black/70"
+            className="absolute left-3 top-1/2 z-10 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full bg-black/40 text-white backdrop-blur-sm transition-colors hover:bg-black/60"
           >
             <ChevronLeft className="h-5 w-5" />
           </button>
@@ -106,7 +124,7 @@ export default function HeroCarousel({ banners }: HeroCarouselProps) {
               e.stopPropagation();
               goNext();
             }}
-            className="absolute right-2 top-1/2 z-10 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full bg-black/50 text-white transition-colors hover:bg-black/70"
+            className="absolute right-3 top-1/2 z-10 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full bg-black/40 text-white backdrop-blur-sm transition-colors hover:bg-black/60"
           >
             <ChevronRight className="h-5 w-5" />
           </button>
@@ -115,7 +133,7 @@ export default function HeroCarousel({ banners }: HeroCarouselProps) {
 
       {/* Dot indicators */}
       {banners.length > 1 && (
-        <div className="absolute bottom-2 left-1/2 z-10 flex -translate-x-1/2 gap-1.5">
+        <div className="absolute bottom-3 left-1/2 z-10 flex -translate-x-1/2 gap-1.5">
           {banners.map((_, i) => (
             <button
               key={i}
@@ -124,7 +142,7 @@ export default function HeroCarousel({ banners }: HeroCarouselProps) {
                 e.stopPropagation();
                 setCurrentIndex(i);
               }}
-              className={`h-1.5 rounded-full transition-all ${
+              className={`h-1.5 rounded-full transition-all duration-300 ${
                 i === currentIndex
                   ? "w-6 bg-white"
                   : "w-1.5 bg-white/50 hover:bg-white/70"
@@ -135,9 +153,4 @@ export default function HeroCarousel({ banners }: HeroCarouselProps) {
       )}
     </div>
   );
-
-  if (banner?.linkUrl) {
-    return <Link href={banner.linkUrl}>{inner}</Link>;
-  }
-  return inner;
 }

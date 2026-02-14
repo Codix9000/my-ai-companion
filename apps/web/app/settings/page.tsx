@@ -151,7 +151,7 @@ export default function SettingsPage() {
               </div>
             </div>
             {currentPlan === "Free" && (
-              <Link href="/crystals">
+              <Link href="/subscriptions">
                 <Button className="gap-2 rounded-full bg-gradient-to-r from-pink-500 to-purple-500 px-5 text-white hover:from-pink-600 hover:to-purple-600">
                   <Gem className="h-4 w-4" />
                   {t("Upgrade to Premium")}

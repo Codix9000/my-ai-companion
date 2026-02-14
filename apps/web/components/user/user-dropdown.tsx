@@ -92,7 +92,7 @@ export default function UserDropdown() {
               <StyledLink
                 text={t("Subscription")}
                 Icon={<Crown className="h-4 w-4 text-amber-400" />}
-                href="/crystals"
+                href="/subscriptions"
                 onClick={() => setOpenPopover(false)}
               />
               <StyledLink

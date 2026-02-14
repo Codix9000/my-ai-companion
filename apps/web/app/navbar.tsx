@@ -46,7 +46,7 @@ export default function NavBar({}: {}) {
           <div className="flex items-center gap-3">
             {/* Premium 70% OFF button */}
             {isAuthenticated && !isPlus && (
-              <Link href="/crystals">
+              <Link href="/subscriptions">
                 <Button
                   variant="outline"
                   className="hidden gap-2 rounded-full border-amber-500/50 bg-amber-950/30 px-4 py-2 text-amber-400 hover:bg-amber-950/50 hover:text-amber-300 md:flex"
