@@ -3,7 +3,7 @@ import {
   Compass,
   Gem,
   Home,
-  Images,
+  LayoutGrid,
   MessageSquare,
   Sparkles,
   Users,
@@ -167,7 +167,7 @@ function TabsController() {
       <NavItem
         href="/collection"
         value="/collection"
-        icon={Images}
+        icon={LayoutGrid}
         label={t("Collection")}
       />
       <NavItem
