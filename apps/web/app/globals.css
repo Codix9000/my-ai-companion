@@ -89,9 +89,10 @@
   * {
     user-select: none;
     cursor: default;
+    caret-color: transparent;
   }
 
-  /* Only allow text selection and text cursor on actual text content and inputs */
+  /* Only allow text selection on actual text content and inputs */
   p,
   h1,
   h2,
@@ -108,11 +109,13 @@
   [contenteditable="true"] {
     user-select: text;
     cursor: text;
+    caret-color: auto;
   }
 
   a,
   button,
-  [role="button"] {
+  [role="button"],
+  summary {
     cursor: pointer;
   }
 }

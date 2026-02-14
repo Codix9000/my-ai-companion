@@ -24,11 +24,6 @@ export default function CharacterProfile({ characterId }: CharacterProfileProps)
     currentUser?.name ? { id: characterId } : "skip"
   );
 
-  const creatorName = useQuery(
-    api.users.getUsername,
-    character?.creatorId ? { id: character.creatorId } : "skip"
-  );
-
   if (!character) {
     return (
       <div className="flex h-[50vh] w-full items-center justify-center">
@@ -37,26 +32,17 @@ export default function CharacterProfile({ characterId }: CharacterProfileProps)
     );
   }
 
-  const isCreator = currentUser?._id === character.creatorId;
-
   return (
     <div className="w-full pb-24">
       {character.isNSFW && <AgeRestriction />}
       
-      {/* Profile Header - Banner, Avatar, Name, Stats */}
-      <ProfileHeader
-        character={character}
-        creatorName={creatorName}
-      />
+      {/* Profile Header - Avatar, Name, Description */}
+      <ProfileHeader character={character} />
 
-      {/* Action Buttons - Subscribe, Chat */}
-      <ProfileActions
-        characterId={characterId}
-        characterName={character.name || "Character"}
-        isCreator={isCreator}
-      />
+      {/* Action Buttons - Message, Image, Video */}
+      <ProfileActions characterId={characterId} />
 
-      {/* Character's Posts Feed */}
+      {/* Character's Posts Grid */}
       <ProfilePosts
         characterId={characterId}
         nsfwPreference={nsfwPreference}
