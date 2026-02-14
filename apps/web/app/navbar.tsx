@@ -8,10 +8,12 @@ import UserDropdown from "../components/user/user-dropdown";
 import { Button, Tooltip } from "@repo/ui/src/components";
 import { SignedOut } from "@clerk/nextjs";
 import { useConvexAuth } from "convex/react";
-import { Sparkles } from "lucide-react";
+import { Menu, Sparkles } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import useCurrentUser from "./lib/hooks/use-current-user";
 import { Search } from "@repo/ui/src/components/icons";
+import useMediaQuery from "@repo/ui/src/hooks/use-media-query";
+import { useSidebarStore } from "./lib/hooks/use-sidebar-store";
 
 export default function NavBar({}: {}) {
   const scrolled = useScroll(50);
@@ -19,16 +21,29 @@ export default function NavBar({}: {}) {
   const { t } = useTranslation();
   const currentUser = useCurrentUser();
   const isPlus = currentUser?.subscriptionTier === "plus";
+  const { isMobile } = useMediaQuery();
+  const { toggleCollapsed } = useSidebarStore();
 
   return (
     <>
       <div
-        className={`absolute top-0 flex w-full justify-center ${
+        className={`fixed top-0 flex w-full justify-center ${
           scrolled ? "bg-background/80 backdrop-blur-xl" : "bg-background/60 backdrop-blur-sm"
-        } z-30 border-b border-border/60 transition-opacity`}
+        } z-30 border-b-2 border-border/50 transition-opacity`}
       >
-        <div className={`mx-5 flex h-16 w-full items-center justify-between `}>
-          <div className="flex items-center gap-4 font-display text-2xl">
+        <div className={`mx-5 flex h-16 w-full items-center justify-between`}>
+          <div className="flex items-center gap-3 font-display text-2xl">
+            {/* Hamburger menu toggle - Desktop Only */}
+            {!isMobile && (
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={toggleCollapsed}
+                className="hidden h-9 w-9 rounded-lg hover:bg-primary/10 lg:flex"
+              >
+                <Menu className="h-5 w-5" />
+              </Button>
+            )}
             <Link href="/">
               <TextLogo isPlus={isPlus} />
             </Link>
