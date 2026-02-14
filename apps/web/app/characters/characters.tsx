@@ -31,7 +31,7 @@ const Characters = () => {
       {/* Page Title — "OpenRoleplay Characters" */}
       <div className="pt-4 lg:pt-6">
         <h1 className="text-2xl font-bold sm:text-3xl">
-          <span className="bg-gradient-to-r from-pink-500 to-purple-500 bg-clip-text italic text-transparent">
+          <span className="bg-gradient-to-r from-pink-500 to-purple-500 bg-clip-text text-transparent">
             OpenRoleplay
           </span>{" "}
           <span className="text-foreground">Characters</span>

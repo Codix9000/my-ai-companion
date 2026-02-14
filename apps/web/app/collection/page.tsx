@@ -36,11 +36,14 @@ export default function CollectionPage() {
       {/* Header */}
       <div className="flex items-center justify-between pt-4 lg:pt-6">
         <h1 className="text-2xl font-bold text-foreground sm:text-3xl">
-          My Collection
+          <span className="bg-gradient-to-r from-pink-500 to-purple-500 bg-clip-text text-transparent">
+            My
+          </span>{" "}
+          Collection
         </h1>
 
         {/* Sort by button */}
-        <div className="relative">
+        <div className="relative mr-2 sm:mr-4">
           <button
             className="flex items-center gap-2 rounded-lg border border-border/50 bg-card px-3 py-2 text-sm text-foreground/80 transition-colors hover:bg-accent"
             onClick={() => setSortOpen(!sortOpen)}
