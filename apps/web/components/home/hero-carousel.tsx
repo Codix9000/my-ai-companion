@@ -25,7 +25,6 @@ export default function HeroCarousel({ banners }: HeroCarouselProps) {
     if (timerRef.current) clearInterval(timerRef.current);
     if (banners.length > 1) {
       timerRef.current = setInterval(() => {
-        setSlideDirection("left");
         setCurrentIndex((prev) => (prev + 1) % banners.length);
       }, 5000);
     }
