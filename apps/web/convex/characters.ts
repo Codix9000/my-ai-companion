@@ -822,6 +822,37 @@ export const removeOldCharacters = internalMutation({
   },
 });
 
+// List characters for Discover page, sorted by numChats descending
+export const listByPopularity = query({
+  args: {
+    paginationOpts: paginationOptsValidator,
+  },
+  handler: async (ctx, args) => {
+    const paginationResult = await ctx.db
+      .query("characters")
+      .withIndex("byNumChats")
+      .filter((q) => q.eq(q.field("isDraft"), false))
+      .filter((q) => q.eq(q.field("isBlacklisted"), false))
+      .filter((q) => q.neq(q.field("isArchived"), true))
+      .filter((q) => q.neq(q.field("isModel"), true))
+      .filter((q) => q.neq(q.field("visibility"), "private"))
+      .order("desc")
+      .paginate(args.paginationOpts);
+
+    return {
+      ...paginationResult,
+      page: await Promise.all(
+        paginationResult.page.map(async (character) => ({
+          ...character,
+          cardImageUrl: character.cardImageStorageId
+            ? ((await ctx.storage.getUrl(character.cardImageStorageId)) as string)
+            : character.cardImageUrl,
+        })),
+      ),
+    };
+  },
+});
+
 // Get stats for a character profile (total messages, unique chatters)
 export const getProfileStats = query({
   args: {

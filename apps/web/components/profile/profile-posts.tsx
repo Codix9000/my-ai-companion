@@ -9,6 +9,7 @@ import { api } from "../../convex/_generated/api";
 import { Id } from "../../convex/_generated/dataModel";
 import { nFormatter } from "../../app/lib/utils";
 import Spinner from "@repo/ui/src/components/spinner";
+import { useNsfwPreference } from "../../app/lib/hooks/use-nsfw-preference";
 
 interface PostAuthor {
   id: Id<"characters">;
@@ -30,7 +31,6 @@ interface Post {
 
 interface ProfilePostsProps {
   characterId: Id<"characters">;
-  nsfwPreference?: string;
 }
 
 // Grid thumbnail component
@@ -298,8 +298,8 @@ function PostDetailCard({
 // Main profile posts component
 export default function ProfilePosts({
   characterId,
-  nsfwPreference,
 }: ProfilePostsProps) {
+  const { nsfwPreference } = useNsfwPreference();
   const [selectedPostIndex, setSelectedPostIndex] = useState<number | null>(
     null
   );
