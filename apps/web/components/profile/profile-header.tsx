@@ -17,6 +17,7 @@ interface ProfileHeaderProps {
     description?: string;
     cardImageUrl?: string;
     isNSFW?: boolean;
+    age?: number;
   };
   characterId: Id<"characters">;
 }
@@ -44,9 +45,14 @@ export default function ProfileHeader({ character, characterId }: ProfileHeaderP
 
         {/* Info — right of avatar */}
         <div className="flex min-w-0 flex-1 flex-col justify-center pt-1">
-          {/* Name */}
+          {/* Name + Age */}
           <h1 className="text-2xl font-bold leading-tight text-foreground sm:text-3xl">
             {character.name}
+            {character.age && (
+              <span className="ml-2 font-normal text-muted-foreground">
+                {character.age}
+              </span>
+            )}
             {character.isNSFW && (
               <span className="ml-2 inline-block rounded-full bg-red-500/10 px-2 py-0.5 align-middle text-xs font-medium text-red-500">
                 18+

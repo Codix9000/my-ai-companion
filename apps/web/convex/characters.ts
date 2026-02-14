@@ -28,6 +28,7 @@ export const upsert = mutation({
     knowledge: v.optional(v.string()),
     capabilities: v.optional(v.array(v.string())),
     isNSFW: v.optional(v.boolean()),
+    age: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
     const user = await getUser(ctx);

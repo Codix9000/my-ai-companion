@@ -70,6 +70,7 @@ export default defineSchema({
     personalityTag: v.optional(v.string()), // These tags describe the character's personality traits. Examples include "Introverted," "Brave," "Cunning," "Compassionate," "Sarcastic," etc.
     roleTag: v.optional(v.string()),
     genderTag: v.optional(v.string()),
+    age: v.optional(v.number()),
     updatedAt: v.string(),
   })
     .index("byUserId", ["creatorId"])

@@ -9,20 +9,19 @@ import {
 import { Input } from "@repo/ui/src/components/input";
 import { Textarea } from "@repo/ui/src/components/textarea";
 import { Button } from "@repo/ui/src/components/button";
-import { ArrowLeft, Book, ImageIcon, Plus, UploadCloud } from "lucide-react";
+import { ArrowLeft, Book, Plus, UploadCloud } from "lucide-react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import {
   Form,
   FormControl,
-  FormDescription,
   FormField,
   FormItem,
   FormLabel,
   FormMessage,
 } from "@repo/ui/src/components/form";
-import { useAction, useMutation, useQuery } from "convex/react";
+import { useMutation, useQuery } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import { useEffect, useRef, useState } from "react";
 import { useDebouncedCallback } from "use-debounce";
@@ -37,16 +36,19 @@ import SavingBadge from "./saving-badge";
 import Image from "next/image";
 import { InfoTooltip, Tooltip } from "@repo/ui/src/components";
 import { Crystal } from "@repo/ui/src/components/icons";
-import Spinner from "@repo/ui/src/components/spinner";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import RemixBadge from "./remix-badge";
 import { ModelSelect } from "./model-select";
 import { ArchiveButton } from "./archive-button";
 import { useTranslation } from "react-i18next";
-import { Checkbox } from "@repo/ui/src/components/checkbox";
-import { VoiceSelect } from "./voice-select";
-import BannerCropDialog from "./banner-crop-dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@repo/ui/src/components/select";
 
 const formSchema = z.object({
   name: z.string().max(24),
@@ -54,8 +56,8 @@ const formSchema = z.object({
   instructions: z.string().max(2048),
   greetings: z.optional(z.string().max(1024)),
   model: z.string(),
-  isNSFW: z.boolean(),
   voiceId: z.string(),
+  age: z.optional(z.number().min(18).max(99)),
 });
 
 export default function CharacterForm() {
@@ -82,34 +84,23 @@ export default function CharacterForm() {
     instructions = searchParams.get("instructions") || "",
     greetings = searchParams.get("greetings") || "Hi.",
     cardImageUrl = searchParams.get("cardImageUrl") || "",
-    bannerImageUrl = "",
     model = (searchParams.get("model") as any) || "Gryphe/MythoMax-L2-13b",
     voiceId = (searchParams.get("voiceId") as any) || "MjxppkSa4IoDSRGySayZ",
     isDraft = searchParams.get("isDraft") || true,
-    isNSFW = Boolean(searchParams.get("isNSFW")) || false,
+    age,
     visibility: _visibility = searchParams.get("visibility") || "private",
   } = character || remixCharacter || {};
 
-  const upload = useAction(api.image.upload);
   const upsert = useMutation(api.characters.upsert);
   const publish = useMutation(api.characters.publish);
   const generateUploadUrl = useMutation(api.characters.generateUploadUrl);
-  const generateInstruction = useMutation(api.characters.generateInstruction);
   const [visibility, setVisibility] = useState(_visibility);
   const { Popover, PopoverContent, PopoverTrigger, isMobile } =
     useResponsivePopover();
 
-  const [isGeneratingImage, setIsGeneratingImage] = useState(false);
-  const [isGeneratingInstructions, setIsGeneratingInstructions] =
-    useState(false);
-
   const imageInput = useRef<HTMLInputElement>(null);
-  const bannerInput = useRef<HTMLInputElement>(null);
+
   const [openPopover, setOpenPopover] = useState(false);
-  
-  // Banner crop dialog state
-  const [bannerCropOpen, setBannerCropOpen] = useState(false);
-  const [bannerImageSrc, setBannerImageSrc] = useState<string>("");
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -120,7 +111,7 @@ export default function CharacterForm() {
       greetings: Array.isArray(greetings) ? greetings[0] : greetings,
       model,
       voiceId,
-      isNSFW,
+      age: age ?? undefined,
     },
   });
 
@@ -132,7 +123,7 @@ export default function CharacterForm() {
       greetings: Array.isArray(greetings) ? greetings[0] : greetings,
       model,
       voiceId,
-      isNSFW,
+      age: age ?? undefined,
     });
   }, [
     character,
@@ -142,27 +133,20 @@ export default function CharacterForm() {
     greetings,
     model,
     voiceId,
-    isNSFW,
+    age,
   ]);
 
   useEffect(() => {
     setVisibility(_visibility);
   }, [_visibility]);
 
-  useEffect(() => {
-    cardImageUrl && setIsGeneratingImage(false);
-  }, [cardImageUrl]);
-
-  useEffect(() => {
-    instructions && setIsGeneratingInstructions(false);
-  }, [instructions]);
-
   async function onSubmit(values: z.infer<typeof formSchema>) {
-    const { greetings, ...otherValues } = values;
+    const { greetings, age: formAge, ...otherValues } = values;
     const character = await upsert({
       ...(characterId ? { id: characterId } : {}),
       greetings: [greetings as string],
       ...otherValues,
+      ...(formAge ? { age: formAge } : {}),
       ...(cardImageUrl ? { cardImageUrl } : {}),
       ...(remixId ? { remixId } : {}),
     });
@@ -218,73 +202,11 @@ export default function CharacterForm() {
     });
   }
 
-  // Handle banner file selection - opens the crop dialog
-  function handleBannerFileSelect(file: File) {
-    const validImageTypes = [
-      "image/gif",
-      "image/jpeg",
-      "image/png",
-      "image/webp",
-    ];
-    if (!validImageTypes.includes(file.type)) {
-      toast.error(
-        "Invalid file type. Please upload a valid image file (gif, jpeg, png, webp)",
-      );
-      return;
-    }
-    if (file.size > 10485760) {
-      toast.error("File size should be less than 10MB");
-      return;
-    }
-    
-    // Create a data URL for the crop dialog
-    const reader = new FileReader();
-    reader.onload = () => {
-      setBannerImageSrc(reader.result as string);
-      setBannerCropOpen(true);
-    };
-    reader.readAsDataURL(file);
-  }
-
-  // Handle the cropped banner upload
-  async function handleCroppedBannerUpload(croppedBlob: Blob) {
-    const newCharacterId = await onSubmit(form.getValues());
-    
-    const postUrl = await generateUploadUrl();
-    const result = await fetch(postUrl, {
-      method: "POST",
-      headers: { "Content-Type": "image/jpeg" },
-      body: croppedBlob,
-    });
-    const { storageId } = await result.json();
-
-    const promise = upsert({
-      ...(characterId
-        ? { id: characterId }
-        : newCharacterId
-          ? { id: newCharacterId as Id<"characters"> }
-          : {}),
-      bannerImageStorageId: storageId,
-    });
-    toast.promise(promise, {
-      loading: "Uploading banner...",
-      success: (character) => {
-        character && setCharacterId(character);
-        return `Banner has been uploaded.`;
-      },
-      error: (error) => {
-        return error
-          ? (error.data as { message: string }).message
-          : "Unexpected error occurred";
-      },
-    });
-  }
-
   const debouncedSubmitHandle = useDebouncedCallback(onSubmit, 1000);
-  const isInstructionGenerationDisabled =
-    !form.getValues().name ||
-    !form.getValues().description ||
-    isGeneratingInstructions;
+
+  // Generate age options 18-99
+  const ageOptions = Array.from({ length: 82 }, (_, i) => i + 18);
+
   return (
     <Card className="h-full w-full overflow-hidden rounded-b-none border-transparent shadow-none lg:border-border lg:shadow-xl">
       <CardHeader>
@@ -437,15 +359,6 @@ export default function CharacterForm() {
                     Best size: 1024x1792
                   </span>
                 </div>
-                <span className="text-xs">or</span>
-                <Link
-                  href={`/images${form.getValues()?.description
-                    ? `?prompt=${form.getValues()?.description}`
-                    : ""
-                    }`}
-                >
-                  <Button variant="outline">{t("Generate")}</Button>
-                </Link>
               </>
             )}
           </Label>
@@ -460,63 +373,7 @@ export default function CharacterForm() {
             className="hidden"
           />
         </div>
-        
-        {/* Banner Upload Section */}
-        <div className="my-4 flex w-full flex-col items-center justify-center gap-2">
-          <Label className="text-sm font-medium">{t("Profile Banner")}</Label>
-          <Label
-            htmlFor="banner"
-            className="relative flex h-24 w-full max-w-md cursor-pointer flex-col items-center justify-center gap-1 rounded border border-dashed duration-200 hover:border-border hover:bg-muted/50"
-          >
-            {bannerImageUrl ? (
-              <>
-                <Image
-                  src={bannerImageUrl}
-                  alt={"Preview of banner"}
-                  fill
-                  className="rounded object-cover opacity-80"
-                />
-                <div className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 transition-opacity hover:opacity-100">
-                  <span className="text-sm font-medium text-white">{t("Change Banner")}</span>
-                </div>
-              </>
-            ) : (
-              <>
-                <ImageIcon className="h-6 w-6 text-muted-foreground" />
-                <div className="flex flex-col items-center justify-center text-sm">
-                  {t("Add banner image")}
-                  <span className="text-xs text-muted-foreground">
-                    {t("Recommended: 1200x375 (wide horizontal)")}
-                  </span>
-                </div>
-              </>
-            )}
-          </Label>
-          <Input
-            id="banner"
-            type="file"
-            accept="image/*"
-            ref={bannerInput}
-            onChange={(event: any) => {
-              if (event.target.files?.[0]) {
-                handleBannerFileSelect(event.target.files[0]);
-              }
-            }}
-            className="hidden"
-          />
-          <p className="text-center text-xs text-muted-foreground">
-            {t("You'll be able to position your image after selecting it")}
-          </p>
-        </div>
 
-        {/* Banner Crop Dialog */}
-        <BannerCropDialog
-          open={bannerCropOpen}
-          onOpenChange={setBannerCropOpen}
-          imageSrc={bannerImageSrc}
-          onCropComplete={handleCroppedBannerUpload}
-        />
-        
         <Form {...form}>
           <form
             onSubmit={form.handleSubmit(debouncedSubmitHandle)}
@@ -570,63 +427,59 @@ export default function CharacterForm() {
                 </FormItem>
               )}
             />
+
+            {/* Age Dropdown */}
+            <FormField
+              control={form.control}
+              name="age"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className="flex items-center gap-1">
+                    {t("Age")}
+                    <InfoTooltip
+                      content={
+                        "The character's age. Displayed on their profile."
+                      }
+                    />
+                  </FormLabel>
+                  <Select
+                    onValueChange={(val) => field.onChange(Number(val))}
+                    value={field.value ? String(field.value) : undefined}
+                  >
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder={t("Select age")} />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      {ageOptions.map((a) => (
+                        <SelectItem key={a} value={String(a)}>
+                          {a}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
             <FormField
               control={form.control}
               name="instructions"
               render={({ field }) => (
                 <FormItem>
-                  <div className="flex items-center justify-between">
-                    <FormLabel className="flex items-center gap-1">
-                      {t("Instructions")}{" "}
-                      <span className="text-muted-foreground">
-                        {t("(optional)")}
-                      </span>
-                      <InfoTooltip
-                        content={
-                          "With Instructions, you can have the Character describe themselves (traits, history, example quotes, mannerisms, etc.) and specify the topics they prefer to talk about."
-                        }
-                      />
-                    </FormLabel>
-                    <Tooltip
+                  <FormLabel className="flex items-center gap-1">
+                    {t("Instructions")}{" "}
+                    <span className="text-muted-foreground">
+                      {t("(optional)")}
+                    </span>
+                    <InfoTooltip
                       content={
-                        isInstructionGenerationDisabled
-                          ? "Write character name and description to generate instruction"
-                          : "Generate character instruction"
+                        "With Instructions, you can have the Character describe themselves (traits, history, example quotes, mannerisms, etc.) and specify the topics they prefer to talk about."
                       }
-                    >
-                      <Button
-                        className="flex h-8 gap-1"
-                        variant="ghost"
-                        disabled={isInstructionGenerationDisabled}
-                        onClick={async () => {
-                          setIsGeneratingInstructions(true);
-                          const formValues = form.getValues();
-                          const newCharacterId = await onSubmit(formValues);
-                          await generateInstruction({
-                            characterId: characterId
-                              ? characterId
-                              : (newCharacterId as Id<"characters">),
-                            name: formValues.name ? formValues.name : name,
-                            description: formValues.description
-                              ? formValues.description
-                              : description,
-                          });
-                        }}
-                      >
-                        {isGeneratingInstructions ? (
-                          <>
-                            <Spinner />
-                            Generating...
-                          </>
-                        ) : (
-                          <>
-                            {t("Generate")}
-                            <Crystal className="h-4 w-4" />
-                          </>
-                        )}
-                      </Button>
-                    </Tooltip>
-                  </div>
+                    />
+                  </FormLabel>
                   <FormControl>
                     <Textarea
                       className="min-h-[100px]"
@@ -666,40 +519,19 @@ export default function CharacterForm() {
                 </FormItem>
               )}
             />
-            <FormField
-              control={form.control}
-              name="isNSFW"
-              render={({ field }) => (
-                <div className="flex flex-col space-y-2">
-                  <FormLabel className="flex gap-1">
-                    {t("Mature content")}
-                    <span className="text-muted-foreground">
-                      {t("(optional)")}
-                    </span>
-                  </FormLabel>
-                  <FormItem className="flex items-center space-x-2 pt-2">
-                    <FormControl>
-                      <Checkbox
-                        checked={field.value}
-                        onCheckedChange={field.onChange}
-                      />
-                    </FormControl>
-                    <FormLabel className="pb-2 font-normal">
-                      {t("This character is intended for adult.")}
-                    </FormLabel>
-                  </FormItem>
-                  <FormDescription>
-                    {t("Check this to enable uncensored models.")}
-                  </FormDescription>
-                </div>
-              )}
-            />
             <ModelSelect
               form={form}
               model={model}
-              isNSFW={form.getValues("isNSFW")}
+              isNSFW={false}
             />
-            <VoiceSelect form={form} voiceId={voiceId} />
+
+            {/* AI Voice — Coming Soon */}
+            <div className="space-y-2">
+              <Label className="text-sm font-medium">{t("AI Voice")}</Label>
+              <div className="flex h-10 w-full items-center rounded-md border border-input bg-muted/50 px-3 text-sm text-muted-foreground">
+                {t("Coming soon")}
+              </div>
+            </div>
           </form>
         </Form>
       </CardContent>
