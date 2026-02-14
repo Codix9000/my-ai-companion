@@ -31,9 +31,7 @@ const Characters = () => {
       {/* Page Title — "OpenRoleplay Characters" */}
       <div className="pt-4 lg:pt-6">
         <h1 className="text-2xl font-bold sm:text-3xl">
-          <span className="bg-gradient-to-r from-pink-500 to-purple-500 bg-clip-text text-transparent">
-            OpenRoleplay
-          </span>{" "}
+          <span className="text-pink-500">OpenRoleplay</span>{" "}
           <span className="text-foreground">Characters</span>
         </h1>
       </div>
@@ -107,15 +105,15 @@ function DiscoverCard({
         />
 
         {/* Bottom gradient overlay */}
-        <div className="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-black/90 via-black/50 to-transparent" />
+        <div className="absolute inset-x-0 bottom-0 h-2/3 bg-gradient-to-t from-black via-black/70 to-transparent" />
 
         {/* Text content — bottom */}
         <div className="absolute inset-x-0 bottom-0 p-3 sm:p-4">
           {/* Name + Age */}
-          <h3 className="text-xl font-bold leading-tight text-white sm:text-2xl">
+          <h3 className="text-xl font-bold leading-tight text-white drop-shadow-md sm:text-2xl">
             {name}
             {age && (
-              <span className="ml-1.5 text-lg font-normal text-white/70 sm:text-xl">
+              <span className="ml-1.5 text-lg font-normal text-white/80 sm:text-xl">
                 {age}
               </span>
             )}
@@ -123,7 +121,7 @@ function DiscoverCard({
 
           {/* Description */}
           {description && (
-            <p className="mt-1.5 line-clamp-2 text-sm leading-snug text-white/70">
+            <p className="mt-1.5 line-clamp-2 text-sm leading-snug text-white/80 drop-shadow-sm">
               {description}
             </p>
           )}
