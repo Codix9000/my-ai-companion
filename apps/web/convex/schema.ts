@@ -250,6 +250,17 @@ export default defineSchema({
   })
     .index("byAuthorId", ["authorId"])
     .index("byFormat", ["format"]),
+  promoBanners: defineTable({
+    title: v.optional(v.string()),
+    subtitle: v.optional(v.string()),
+    imageUrl: v.string(),
+    imageStorageId: v.optional(v.id("_storage")),
+    linkUrl: v.optional(v.string()),
+    isActive: v.boolean(),
+    sortOrder: v.number(),
+  })
+    .index("byActive", ["isActive"])
+    .index("bySortOrder", ["sortOrder"]),
   postLikes: defineTable({
     postId: v.id("posts"),
     userId: v.id("users"),

@@ -5,18 +5,26 @@ import { useInView } from "framer-motion";
 import { useEffect, useRef } from "react";
 import { useStablePaginatedQuery } from "../lib/hooks/use-stable-query";
 import { useTranslation } from "react-i18next";
-import { Unauthenticated } from "convex/react";
+import { Unauthenticated, useQuery } from "convex/react";
 import PostCard from "../../components/feed/post-card";
 import { useNsfwPreference } from "../lib/hooks/use-nsfw-preference";
 import useStoreUserEffect from "../lib/hooks/use-store-user-effect";
 import PreferenceDialog from "../../components/user/preference-dialog";
 import useCurrentUser from "../lib/hooks/use-current-user";
 import Spinner from "@repo/ui/src/components/spinner";
+import HeroCarousel from "../../components/home/hero-carousel";
+import StoryBar from "../../components/home/story-bar";
 
 const FeedPage = () => {
   const { t } = useTranslation();
   const { nsfwPreference } = useNsfwPreference();
   useStoreUserEffect();
+
+  // Fetch banners for hero carousel
+  const banners = useQuery(api.home.getActiveBanners) ?? [];
+
+  // Fetch characters with posts for story bar
+  const charactersWithPosts = useQuery(api.home.getCharactersWithPosts) ?? [];
 
   const { results, status, loadMore } = useStablePaginatedQuery(
     api.feed.getFeed,
@@ -40,17 +48,22 @@ const FeedPage = () => {
   }, [inView, loadMore, status]);
 
   return (
-    <div className="h-full w-full overflow-x-hidden pb-24 lg:pl-16">
+    <div className="h-full w-full overflow-x-hidden pb-24">
       <Unauthenticated>{!username && <PreferenceDialog />}</Unauthenticated>
 
-      <div className="mx-auto max-w-xl px-4 lg:px-0">
-        {/* Header */}
-        <div className="sticky top-0 z-10 bg-background/95 backdrop-blur-sm py-4 mb-4">
-          <h1 className="text-xl font-bold">{t("Home")}</h1>
-        </div>
+      {/* Hero Carousel — full width */}
+      <div className="px-4 pt-4 lg:px-6">
+        <HeroCarousel banners={banners} />
+      </div>
 
-        {/* Posts Feed */}
-        <div className="flex flex-col gap-6">
+      {/* Story Bar — full width, scrollable */}
+      <div className="px-4 lg:px-6">
+        <StoryBar characters={charactersWithPosts as any} />
+      </div>
+
+      {/* Posts Feed */}
+      <div className="mx-auto max-w-xl px-4 lg:px-0">
+        <div className="flex flex-col gap-6 pt-4">
           {posts.length > 0 ? (
             posts.map((post) => (
               <PostCard
@@ -72,24 +85,9 @@ const FeedPage = () => {
               <p className="mt-4 text-muted-foreground">{t("Loading feed...")}</p>
             </div>
           ) : (
-            <div className="flex flex-col items-center justify-center py-20 text-center">
-              <div className="rounded-full bg-muted p-6 mb-4">
-                <svg
-                  className="h-12 w-12 text-muted-foreground"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={1.5}
-                    d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
-                  />
-                </svg>
-              </div>
+            <div className="flex flex-col items-center justify-center py-12 text-center">
               <h3 className="text-lg font-semibold mb-2">{t("No posts yet")}</h3>
-              <p className="text-muted-foreground max-w-sm">
+              <p className="text-muted-foreground max-w-sm text-sm">
                 {t("When creators share posts, they'll appear here. Check back soon!")}
               </p>
             </div>

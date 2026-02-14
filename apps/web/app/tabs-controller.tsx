@@ -28,15 +28,16 @@ function TabsController() {
 
   const currentSection = `/${pathname.split("/")[1] || ""}`;
 
-  // Delayed state for text visibility — text appears AFTER width animation finishes
+  // Delayed state for text visibility — text appears/disappears in sync with width animation
   const [showText, setShowText] = useState(!isCollapsed);
   useEffect(() => {
     if (isCollapsed) {
-      // Hide text immediately when collapsing
-      setShowText(false);
+      // Fade out text first, then width collapses
+      const timer = setTimeout(() => setShowText(false), 150);
+      return () => clearTimeout(timer);
     } else {
-      // Show text after width animation completes
-      const timer = setTimeout(() => setShowText(true), 250);
+      // Width expands first, then text fades in
+      const timer = setTimeout(() => setShowText(true), 350);
       return () => clearTimeout(timer);
     }
   }, [isCollapsed]);
@@ -110,8 +111,8 @@ function TabsController() {
         ) : (
           showText && (
             <span
-              className={`whitespace-nowrap text-sm font-medium opacity-0 transition-opacity duration-150 ${
-                showText ? "opacity-100" : ""
+              className={`whitespace-nowrap text-sm font-medium transition-opacity duration-200 ${
+                showText ? "opacity-100" : "opacity-0"
               } ${isPremium ? "text-amber-400" : ""}`}
             >
               {label}
@@ -144,7 +145,7 @@ function TabsController() {
         fixed bottom-0 left-0 right-0 z-20 flex h-20 items-center justify-around border-t bg-background/95 backdrop-blur-md
         lg:sticky lg:top-16 lg:bottom-auto lg:right-auto lg:z-10 lg:h-[calc(100vh-4rem)] lg:flex-col lg:items-stretch lg:justify-start lg:gap-1 lg:border-t-0 lg:border-r-[3px] lg:border-border/40 lg:bg-background/40 lg:p-3
         ${isCollapsed ? "lg:w-[4.5rem]" : "lg:w-52"}
-        transition-all duration-300 ease-in-out
+        transition-all duration-500 ease-in-out
       `}
     >
       {/* Main Navigation Items */}

@@ -115,3 +115,12 @@ body {
   -moz-text-size-adjust: none;
   -o-text-size-adjust: none;
 }
+
+/* Hide scrollbar for story bar and horizontal scrollable areas */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
