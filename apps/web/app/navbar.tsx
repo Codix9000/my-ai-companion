@@ -2,23 +2,18 @@
 
 import Link from "next/link";
 import TextLogo from "@repo/ui/src/components/text-logo";
-import { Badge } from "@repo/ui/src/components/badge";
 import useScroll from "@repo/ui/src/hooks/use-scroll";
 import UserDropdown from "../components/user/user-dropdown";
-import { Button, Tooltip } from "@repo/ui/src/components";
-import { SignedOut } from "@clerk/nextjs";
+import { Button } from "@repo/ui/src/components";
 import { useConvexAuth } from "convex/react";
-import { Menu, Sparkles } from "lucide-react";
-import { useTranslation } from "react-i18next";
+import { Gem, Menu } from "lucide-react";
 import useCurrentUser from "./lib/hooks/use-current-user";
-import { Search } from "@repo/ui/src/components/icons";
 import useMediaQuery from "@repo/ui/src/hooks/use-media-query";
 import { useSidebarStore } from "./lib/hooks/use-sidebar-store";
 
 export default function NavBar({}: {}) {
   const scrolled = useScroll(50);
   const { isAuthenticated } = useConvexAuth();
-  const { t } = useTranslation();
   const currentUser = useCurrentUser();
   const isPlus = currentUser?.subscriptionTier === "plus";
   const { isMobile } = useMediaQuery();
@@ -29,9 +24,9 @@ export default function NavBar({}: {}) {
       <div
         className={`fixed top-0 flex w-full justify-center ${
           scrolled ? "bg-background/80 backdrop-blur-xl" : "bg-background/60 backdrop-blur-sm"
-        } z-30 border-b-2 border-border/50 transition-opacity`}
+        } z-30 border-b-[3px] border-border/40 transition-opacity`}
       >
-        <div className={`mx-5 flex h-16 w-full items-center justify-between`}>
+        <div className="mx-5 flex h-16 w-full items-center justify-between">
           <div className="flex items-center gap-3 font-display text-2xl">
             {/* Hamburger menu toggle - Desktop Only */}
             {!isMobile && (
@@ -47,64 +42,25 @@ export default function NavBar({}: {}) {
             <Link href="/">
               <TextLogo isPlus={isPlus} />
             </Link>
-            {isAuthenticated ? (
-              <>
-                {!isPlus && (
-                  <Link
-                    href="/crystals"
-                    className="flex items-center justify-center"
-                  >
-                    <Badge className="w-fit font-display">
-                      {t("Get ORP+")}
-                    </Badge>
-                  </Link>
-                )}
-              </>
-            ) : (
-              <Tooltip content="Star openroleplay.ai on GitHub" desktopOnly>
-                <Link
-                  className="hidden items-center gap-2 text-base text-muted-foreground hover:opacity-50 lg:flex"
-                  href="/github"
-                >
-                  <Badge className="font-default">
-                    <span>{t("alpha")}</span>
-                  </Badge>
-                </Link>
-              </Tooltip>
-            )}
           </div>
-          <div className="flex items-center gap-2">
-            <Tooltip content="Search characters" desktopOnly>
-              <Link href="/search">
+          <div className="flex items-center gap-3">
+            {/* Premium 70% OFF button */}
+            {isAuthenticated && !isPlus && (
+              <Link href="/crystals">
                 <Button
-                  className="rounded-full p-2"
-                  variant="ghost"
-                  size="icon"
+                  variant="outline"
+                  className="hidden gap-2 rounded-full border-amber-500/50 bg-amber-950/30 px-4 py-2 text-amber-400 hover:bg-amber-950/50 hover:text-amber-300 md:flex"
                 >
-                  <Search className="h-5 w-5 p-px text-foreground" />
-                </Button>
-              </Link>
-            </Tooltip>
-            {isAuthenticated && (
-              <Link href="/my-characters/create" className="hidden lg:block">
-                <Button className="gap-0.5 rounded-full px-3" variant="cta">
-                  <Sparkles className="h-4 w-4" />
-                  {t("Create")}
+                  <Gem className="h-4 w-4" />
+                  <span className="text-sm font-semibold">Premium</span>
+                  <span className="rounded bg-red-600 px-1.5 py-0.5 text-[10px] font-bold leading-none text-white">
+                    70% OFF
+                  </span>
                 </Button>
               </Link>
             )}
 
             <UserDropdown />
-            <SignedOut>
-              <Link href="/sign-in">
-                <Button
-                  className="hidden rounded-full px-3 md:block"
-                  variant="cta"
-                >
-                  {t("Log in")}
-                </Button>
-              </Link>
-            </SignedOut>
           </div>
         </div>
       </div>

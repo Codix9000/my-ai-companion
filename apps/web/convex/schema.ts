@@ -25,6 +25,7 @@ export default defineSchema({
   users: defineTable({
     name: v.string(),
     email: v.optional(v.string()),
+    gender: v.optional(v.string()),
     subscriptionTier: v.optional(v.union(v.literal("free"), v.literal("plus"))),
     primaryPersonaId: v.optional(v.id("personas")),
     crystals: v.optional(v.number()),

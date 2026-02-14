@@ -17,6 +17,7 @@ import { initializeTranslationStore } from "./lib/hooks/use-machine-translation"
 import { useSidebarStore } from "./lib/hooks/use-sidebar-store";
 import { Tooltip } from "@repo/ui/src/components";
 import { toast } from "sonner";
+import { useEffect, useState } from "react";
 
 function TabsController() {
   const { isMobile } = useMediaQuery();
@@ -26,6 +27,19 @@ function TabsController() {
   initializeTranslationStore();
 
   const currentSection = `/${pathname.split("/")[1] || ""}`;
+
+  // Delayed state for text visibility — text appears AFTER width animation finishes
+  const [showText, setShowText] = useState(!isCollapsed);
+  useEffect(() => {
+    if (isCollapsed) {
+      // Hide text immediately when collapsing
+      setShowText(false);
+    } else {
+      // Show text after width animation completes
+      const timer = setTimeout(() => setShowText(true), 250);
+      return () => clearTimeout(timer);
+    }
+  }, [isCollapsed]);
 
   // Nav item component
   const NavItem = ({
@@ -62,7 +76,7 @@ function TabsController() {
       <Link
         href={isComingSoon ? "#" : href}
         onClick={handleClick}
-        className={`flex items-center gap-3 rounded-xl px-3 py-3 transition-all duration-200 ${
+        className={`flex items-center gap-3 rounded-xl px-3 py-3 transition-colors duration-200 ${
           hideOnMobile ? "hidden lg:flex" : "flex"
         } ${
           isCollapsed && !isMobile
@@ -85,17 +99,27 @@ function TabsController() {
             isActive && !isPremium ? "text-foreground" : ""
           }`}
         />
-        {(!isCollapsed || isMobile) && (
+        {isMobile ? (
           <span
-            className={`${isMobile ? "text-xs" : "text-sm font-medium"} ${
-              isCreate && isMobile ? "hidden" : ""
-            } ${isPremium ? "text-amber-400" : ""}`}
+            className={`text-xs ${isCreate ? "hidden" : ""} ${
+              isPremium ? "text-amber-400" : ""
+            }`}
           >
             {label}
           </span>
+        ) : (
+          showText && (
+            <span
+              className={`whitespace-nowrap text-sm font-medium opacity-0 transition-opacity duration-150 ${
+                showText ? "opacity-100" : ""
+              } ${isPremium ? "text-amber-400" : ""}`}
+            >
+              {label}
+            </span>
+          )
         )}
-        {badge && !isCollapsed && !isMobile && (
-          <span className="ml-auto rounded-md bg-red-600 px-1.5 py-0.5 text-[10px] font-bold leading-none text-white">
+        {badge && showText && !isMobile && (
+          <span className="ml-auto whitespace-nowrap rounded-md bg-red-600 px-1.5 py-0.5 text-[10px] font-bold leading-none text-white">
             {badge}
           </span>
         )}
@@ -118,9 +142,9 @@ function TabsController() {
     <nav
       className={`
         fixed bottom-0 left-0 right-0 z-20 flex h-20 items-center justify-around border-t bg-background/95 backdrop-blur-md
-        lg:sticky lg:top-16 lg:bottom-auto lg:right-auto lg:z-10 lg:h-[calc(100vh-4rem)] lg:flex-col lg:items-stretch lg:justify-start lg:gap-1 lg:border-t-0 lg:border-r-2 lg:border-border/50 lg:bg-background/40 lg:p-3
-        ${isCollapsed ? "lg:w-20" : "lg:w-52"}
-        transition-all duration-300
+        lg:sticky lg:top-16 lg:bottom-auto lg:right-auto lg:z-10 lg:h-[calc(100vh-4rem)] lg:flex-col lg:items-stretch lg:justify-start lg:gap-1 lg:border-t-0 lg:border-r-[3px] lg:border-border/40 lg:bg-background/40 lg:p-3
+        ${isCollapsed ? "lg:w-[4.5rem]" : "lg:w-52"}
+        transition-all duration-300 ease-in-out
       `}
     >
       {/* Main Navigation Items */}
@@ -159,7 +183,7 @@ function TabsController() {
       {/* Bottom Section Separator - Desktop Only */}
       {!isMobile && (
         <div className="hidden lg:block">
-          <div className="mx-2 mb-2 border-t-2 border-border/50" />
+          <div className="mx-1 mb-2 border-t-[3px] border-border/40" />
         </div>
       )}
 

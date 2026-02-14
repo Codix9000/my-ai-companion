@@ -134,6 +134,30 @@ export const persona = query({
   },
 });
 
+export const updateProfile = mutation({
+  args: {
+    name: v.optional(v.string()),
+    gender: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    const user = await getUser(ctx);
+    if (!user) {
+      throw new Error("User not found");
+    }
+    const updates: Record<string, string> = {};
+    if (args.name !== undefined && args.name.trim().length > 0) {
+      updates.name = args.name.trim();
+    }
+    if (args.gender !== undefined) {
+      updates.gender = args.gender;
+    }
+    if (Object.keys(updates).length > 0) {
+      await ctx.db.patch(user._id, updates);
+    }
+    return { success: true };
+  },
+});
+
 export const setLanguage = mutation({
   args: {
     languageTag: v.string(),
