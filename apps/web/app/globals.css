@@ -112,6 +112,23 @@
     caret-color: auto;
   }
 
+  /* Ensure plain text inputs have no visible borders/outlines */
+  input[type="text"],
+  input:not([type]) {
+    border: none;
+    outline: none;
+    box-shadow: none;
+  }
+  input[type="text"]:focus,
+  input[type="text"]:focus-visible,
+  input:not([type]):focus,
+  input:not([type]):focus-visible {
+    border: none;
+    outline: none;
+    box-shadow: none;
+    ring: none;
+  }
+
   a,
   button,
   [role="button"],

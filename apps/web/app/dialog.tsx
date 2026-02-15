@@ -13,7 +13,6 @@ import {
   Edit,
   Repeat,
   Share,
-  Download,
 } from "lucide-react";
 import { AnimatePresence, motion, useInView } from "framer-motion";
 import { Button } from "@repo/ui/src/components";
@@ -69,6 +68,7 @@ export const Message = ({
     <div
       className={`flex gap-2.5 ${isCharacter ? "justify-start" : "flex-row-reverse"}`}
     >
+      {/* Avatar — small inline */}
       <Avatar className="mt-0.5 h-7 w-7 shrink-0">
         <AvatarImage
           src={cardImageUrl || ""}
@@ -80,7 +80,8 @@ export const Message = ({
         </AvatarFallback>
       </Avatar>
 
-      <div className={`max-w-[70%]`}>
+      {/* Message text — plain, no background boxes */}
+      <div className="max-w-[75%]">
         {message?.text === "" ? (
           <div className="flex items-center gap-1 py-2">
             <span className="h-2 w-2 animate-bounce rounded-full bg-pink-400" style={{ animationDelay: "0ms" }} />
@@ -88,7 +89,7 @@ export const Message = ({
             <span className="h-2 w-2 animate-bounce rounded-full bg-pink-400" style={{ animationDelay: "300ms" }} />
           </div>
         ) : (
-          <div className="text-sm leading-relaxed text-foreground">
+          <div className="text-[14px] leading-relaxed text-white/90">
             <FormattedMessage message={message} username={username} />
           </div>
         )}
@@ -176,7 +177,7 @@ const ChatOptionsPopover = ({
         </AlertDialogContent>
       </AlertDialog>
       <PopoverTrigger asChild>
-        <Button variant="ghost" size="icon" className="h-9 w-9">
+        <Button variant="ghost" size="icon" className="h-9 w-9 text-white/60 hover:text-white">
           <MoreHorizontal className="h-5 w-5" />
         </Button>
       </PopoverTrigger>
@@ -268,16 +269,16 @@ export function Dialog({
 
   return (
     <div className="flex h-full flex-col">
-      {/* ── Header ── */}
-      <div className="flex h-14 shrink-0 items-center justify-between border-b border-border/30 px-4">
+      {/* ── Header — candy.ai style: large avatar + bold name ── */}
+      <div className="flex h-16 shrink-0 items-center justify-between border-b border-white/10 px-5">
         <Link href={`/character/${characterId}`} className="flex items-center gap-3">
-          <Avatar className="h-10 w-10">
+          <Avatar className="h-11 w-11">
             <AvatarImage src={cardImageUrl || ""} alt={name} className="object-cover" />
             <AvatarFallback className="bg-gradient-to-br from-pink-400 to-purple-500 text-sm text-white">
               {name?.[0] || "?"}
             </AvatarFallback>
           </Avatar>
-          <span className="text-base font-semibold text-foreground">{name}</span>
+          <span className="text-lg font-bold text-white">{name}</span>
         </Link>
         <ChatOptionsPopover
           characterId={characterId}
@@ -289,7 +290,7 @@ export function Dialog({
 
       {/* ── Messages ── */}
       <div
-        className="flex-1 overflow-y-auto px-4 py-4"
+        className="flex-1 overflow-y-auto px-5 py-5"
         ref={listRef}
         onWheel={() => setScrolled(true)}
       >
@@ -326,49 +327,61 @@ export function Dialog({
         </div>
       </div>
 
-      {/* ── Input Area — candy.ai style ── */}
-      <div className="shrink-0 border-t border-border/30 px-4 pb-3 pt-3">
-        {/* Text input */}
-        <form onSubmit={handleSend} className="flex items-center gap-3">
-          <input
-            className="flex-1 bg-transparent text-sm text-foreground placeholder-muted-foreground/50 outline-none"
-            autoFocus
-            placeholder={t("Write a message...")}
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter" && !e.shiftKey) {
-                e.preventDefault();
-                handleSend();
-              }
-            }}
-          />
-          <button
-            type="submit"
-            disabled={!input.trim()}
-            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gradient-to-r from-pink-500 to-purple-500 text-white transition-opacity disabled:opacity-40 hover:from-pink-600 hover:to-purple-600"
-          >
-            <Send className="h-4 w-4" />
-          </button>
-        </form>
+      {/* ── Input Area — ONE unified rounded container like candy.ai ── */}
+      <div className="shrink-0 px-4 pb-4 pt-2">
+        <div className="overflow-hidden rounded-2xl border border-white/10 bg-white/[0.04]">
+          {/* Top row: text input */}
+          <form onSubmit={handleSend}>
+            <input
+              className="w-full border-0 bg-transparent px-4 pb-1 pt-3 text-[14px] text-white placeholder-white/30 outline-none ring-0 focus:outline-none focus:ring-0"
+              style={{ boxShadow: "none" }}
+              autoFocus
+              placeholder={t("Write a message...")}
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && !e.shiftKey) {
+                  e.preventDefault();
+                  handleSend();
+                }
+              }}
+            />
 
-        {/* Action buttons — circular icons like candy.ai */}
-        <div className="mt-2.5 flex items-center gap-2">
-          <button className="flex h-9 w-9 items-center justify-center rounded-full border border-border/40 text-muted-foreground transition-colors hover:bg-muted/50 hover:text-foreground">
-            <span className="relative">
-              <ImageIcon className="h-4 w-4" />
-              <Sparkles className="absolute -right-1 -top-1 h-2 w-2 text-yellow-400" />
-            </span>
-          </button>
-          <button className="flex h-9 w-9 items-center justify-center rounded-full border border-border/40 text-muted-foreground transition-colors hover:bg-muted/50 hover:text-foreground">
-            <span className="relative">
-              <Video className="h-4 w-4" />
-              <Sparkles className="absolute -right-1 -top-1 h-2 w-2 text-yellow-400" />
-            </span>
-          </button>
-          <button className="flex h-9 w-9 items-center justify-center rounded-full border border-border/40 text-muted-foreground transition-colors hover:bg-muted/50 hover:text-foreground">
-            <Download className="h-4 w-4" />
-          </button>
+            {/* Bottom row: icon buttons (left) + send button (right) */}
+            <div className="flex items-center justify-between px-3 pb-2.5 pt-1">
+              <div className="flex items-center gap-1">
+                {/* Generate Image */}
+                <button
+                  type="button"
+                  className="flex h-10 w-10 items-center justify-center rounded-full text-white/40 transition-colors hover:bg-white/10 hover:text-white/70"
+                >
+                  <span className="relative">
+                    <ImageIcon className="h-[18px] w-[18px]" />
+                    <Sparkles className="absolute -right-1 -top-1 h-2.5 w-2.5 text-yellow-400" />
+                  </span>
+                </button>
+                {/* Generate Video */}
+                <button
+                  type="button"
+                  className="flex h-10 w-10 items-center justify-center rounded-full text-white/40 transition-colors hover:bg-white/10 hover:text-white/70"
+                >
+                  <span className="relative">
+                    <Video className="h-[18px] w-[18px]" />
+                    <Sparkles className="absolute -right-1 -top-1 h-2.5 w-2.5 text-yellow-400" />
+                  </span>
+                </button>
+              </div>
+
+              {/* Send button — gradient circle */}
+              <button
+                type="submit"
+                disabled={!input.trim()}
+                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gradient-to-r from-pink-500 to-purple-500 text-white shadow-lg shadow-pink-500/20 transition-all disabled:opacity-30 hover:from-pink-600 hover:to-purple-600"
+              >
+                <Send className="h-[16px] w-[16px]" />
+              </button>
+            </div>
+          </form>
         </div>
       </div>
     </div>

@@ -47,38 +47,42 @@ function CharacterChatItem({
     <Link
       href={`/chats?characterId=${characterId}`}
       className={cn(
-        "flex items-center gap-3 rounded-lg px-3 py-3 transition-colors hover:bg-primary/10",
-        isActive && "bg-primary/15",
+        "flex items-center gap-3 rounded-xl px-3 py-3 transition-colors hover:bg-white/5",
+        isActive && "bg-white/10",
       )}
     >
-      <Avatar className="h-12 w-12 shrink-0">
+      {/* Avatar — large, matching candy.ai ~48px */}
+      <Avatar className="h-[48px] w-[48px] shrink-0">
         <AvatarImage
           src={character.cardImageUrl || ""}
           alt={character.name || ""}
           className="object-cover"
         />
-        <AvatarFallback className="bg-gradient-to-br from-pink-400 to-purple-500 text-sm text-white">
+        <AvatarFallback className="bg-gradient-to-br from-pink-400 to-purple-500 text-base text-white">
           {character.name?.[0] || "?"}
         </AvatarFallback>
       </Avatar>
+
       <div className="flex-1 overflow-hidden">
         <div className="flex items-center justify-between">
-          <span className="truncate text-sm font-semibold text-foreground">
+          {/* Name — candy.ai uses ~14px bold white */}
+          <span className="truncate text-[14px] font-bold text-white">
             {character.name || "Unknown"}
           </span>
           {timeStr && (
-            <span className="shrink-0 pl-2 text-[11px] text-muted-foreground/50">
+            <span className="shrink-0 pl-2 text-[11px] font-normal text-white/40">
               {timeStr}
             </span>
           )}
         </div>
-        <p className="mt-0.5 truncate text-xs text-muted-foreground/70">
+        {/* Message preview — candy.ai uses ~12px, muted */}
+        <p className="mt-0.5 truncate text-[12px] text-white/40">
           {message?.text
             ? (() => {
                 const cleaned = message.text
                   .replace(/^\d+\.\s*/, "")
                   .replace(/^[-*]\s*/, "");
-                return cleaned.substring(0, 40) + (cleaned.length > 40 ? "..." : "");
+                return cleaned.substring(0, 36) + (cleaned.length > 36 ? "..." : "");
               })()
             : "Start chatting..."}
         </p>
@@ -111,20 +115,21 @@ export default function ChatHistorySidebar({
   }, [chats]);
 
   return (
-    <div className="flex h-full w-[260px] shrink-0 flex-col border-r border-border/30">
-      {/* Header */}
-      <div className="px-4 pb-2 pt-4">
-        <h2 className="text-lg font-bold text-foreground">Chat</h2>
+    <div className="flex h-full w-[260px] shrink-0 flex-col border-r border-white/10">
+      {/* Header — "Chat" bold, large, like candy.ai */}
+      <div className="px-5 pb-3 pt-5">
+        <h2 className="text-xl font-bold text-white">Chat</h2>
       </div>
 
-      {/* Search — no border, subtle bg */}
-      <div className="px-3 pb-2">
-        <div className="flex items-center gap-2 rounded-md bg-muted/30 px-2.5 py-1.5">
-          <Search className="h-3.5 w-3.5 text-muted-foreground/50" />
+      {/* Search — seamless, NO border, NO ring, subtle bg like candy.ai */}
+      <div className="px-3 pb-3">
+        <div className="flex items-center gap-2.5 rounded-lg bg-white/[0.06] px-3 py-2">
+          <Search className="h-4 w-4 shrink-0 text-white/30" />
           <input
             type="text"
             placeholder="Search for a profile..."
-            className="w-full bg-transparent text-xs text-foreground placeholder-muted-foreground/50 outline-none"
+            className="w-full border-0 bg-transparent text-[13px] text-white placeholder-white/30 outline-none ring-0 focus:outline-none focus:ring-0"
+            style={{ boxShadow: "none" }}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
           />
@@ -132,9 +137,9 @@ export default function ChatHistorySidebar({
       </div>
 
       {/* Chat List */}
-      <div className="flex-1 overflow-y-auto px-1.5 py-1">
+      <div className="flex-1 overflow-y-auto px-2 py-0.5">
         {characterChats.length > 0 ? (
-          <div className="flex flex-col">
+          <div className="flex flex-col gap-0.5">
             {characterChats.map((chat) => (
               <CharacterChatItem
                 key={chat._id}
@@ -145,7 +150,7 @@ export default function ChatHistorySidebar({
             ))}
           </div>
         ) : (
-          <div className="flex flex-col items-center justify-center py-12 text-center text-xs text-muted-foreground">
+          <div className="flex flex-col items-center justify-center py-16 text-center text-xs text-white/30">
             <p>No conversations yet</p>
           </div>
         )}
