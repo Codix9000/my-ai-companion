@@ -131,7 +131,7 @@ async function pollForResult(
 ): Promise<any> {
   const statusUrl = `https://api.runpod.ai/v2/${endpointId}/status/${jobId}`;
   const MAX_POLL_TIME_MS = 5 * 60 * 1000; // 5 minutes max
-  const POLL_INTERVAL_MS = 2000; // 2 seconds between polls
+  const POLL_INTERVAL_MS = 5000; // 2 seconds between polls
   const startTime = Date.now();
 
   let attempt = 0;
