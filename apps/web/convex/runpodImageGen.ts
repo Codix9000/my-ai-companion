@@ -193,6 +193,7 @@ async function pollForResult(
 }
 
 // ── Extract image from RunPod response output ──
+// Expected format: { images: [{ filename, type: "base64", data: "iVBOR..." }] }
 function extractImageFromOutput(output: any): {
   base64Image: string | null;
   imageUrl: string | null;
@@ -208,47 +209,66 @@ function extractImageFromOutput(output: any): {
     typeof output === "object" ? Object.keys(output) : "",
   );
 
-  // Format 1: output.images[0].image (base64) — common ComfyUI RunPod format
+  // Primary format: output.images[0].data (base64) — RunPod ComfyUI documented format
   if (output.images && Array.isArray(output.images) && output.images[0]) {
-    if (output.images[0].image) {
-      base64Image = output.images[0].image;
+    const img = output.images[0];
+    console.log(
+      "[RunPod] images[0] keys:",
+      typeof img === "object" ? Object.keys(img) : typeof img,
+    );
+
+    if (img.data && typeof img.data === "string") {
+      base64Image = img.data;
+      console.log(
+        `[RunPod] Found base64 image in output.images[0].data (type: ${img.type}, filename: ${img.filename}, length: ${img.data.length})`,
+      );
+      return { base64Image, imageUrl };
+    }
+
+    // Fallback: output.images[0].image (older format)
+    if (img.image && typeof img.image === "string") {
+      base64Image = img.image;
       console.log("[RunPod] Found base64 image in output.images[0].image");
-    } else if (typeof output.images[0] === "string") {
-      if (output.images[0].startsWith("http")) {
-        imageUrl = output.images[0];
+      return { base64Image, imageUrl };
+    }
+
+    // Fallback: images[0] is a direct string (URL or base64)
+    if (typeof img === "string") {
+      if (img.startsWith("http")) {
+        imageUrl = img;
         console.log("[RunPod] Found image URL in output.images[0]");
       } else {
-        base64Image = output.images[0];
+        base64Image = img;
         console.log("[RunPod] Found base64 string in output.images[0]");
       }
+      return { base64Image, imageUrl };
     }
   }
 
-  // Format 2: output.image (single base64 or URL)
-  if (!base64Image && !imageUrl && output.image) {
-    if (typeof output.image === "string") {
-      if (output.image.startsWith("http")) {
-        imageUrl = output.image;
-      } else {
-        base64Image = output.image;
-      }
-      console.log("[RunPod] Found image in output.image");
+  // Fallback: output.image (single value)
+  if (output.image && typeof output.image === "string") {
+    if (output.image.startsWith("http")) {
+      imageUrl = output.image;
+    } else {
+      base64Image = output.image;
     }
+    console.log("[RunPod] Found image in output.image");
+    return { base64Image, imageUrl };
   }
 
-  // Format 3: output.message (sometimes contains data)
-  if (!base64Image && !imageUrl && output.message) {
-    console.log("[RunPod] output.message:", output.message);
-  }
-
-  // Format 4: output is directly a string (URL or base64)
-  if (!base64Image && !imageUrl && typeof output === "string") {
+  // Fallback: output is directly a string
+  if (typeof output === "string") {
     if (output.startsWith("http")) {
       imageUrl = output;
     } else if (output.length > 100) {
       base64Image = output;
     }
     console.log("[RunPod] Output is a direct string");
+  }
+
+  // Log anything else for debugging
+  if (!base64Image && !imageUrl && output.message) {
+    console.log("[RunPod] output.message:", output.message);
   }
 
   return { base64Image, imageUrl };
@@ -373,7 +393,7 @@ export const generateImage = action({
 
     if (base64Image) {
       const binaryData = Buffer.from(base64Image, "base64");
-      const imageBlob = new Blob([binaryData], { type: "image/png" });
+      const imageBlob = new Blob([binaryData as unknown as BlobPart], { type: "image/png" });
       storageId = await ctx.storage.store(imageBlob as Blob);
       finalImageUrl = await ctx.storage.getUrl(storageId);
       console.log("[RunPod] Image stored in Convex, storageId:", storageId);
@@ -402,14 +422,17 @@ export const generateImage = action({
 
     // 11. Save to userMedia collection
     if (storageId && finalImageUrl) {
-      await ctx.runMutation(internal.collection.saveGeneratedMediaInternal, {
-        userId: user._id,
-        characterId: args.characterId,
-        mediaUrl: finalImageUrl,
-        mediaStorageId: storageId,
-        mediaType: "image",
-        prompt: args.userPrompt,
-      });
+      await ctx.runMutation(
+        (internal as any).collection.saveGeneratedMediaInternal,
+        {
+          userId: user._id,
+          characterId: args.characterId,
+          mediaUrl: finalImageUrl,
+          mediaStorageId: storageId,
+          mediaType: "image" as const,
+          prompt: args.userPrompt,
+        },
+      );
     }
 
     return {
