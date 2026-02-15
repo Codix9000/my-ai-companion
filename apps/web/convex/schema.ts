@@ -71,6 +71,7 @@ export default defineSchema({
     roleTag: v.optional(v.string()),
     genderTag: v.optional(v.string()),
     age: v.optional(v.number()),
+    imagePromptInstructions: v.optional(v.string()), // Prompt block injected into image generation for this character
     updatedAt: v.string(),
   })
     .index("byUserId", ["creatorId"])

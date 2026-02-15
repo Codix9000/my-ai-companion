@@ -56,6 +56,7 @@ const formSchema = z.object({
   instructions: z.string().max(2048),
   greetings: z.optional(z.string().max(1024)),
   model: z.string(),
+  imagePromptInstructions: z.optional(z.string().max(1024)),
   voiceId: z.string(),
   age: z.optional(z.number().min(18).max(99)),
 });
@@ -88,6 +89,7 @@ export default function CharacterForm() {
     voiceId = (searchParams.get("voiceId") as any) || "MjxppkSa4IoDSRGySayZ",
     isDraft = searchParams.get("isDraft") || true,
     age,
+    imagePromptInstructions = "",
     visibility: _visibility = searchParams.get("visibility") || "private",
   } = character || remixCharacter || {};
 
@@ -110,6 +112,7 @@ export default function CharacterForm() {
       instructions,
       greetings: Array.isArray(greetings) ? greetings[0] : greetings,
       model,
+      imagePromptInstructions: imagePromptInstructions || "",
       voiceId,
       age: age ?? undefined,
     },
@@ -122,6 +125,7 @@ export default function CharacterForm() {
       instructions,
       greetings: Array.isArray(greetings) ? greetings[0] : greetings,
       model,
+      imagePromptInstructions: imagePromptInstructions || "",
       voiceId,
       age: age ?? undefined,
     });
@@ -132,6 +136,7 @@ export default function CharacterForm() {
     instructions,
     greetings,
     model,
+    imagePromptInstructions,
     voiceId,
     age,
   ]);
@@ -141,12 +146,13 @@ export default function CharacterForm() {
   }, [_visibility]);
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
-    const { greetings, age: formAge, ...otherValues } = values;
+    const { greetings, age: formAge, imagePromptInstructions: imgPrompt, ...otherValues } = values;
     const character = await upsert({
       ...(characterId ? { id: characterId } : {}),
       greetings: [greetings as string],
       ...otherValues,
       ...(formAge ? { age: formAge } : {}),
+      ...(imgPrompt ? { imagePromptInstructions: imgPrompt } : {}),
       ...(cardImageUrl ? { cardImageUrl } : {}),
       ...(remixId ? { remixId } : {}),
     });
@@ -523,6 +529,37 @@ export default function CharacterForm() {
               form={form}
               model={model}
               isNSFW={false}
+            />
+
+            {/* Image Prompt Instructions */}
+            <FormField
+              control={form.control}
+              name="imagePromptInstructions"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className="flex items-center gap-1">
+                    {t("Image Prompt Instructions")}
+                    <span className="text-muted-foreground">
+                      {t("(optional)")}
+                    </span>
+                    <InfoTooltip
+                      content={
+                        "A text block describing this character's visual appearance. It will be injected into image generation prompts to produce consistent, on-brand images of this character."
+                      }
+                    />
+                  </FormLabel>
+                  <FormControl>
+                    <Textarea
+                      className="min-h-[80px]"
+                      placeholder={t(
+                        "e.g. A 25-year-old woman with long black hair, brown eyes, fair skin, wearing a white sundress...",
+                      )}
+                      {...field}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
             />
 
             {/* AI Voice — Coming Soon */}
