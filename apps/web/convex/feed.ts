@@ -128,17 +128,15 @@ export const createPost = mutation({
     isLocked: v.optional(v.boolean()),
     format: v.optional(v.union(v.literal("feed"), v.literal("short"))),
     isNSFW: v.optional(v.boolean()),
+    isHighlight: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
-    // Verify the character exists
     const character = await ctx.db.get(args.authorId);
     if (!character) {
       throw new Error("Character not found");
     }
 
-    // Get the media URL - either from direct URL or from storage ID
     let finalMediaUrl: string;
-    
     if (args.mediaStorageId) {
       const storageUrl = await ctx.storage.getUrl(args.mediaStorageId);
       if (!storageUrl) {
@@ -160,6 +158,7 @@ export const createPost = mutation({
       isLocked: args.isLocked ?? false,
       format: args.format ?? "feed",
       isNSFW: args.isNSFW ?? false,
+      isHighlight: args.isHighlight ?? false,
     });
 
     return postId;
@@ -261,5 +260,22 @@ export const getPostsByAuthor = query({
         author: authorInfo,
       })),
     };
+  },
+});
+
+// Get highlighted posts for a character (for chat right panel carousel)
+export const getHighlightsByCharacter = query({
+  args: {
+    characterId: v.id("characters"),
+  },
+  handler: async (ctx, args) => {
+    const posts = await ctx.db
+      .query("posts")
+      .withIndex("byAuthorId", (q) => q.eq("authorId", args.characterId))
+      .filter((q) => q.eq(q.field("isHighlight"), true))
+      .order("desc")
+      .take(20);
+
+    return posts;
   },
 });

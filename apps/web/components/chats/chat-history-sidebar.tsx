@@ -12,7 +12,10 @@ import {
 import { Search } from "lucide-react";
 import { useState, useMemo } from "react";
 import { cn } from "@repo/ui/src/utils";
-import { useStablePaginatedQuery, useStableQuery } from "../../app/lib/hooks/use-stable-query";
+import {
+  useStablePaginatedQuery,
+  useStableQuery,
+} from "../../app/lib/hooks/use-stable-query";
 
 interface ChatHistorySidebarProps {
   currentCharacterId?: Id<"characters"> | null;
@@ -44,11 +47,11 @@ function CharacterChatItem({
     <Link
       href={`/chats?characterId=${characterId}`}
       className={cn(
-        "flex items-center gap-3 rounded-lg px-3 py-2.5 transition-colors hover:bg-primary/10",
+        "flex items-center gap-3 rounded-lg px-3 py-3 transition-colors hover:bg-primary/10",
         isActive && "bg-primary/15",
       )}
     >
-      <Avatar className="h-11 w-11 shrink-0 ring-2 ring-pink-500/20">
+      <Avatar className="h-12 w-12 shrink-0">
         <AvatarImage
           src={character.cardImageUrl || ""}
           alt={character.name || ""}
@@ -60,25 +63,22 @@ function CharacterChatItem({
       </Avatar>
       <div className="flex-1 overflow-hidden">
         <div className="flex items-center justify-between">
-          <p className="truncate text-sm font-semibold text-foreground">
+          <span className="truncate text-sm font-semibold text-foreground">
             {character.name || "Unknown"}
-          </p>
+          </span>
           {timeStr && (
-            <span className="shrink-0 text-[11px] text-muted-foreground/60">
+            <span className="shrink-0 pl-2 text-[11px] text-muted-foreground/50">
               {timeStr}
             </span>
           )}
         </div>
-        <p className="mt-0.5 truncate text-xs text-muted-foreground">
+        <p className="mt-0.5 truncate text-xs text-muted-foreground/70">
           {message?.text
             ? (() => {
                 const cleaned = message.text
                   .replace(/^\d+\.\s*/, "")
                   .replace(/^[-*]\s*/, "");
-                return (
-                  cleaned.substring(0, 40) +
-                  (cleaned.length > 40 ? "..." : "")
-                );
+                return cleaned.substring(0, 40) + (cleaned.length > 40 ? "..." : "");
               })()
             : "Start chatting..."}
         </p>
@@ -111,20 +111,20 @@ export default function ChatHistorySidebar({
   }, [chats]);
 
   return (
-    <div className="flex h-full w-72 shrink-0 flex-col border-r border-border/40 bg-background/50">
+    <div className="flex h-full w-[260px] shrink-0 flex-col border-r border-border/30">
       {/* Header */}
-      <div className="border-b border-border/30 px-4 pb-3 pt-4">
-        <h2 className="text-xl font-bold text-foreground">Chat</h2>
+      <div className="px-4 pb-2 pt-4">
+        <h2 className="text-lg font-bold text-foreground">Chat</h2>
       </div>
 
-      {/* Search */}
-      <div className="px-3 py-2">
-        <div className="flex items-center gap-2 rounded-lg bg-muted/50 px-3 py-2">
-          <Search className="h-4 w-4 text-muted-foreground" />
+      {/* Search — no border, subtle bg */}
+      <div className="px-3 pb-2">
+        <div className="flex items-center gap-2 rounded-md bg-muted/30 px-2.5 py-1.5">
+          <Search className="h-3.5 w-3.5 text-muted-foreground/50" />
           <input
             type="text"
             placeholder="Search for a profile..."
-            className="w-full bg-transparent text-sm text-foreground placeholder-muted-foreground outline-none"
+            className="w-full bg-transparent text-xs text-foreground placeholder-muted-foreground/50 outline-none"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
           />
@@ -132,9 +132,9 @@ export default function ChatHistorySidebar({
       </div>
 
       {/* Chat List */}
-      <div className="flex-1 overflow-y-auto px-2 py-1">
+      <div className="flex-1 overflow-y-auto px-1.5 py-1">
         {characterChats.length > 0 ? (
-          <div className="flex flex-col gap-0.5">
+          <div className="flex flex-col">
             {characterChats.map((chat) => (
               <CharacterChatItem
                 key={chat._id}
@@ -145,9 +145,8 @@ export default function ChatHistorySidebar({
             ))}
           </div>
         ) : (
-          <div className="flex flex-col items-center justify-center py-12 text-center text-sm text-muted-foreground">
+          <div className="flex flex-col items-center justify-center py-12 text-center text-xs text-muted-foreground">
             <p>No conversations yet</p>
-            <p className="mt-1 text-xs">Start chatting with characters!</p>
           </div>
         )}
       </div>

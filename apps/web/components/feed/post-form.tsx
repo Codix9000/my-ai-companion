@@ -46,6 +46,7 @@ const formSchema = z.object({
   caption: z.string().min(1, "Caption is required").max(500),
   isLocked: z.boolean(),
   isNSFW: z.boolean(),
+  isHighlight: z.boolean(),
   format: z.enum(["feed", "short"]),
 });
 
@@ -78,6 +79,7 @@ export default function PostForm({ characterId }: PostFormProps) {
       caption: "",
       isLocked: false,
       isNSFW: false,
+      isHighlight: false,
       format: "feed",
     },
   });
@@ -146,6 +148,7 @@ export default function PostForm({ characterId }: PostFormProps) {
         isLocked: values.isLocked,
         format: values.format,
         isNSFW: values.isNSFW,
+        isHighlight: values.isHighlight,
       });
 
       toast.success("Post created successfully!");
@@ -334,6 +337,28 @@ export default function PostForm({ characterId }: PostFormProps) {
                     <FormLabel>{t("Premium Content (Paywall)")}</FormLabel>
                     <FormDescription>
                       {t("Only subscribers can view this content")}
+                    </FormDescription>
+                  </div>
+                </FormItem>
+              )}
+            />
+
+            {/* Highlight Toggle */}
+            <FormField
+              control={form.control}
+              name="isHighlight"
+              render={({ field }) => (
+                <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
+                  <FormControl>
+                    <Checkbox
+                      checked={field.value}
+                      onCheckedChange={field.onChange}
+                    />
+                  </FormControl>
+                  <div className="space-y-1 leading-none">
+                    <FormLabel>{t("Highlight Post")}</FormLabel>
+                    <FormDescription>
+                      {t("Show this post in the chat panel carousel")}
                     </FormDescription>
                   </div>
                 </FormItem>

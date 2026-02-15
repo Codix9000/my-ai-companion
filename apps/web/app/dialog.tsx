@@ -13,6 +13,7 @@ import {
   Edit,
   Repeat,
   Share,
+  Download,
 } from "lucide-react";
 import { AnimatePresence, motion, useInView } from "framer-motion";
 import { Button } from "@repo/ui/src/components";
@@ -42,14 +43,13 @@ import { useCrystalDialog } from "./lib/hooks/use-crystal-dialog";
 import { usePostHog } from "posthog-js/react";
 import {
   useStablePaginatedQuery,
-  useStableQuery,
 } from "./lib/hooks/use-stable-query";
 import usePersona from "./lib/hooks/use-persona";
 import React from "react";
 import { FormattedMessage } from "../components/formatted-message";
 import { useResponsivePopover } from "@repo/ui/src/hooks/use-responsive-popover";
 
-// ─── Message Bubble ──────────────────────────────────────────────
+// ─── Message ─────────────────────────────────────────────────────
 export const Message = ({
   name,
   message,
@@ -69,43 +69,26 @@ export const Message = ({
     <div
       className={`flex gap-2.5 ${isCharacter ? "justify-start" : "flex-row-reverse"}`}
     >
-      {/* Avatar */}
-      <Avatar className="mt-1 h-8 w-8 shrink-0">
+      <Avatar className="mt-0.5 h-7 w-7 shrink-0">
         <AvatarImage
           src={cardImageUrl || ""}
           alt={isCharacter ? name : username}
           className="object-cover"
         />
-        <AvatarFallback className="bg-gradient-to-br from-pink-400 to-purple-500 text-xs text-white">
+        <AvatarFallback className="bg-gradient-to-br from-pink-400 to-purple-500 text-[10px] text-white">
           {isCharacter ? name?.[0] : username?.[0]}
         </AvatarFallback>
       </Avatar>
 
-      {/* Bubble */}
-      <div className={`max-w-[75%] ${isCharacter ? "" : "text-right"}`}>
+      <div className={`max-w-[70%]`}>
         {message?.text === "" ? (
-          <div className="inline-flex items-center gap-1 rounded-2xl bg-muted px-4 py-3">
-            <span
-              className="h-2 w-2 animate-bounce rounded-full bg-pink-400"
-              style={{ animationDelay: "0ms" }}
-            />
-            <span
-              className="h-2 w-2 animate-bounce rounded-full bg-pink-400"
-              style={{ animationDelay: "150ms" }}
-            />
-            <span
-              className="h-2 w-2 animate-bounce rounded-full bg-pink-400"
-              style={{ animationDelay: "300ms" }}
-            />
+          <div className="flex items-center gap-1 py-2">
+            <span className="h-2 w-2 animate-bounce rounded-full bg-pink-400" style={{ animationDelay: "0ms" }} />
+            <span className="h-2 w-2 animate-bounce rounded-full bg-pink-400" style={{ animationDelay: "150ms" }} />
+            <span className="h-2 w-2 animate-bounce rounded-full bg-pink-400" style={{ animationDelay: "300ms" }} />
           </div>
         ) : (
-          <div
-            className={`inline-block rounded-2xl px-4 py-2.5 text-sm ${
-              isCharacter
-                ? "bg-muted text-foreground"
-                : "bg-gradient-to-r from-pink-500 to-purple-500 text-white"
-            }`}
-          >
+          <div className="text-sm leading-relaxed text-foreground">
             <FormattedMessage message={message} username={username} />
           </div>
         )}
@@ -114,7 +97,7 @@ export const Message = ({
   );
 };
 
-// ─── Chat Options Popover ────────────────────────────────────────
+// ─── Chat Options ────────────────────────────────────────────────
 const ChatOptionsPopover = ({
   characterId,
   chatId,
@@ -137,31 +120,19 @@ const ChatOptionsPopover = ({
         <PopoverContent className="p-1 lg:w-48">
           {showEdit && (
             <Link href={`/my-characters/create?id=${characterId}`}>
-              <Button
-                variant="ghost"
-                className="w-full justify-start gap-2 text-sm text-muted-foreground"
-              >
-                <Edit className="h-4 w-4" />
-                {t("Edit character")}
+              <Button variant="ghost" className="w-full justify-start gap-2 text-sm text-muted-foreground">
+                <Edit className="h-4 w-4" /> {t("Edit character")}
               </Button>
             </Link>
           )}
           <Link href={`/my-characters/create?remixId=${characterId}`}>
-            <Button
-              variant="ghost"
-              className="w-full justify-start gap-2 text-sm text-muted-foreground"
-            >
-              <Repeat className="h-4 w-4" />
-              {t("Remix character")}
+            <Button variant="ghost" className="w-full justify-start gap-2 text-sm text-muted-foreground">
+              <Repeat className="h-4 w-4" /> {t("Remix character")}
             </Button>
           </Link>
           <AlertDialogTrigger asChild>
-            <Button
-              variant="ghost"
-              className="w-full justify-start gap-2 text-sm text-muted-foreground"
-            >
-              <Delete className="h-4 w-4" />
-              {t("Delete chat")}
+            <Button variant="ghost" className="w-full justify-start gap-2 text-sm text-muted-foreground">
+              <Delete className="h-4 w-4" /> {t("Delete chat")}
             </Button>
           </AlertDialogTrigger>
           <Button
@@ -170,18 +141,14 @@ const ChatOptionsPopover = ({
             onClick={(e) => {
               e.stopPropagation();
               if (navigator.share) {
-                navigator.share({
-                  title: document.title,
-                  url: document.location.href,
-                });
+                navigator.share({ title: document.title, url: document.location.href });
               } else {
                 navigator.clipboard.writeText(document.location.href);
                 toast.success("Link copied to clipboard");
               }
             }}
           >
-            <Share className="h-4 w-4" />
-            {t("Share")}
+            <Share className="h-4 w-4" /> {t("Share")}
           </Button>
         </PopoverContent>
         <AlertDialogContent>
@@ -198,15 +165,8 @@ const ChatOptionsPopover = ({
                 const promise = remove({ id: chatId });
                 toast.promise(promise, {
                   loading: "Deleting chat...",
-                  success: () => {
-                    router.back();
-                    return "Chat has been deleted.";
-                  },
-                  error: (error) => {
-                    return error
-                      ? (error.data as { message: string })?.message
-                      : "Unexpected error occurred";
-                  },
+                  success: () => { router.back(); return "Chat has been deleted."; },
+                  error: (error) => error ? (error.data as { message: string })?.message : "Unexpected error occurred",
                 });
               }}
             >
@@ -224,7 +184,7 @@ const ChatOptionsPopover = ({
   );
 };
 
-// ─── Main Dialog Component ───────────────────────────────────────
+// ─── Main Dialog ─────────────────────────────────────────────────
 export function Dialog({
   name,
   description,
@@ -249,7 +209,6 @@ export function Dialog({
   isAuthenticated: boolean;
 }) {
   const { t } = useTranslation();
-
   const { results, loadMore } = useStablePaginatedQuery(
     api.messages.list,
     chatId && isAuthenticated ? { chatId } : "skip",
@@ -258,18 +217,8 @@ export function Dialog({
   const remoteMessages = results.reverse();
   const messages = useMemo(
     () =>
-      (
-        [] as {
-          characterId: Id<"characters">;
-          text: string;
-          _id: string;
-        }[]
-      ).concat(
-        (remoteMessages ?? []) as {
-          characterId: Id<"characters">;
-          text: string;
-          _id: string;
-        }[],
+      ([] as { characterId: Id<"characters">; text: string; _id: string }[]).concat(
+        (remoteMessages ?? []) as { characterId: Id<"characters">; text: string; _id: string }[],
       ),
     [remoteMessages],
   );
@@ -288,16 +237,13 @@ export function Dialog({
       await sendMessage({ message: text, chatId, characterId });
       posthog.capture("send_message");
     } catch (error) {
-      if (error instanceof ConvexError) {
-        openDialog();
-      } else {
-        toast.error("An unknown error occurred");
-      }
+      if (error instanceof ConvexError) openDialog();
+      else toast.error("An unknown error occurred");
     }
   };
 
   const handleSend = (event?: FormEvent) => {
-    event && event.preventDefault();
+    event?.preventDefault();
     if (input.trim()) {
       sendAndReset(input);
       setScrolled(false);
@@ -309,10 +255,7 @@ export function Dialog({
   useEffect(() => {
     if (isScrolled) return;
     setTimeout(() => {
-      listRef.current?.scrollTo({
-        top: listRef.current.scrollHeight,
-        behavior: "smooth",
-      });
+      listRef.current?.scrollTo({ top: listRef.current.scrollHeight, behavior: "smooth" });
     }, 0);
   }, [messages, isScrolled]);
 
@@ -320,32 +263,21 @@ export function Dialog({
   const inView = useInView(ref);
 
   useEffect(() => {
-    if (inView && isScrolled) {
-      loadMore(5);
-    }
+    if (inView && isScrolled) loadMore(5);
   }, [inView, loadMore]);
 
   return (
     <div className="flex h-full flex-col">
-      {/* ── Chat Header ── */}
+      {/* ── Header ── */}
       <div className="flex h-14 shrink-0 items-center justify-between border-b border-border/30 px-4">
-        <Link
-          href={`/character/${characterId}`}
-          className="flex items-center gap-3"
-        >
-          <Avatar className="h-9 w-9 ring-2 ring-pink-500/30">
-            <AvatarImage
-              src={cardImageUrl || ""}
-              alt={name}
-              className="object-cover"
-            />
+        <Link href={`/character/${characterId}`} className="flex items-center gap-3">
+          <Avatar className="h-10 w-10">
+            <AvatarImage src={cardImageUrl || ""} alt={name} className="object-cover" />
             <AvatarFallback className="bg-gradient-to-br from-pink-400 to-purple-500 text-sm text-white">
               {name?.[0] || "?"}
             </AvatarFallback>
           </Avatar>
-          <span className="text-base font-semibold text-foreground">
-            {name}
-          </span>
+          <span className="text-base font-semibold text-foreground">{name}</span>
         </Link>
         <ChatOptionsPopover
           characterId={characterId}
@@ -355,17 +287,17 @@ export function Dialog({
         />
       </div>
 
-      {/* ── Messages Area ── */}
+      {/* ── Messages ── */}
       <div
         className="flex-1 overflow-y-auto px-4 py-4"
         ref={listRef}
         onWheel={() => setScrolled(true)}
       >
         <div ref={ref} />
-        <div className="flex flex-col gap-4">
+        <div className="flex flex-col gap-5">
           <AnimatePresence>
             {remoteMessages === undefined ? (
-              <div className="flex flex-col items-center justify-center py-12">
+              <div className="flex items-center justify-center py-12">
                 <Spinner className="h-5 w-5" />
               </div>
             ) : (
@@ -394,16 +326,13 @@ export function Dialog({
         </div>
       </div>
 
-      {/* ── Input Bar ── */}
-      <div className="shrink-0 border-t border-border/30 px-4 py-3">
-        <form
-          className="flex items-center gap-2 rounded-xl bg-muted/40 px-3 py-2"
-          onSubmit={handleSend}
-        >
+      {/* ── Input Area — candy.ai style ── */}
+      <div className="shrink-0 border-t border-border/30 px-4 pb-3 pt-3">
+        {/* Text input */}
+        <form onSubmit={handleSend} className="flex items-center gap-3">
           <input
-            className="flex-1 bg-transparent text-sm text-foreground placeholder-muted-foreground outline-none"
+            className="flex-1 bg-transparent text-sm text-foreground placeholder-muted-foreground/50 outline-none"
             autoFocus
-            name="message"
             placeholder={t("Write a message...")}
             value={input}
             onChange={(e) => setInput(e.target.value)}
@@ -414,31 +343,31 @@ export function Dialog({
               }
             }}
           />
-          <Button
+          <button
             type="submit"
             disabled={!input.trim()}
-            size="icon"
-            className="h-9 w-9 shrink-0 rounded-full bg-gradient-to-r from-pink-500 to-purple-500 hover:from-pink-600 hover:to-purple-600"
+            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gradient-to-r from-pink-500 to-purple-500 text-white transition-opacity disabled:opacity-40 hover:from-pink-600 hover:to-purple-600"
           >
             <Send className="h-4 w-4" />
-          </Button>
+          </button>
         </form>
 
-        {/* Generate buttons */}
-        <div className="mt-2 flex items-center gap-2">
-          <button className="flex items-center gap-1.5 rounded-lg border border-border/50 px-3 py-1.5 text-xs text-muted-foreground transition-colors hover:bg-muted/50">
+        {/* Action buttons — circular icons like candy.ai */}
+        <div className="mt-2.5 flex items-center gap-2">
+          <button className="flex h-9 w-9 items-center justify-center rounded-full border border-border/40 text-muted-foreground transition-colors hover:bg-muted/50 hover:text-foreground">
             <span className="relative">
               <ImageIcon className="h-4 w-4" />
-              <Sparkles className="absolute -right-1 -top-1 h-2.5 w-2.5 text-yellow-400" />
+              <Sparkles className="absolute -right-1 -top-1 h-2 w-2 text-yellow-400" />
             </span>
-            Generate Image
           </button>
-          <button className="flex items-center gap-1.5 rounded-lg border border-border/50 px-3 py-1.5 text-xs text-muted-foreground transition-colors hover:bg-muted/50">
+          <button className="flex h-9 w-9 items-center justify-center rounded-full border border-border/40 text-muted-foreground transition-colors hover:bg-muted/50 hover:text-foreground">
             <span className="relative">
               <Video className="h-4 w-4" />
-              <Sparkles className="absolute -right-1 -top-1 h-2.5 w-2.5 text-yellow-400" />
+              <Sparkles className="absolute -right-1 -top-1 h-2 w-2 text-yellow-400" />
             </span>
-            Generate Video
+          </button>
+          <button className="flex h-9 w-9 items-center justify-center rounded-full border border-border/40 text-muted-foreground transition-colors hover:bg-muted/50 hover:text-foreground">
+            <Download className="h-4 w-4" />
           </button>
         </div>
       </div>

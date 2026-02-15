@@ -248,6 +248,7 @@ export default defineSchema({
     isLocked: v.boolean(), // Paywall status
     format: v.union(v.literal("feed"), v.literal("short")), // Normal post vs vertical video
     isNSFW: v.boolean(),
+    isHighlight: v.optional(v.boolean()),
   })
     .index("byAuthorId", ["authorId"])
     .index("byFormat", ["format"]),
