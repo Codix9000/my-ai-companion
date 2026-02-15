@@ -33,13 +33,15 @@ export default function ProfileActions({
       </Link>
 
       {/* Image — Pill button with image+sparkle composite icon */}
-      <button className="group relative flex h-14 flex-1 max-w-[220px] items-center justify-center gap-2.5 overflow-hidden rounded-full border-2 border-border/60 bg-card text-base font-semibold text-foreground shadow-md transition-all hover:border-purple-400/50 hover:shadow-lg sm:h-16 sm:gap-3 sm:text-lg">
-        <SparkleIcon>
-          <ImageIcon className="h-5 w-5 sm:h-6 sm:w-6" />
-        </SparkleIcon>
-        Image
-        <div className="absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/10 to-transparent transition-transform duration-700 group-hover:translate-x-full" />
-      </button>
+      <Link href={`/generate-image/${characterId}`} className="flex-1 max-w-[220px]">
+        <button className="group relative flex h-14 w-full items-center justify-center gap-2.5 overflow-hidden rounded-full border-2 border-border/60 bg-card text-base font-semibold text-foreground shadow-md transition-all hover:border-purple-400/50 hover:shadow-lg sm:h-16 sm:gap-3 sm:text-lg">
+          <SparkleIcon>
+            <ImageIcon className="h-5 w-5 sm:h-6 sm:w-6" />
+          </SparkleIcon>
+          Image
+          <div className="absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/10 to-transparent transition-transform duration-700 group-hover:translate-x-full" />
+        </button>
+      </Link>
 
       {/* Video — Pill button with video+sparkle composite icon, pink/purple gradient */}
       <button className="group relative flex h-14 flex-1 max-w-[220px] items-center justify-center gap-2.5 overflow-hidden rounded-full bg-gradient-to-r from-pink-500 to-purple-600 text-base font-semibold text-white shadow-md transition-all hover:from-pink-600 hover:to-purple-700 hover:shadow-lg sm:h-16 sm:gap-3 sm:text-lg">

@@ -199,13 +199,16 @@ export default function CharacterInfoPanel({
 
         {/* Action Buttons — Video = gradient (prominent), Image = outlined */}
         <div className="flex flex-col gap-2.5 pt-1">
-          <button className="flex h-11 w-full items-center justify-center gap-2 rounded-full border-2 border-pink-500/50 text-sm font-semibold text-pink-400 transition-all hover:bg-pink-500/10">
+          <Link
+            href={`/generate-image/${characterId}`}
+            className="flex h-11 w-full items-center justify-center gap-2 rounded-full border-2 border-pink-500/50 text-sm font-semibold text-pink-400 transition-all hover:bg-pink-500/10"
+          >
             <span className="relative">
               <ImageIcon className="h-5 w-5" />
               <Sparkles className="absolute -right-1.5 -top-1.5 h-3 w-3 text-yellow-400" />
             </span>
             Generate Image
-          </button>
+          </Link>
           <button className="flex h-11 w-full items-center justify-center gap-2 rounded-full bg-gradient-to-r from-pink-500 to-purple-600 text-sm font-semibold text-white shadow transition-all hover:from-pink-600 hover:to-purple-700 hover:shadow-lg">
             <span className="relative">
               <Video className="h-5 w-5" />

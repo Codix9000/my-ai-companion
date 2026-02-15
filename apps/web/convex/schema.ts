@@ -274,6 +274,20 @@ export default defineSchema({
   })
     .index("byUserId", ["userId"])
     .index("byUserAndCharacter", ["userId", "characterId"]),
+  imageSuggestions: defineTable({
+    category: v.union(
+      v.literal("outfit"),
+      v.literal("action"),
+      v.literal("pose"),
+      v.literal("accessories"),
+      v.literal("scene"),
+    ),
+    label: v.string(),
+    promptText: v.string(), // Text injected into the image prompt when selected
+    imageUrl: v.optional(v.string()),
+    imageStorageId: v.optional(v.id("_storage")),
+    sortOrder: v.optional(v.number()),
+  }).index("byCategory", ["category"]),
   postLikes: defineTable({
     postId: v.id("posts"),
     userId: v.id("users"),

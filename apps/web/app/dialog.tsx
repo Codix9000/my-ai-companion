@@ -351,16 +351,16 @@ export function Dialog({
             {/* Bottom row: icon buttons (left) + send button (right) */}
             <div className="flex items-center justify-between px-3 pb-3 pt-1">
               <div className="flex items-center gap-2">
-                {/* Generate Image — visible dark circle */}
-                <button
-                  type="button"
+                {/* Generate Image — links to generate page */}
+                <Link
+                  href={`/generate-image/${characterId}`}
                   className="flex h-11 w-11 items-center justify-center rounded-full bg-white/[0.08] text-white/50 transition-colors hover:bg-white/[0.14] hover:text-white/80"
                 >
                   <span className="relative">
                     <ImageIcon className="h-5 w-5" />
                     <Sparkles className="absolute -right-1 -top-1 h-2.5 w-2.5 text-yellow-400" />
                   </span>
-                </button>
+                </Link>
                 {/* Generate Video — visible dark circle */}
                 <button
                   type="button"
