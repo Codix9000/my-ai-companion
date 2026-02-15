@@ -1,6 +1,6 @@
 "use client";
 
-import { Authenticated, Unauthenticated, useConvexAuth } from "convex/react";
+import { useConvexAuth } from "convex/react";
 import { SignIn, useUser } from "@clerk/nextjs";
 import { useSearchParams } from "next/navigation";
 import { Id } from "../../convex/_generated/dataModel";
@@ -11,13 +11,13 @@ import useStoreChatEffect from "../lib/hooks/use-store-chat-effect";
 import { useStableQuery } from "../lib/hooks/use-stable-query";
 import useCurrentUser from "../lib/hooks/use-current-user";
 import ChatHistorySidebar from "../../components/chats/chat-history-sidebar";
-import { MessageSquare, Heart } from "lucide-react";
-import { useTranslation } from "react-i18next";
+import CharacterInfoPanel from "../../components/chats/character-info-panel";
+import { Heart } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@repo/ui/src/components";
-import AgeRestriction from "../../components/characters/age-restriction";
 import { ErrorBoundary } from "next/dist/client/components/error-boundary";
 
+// ─── Active Chat Wrapper ─────────────────────────────────────────
 function ActiveChat({ characterId }: { characterId: Id<"characters"> }) {
   const currentUser = useCurrentUser();
   const { isAuthenticated } = useConvexAuth();
@@ -52,26 +52,39 @@ function ActiveChat({ characterId }: { characterId: Id<"characters"> }) {
   }
 
   return (
-    <>
-      {data.isNSFW && <AgeRestriction />}
-      <Dialog
-        name={data.name as string}
-        description={data.description as string}
-        creatorName={creatorName}
-        userId={currentUser?._id}
-        creatorId={data.creatorId}
-        model={data.model as string}
-        chatId={chatId}
-        isAuthenticated={isAuthenticated}
-        characterId={data._id as Id<"characters">}
-        cardImageUrl={data.cardImageUrl}
-      />
-    </>
+    <div className="flex h-full flex-1 overflow-hidden">
+      {/* Center: Chat messages */}
+      <div className="flex-1 overflow-hidden">
+        <Dialog
+          name={data.name as string}
+          description={data.description as string}
+          creatorName={creatorName}
+          userId={currentUser?._id}
+          creatorId={data.creatorId}
+          model={data.model as string}
+          chatId={chatId}
+          isAuthenticated={isAuthenticated}
+          characterId={data._id as Id<"characters">}
+          cardImageUrl={data.cardImageUrl}
+        />
+      </div>
+
+      {/* Right: Character info panel (desktop only) */}
+      <div className="hidden xl:block">
+        <CharacterInfoPanel
+          name={data.name as string}
+          description={data.description as string}
+          cardImageUrl={data.cardImageUrl}
+          characterId={characterId}
+          age={data.age}
+        />
+      </div>
+    </div>
   );
 }
 
+// ─── Empty State ─────────────────────────────────────────────────
 function EmptyState() {
-  const { t } = useTranslation();
   return (
     <div className="flex h-full w-full flex-col items-center justify-center gap-4 text-center">
       <div className="flex h-20 w-20 items-center justify-center rounded-full bg-gradient-to-br from-pink-400/20 to-purple-500/20">
@@ -79,21 +92,22 @@ function EmptyState() {
       </div>
       <div>
         <h2 className="text-xl font-semibold text-foreground">
-          {t("Select a conversation")}
+          Select a conversation
         </h2>
         <p className="mt-1 text-sm text-muted-foreground">
-          {t("Choose a character from the sidebar to start chatting")}
+          Choose a character from the sidebar to start chatting
         </p>
       </div>
       <Link href="/characters">
         <Button className="mt-2 bg-gradient-to-r from-pink-500 to-purple-500 hover:from-pink-600 hover:to-purple-600">
-          {t("Explore Characters")}
+          Explore Characters
         </Button>
       </Link>
     </div>
   );
 }
 
+// ─── Main Page ───────────────────────────────────────────────────
 export default function Page() {
   const { user } = useUser();
   const { isAuthenticated } = useConvexAuth();
@@ -110,18 +124,22 @@ export default function Page() {
 
   return (
     <div className="flex h-[calc(100vh-4rem)] w-full overflow-hidden">
-      {/* Sidebar with all character conversations */}
-      <ChatHistorySidebar currentCharacterId={characterId} />
+      {/* Left: Conversation list */}
+      <div className="hidden lg:block">
+        <ChatHistorySidebar currentCharacterId={characterId} />
+      </div>
 
-      {/* Main chat area */}
+      {/* Center + Right: Chat area + Character info */}
       <div className="flex-1 overflow-hidden">
         {characterId ? (
           <ErrorBoundary
-            errorComponent={({ error }) => (
+            errorComponent={() => (
               <div className="flex h-full w-full flex-col items-center justify-center gap-4 p-8 text-center">
-                <p className="text-lg font-medium text-foreground">Something went wrong</p>
+                <p className="text-lg font-medium text-foreground">
+                  Something went wrong
+                </p>
                 <p className="text-sm text-muted-foreground">
-                  There was an error loading this chat. Please try refreshing the page.
+                  There was an error loading this chat. Please try refreshing.
                 </p>
                 <button
                   onClick={() => window.location.reload()}
