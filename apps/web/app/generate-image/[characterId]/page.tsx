@@ -165,10 +165,11 @@ export default function GenerateImagePage() {
 
   // Get suggestions for active category (DB or placeholder)
   const currentSuggestions = useMemo(() => {
-    if (allSuggestions && allSuggestions[activeCategory]?.length > 0) {
-      return allSuggestions[activeCategory];
+    const dbItems = allSuggestions ? allSuggestions[activeCategory] : undefined;
+    if (dbItems && dbItems.length > 0) {
+      return dbItems;
     }
-    return PLACEHOLDER_SUGGESTIONS[activeCategory]?.map((s) => ({
+    return (PLACEHOLDER_SUGGESTIONS[activeCategory] ?? []).map((s) => ({
       ...s,
       _id: s.label,
       category: activeCategory,
