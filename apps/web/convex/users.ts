@@ -77,6 +77,20 @@ export const getUserInternal = internalQuery({
   },
 });
 
+export const getUserByToken = internalQuery({
+  args: {
+    tokenIdentifier: v.string(),
+  },
+  handler: async (ctx, args) => {
+    return await ctx.db
+      .query("users")
+      .withIndex("byToken", (q: any) =>
+        q.eq("tokenIdentifier", args.tokenIdentifier),
+      )
+      .unique();
+  },
+});
+
 export const getUser = async (ctx: any, doNotThrow?: boolean) => {
   const identity = await ctx.auth.getUserIdentity();
   if (!identity) {

@@ -1,16 +1,11 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { useQuery } from "convex/react";
+import { useQuery, useAction } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import { Id } from "../../../convex/_generated/dataModel";
 import { useParams } from "next/navigation";
 import Image from "next/image";
-import {
-  Avatar,
-  AvatarFallback,
-  AvatarImage,
-} from "@repo/ui/src/components/avatar";
 import {
   Sparkles,
   Pen,
@@ -20,7 +15,7 @@ import {
   Grid3x3,
   LayoutGrid,
   Plus,
-  Video,
+  Loader2,
 } from "lucide-react";
 import { toast } from "sonner";
 import { useConvexAuth } from "convex/react";
@@ -152,12 +147,15 @@ export default function GenerateImagePage() {
     isAuthenticated ? { characterId } : "skip",
   );
 
+  const generateImage = useAction(api.runpodImageGen.generateImage);
+
   const [activeCategory, setActiveCategory] = useState<typeof CATEGORIES[number]["key"]>("outfit");
   const [prompt, setPrompt] = useState("");
   const [isEditingPrompt, setIsEditingPrompt] = useState(false);
   const [selectedCount, setSelectedCount] = useState(1);
   const [selectedSuggestion, setSelectedSuggestion] = useState<string | null>(null);
   const [lightboxImage, setLightboxImage] = useState<string | null>(null);
+  const [isGenerating, setIsGenerating] = useState(false);
 
   // Initialize prompt from character's imagePromptInstructions
   const defaultPrompt = (character as any)?.imagePromptInstructions || "";
@@ -190,8 +188,30 @@ export default function GenerateImagePage() {
     toast.success("Prompt copied to clipboard");
   };
 
-  const handleGenerate = () => {
-    toast.info("Image generation coming soon! The API will be connected in the next update.");
+  const handleGenerate = async () => {
+    const finalPrompt = prompt || defaultPrompt;
+    if (!finalPrompt.trim()) {
+      toast.error("Please enter a prompt or select a suggestion first.");
+      return;
+    }
+
+    setIsGenerating(true);
+    try {
+      const result = await generateImage({
+        characterId,
+        userPrompt: finalPrompt,
+      });
+      if (result.success) {
+        toast.success("Image generated successfully!");
+      }
+    } catch (error: any) {
+      console.error("[GenerateImage] Error:", error);
+      toast.error(
+        error?.message || "Failed to generate image. Check Convex logs for details.",
+      );
+    } finally {
+      setIsGenerating(false);
+    }
   };
 
   if (!isAuthenticated || !user) {
@@ -370,10 +390,20 @@ export default function GenerateImagePage() {
         {/* ── Generate Button ── */}
         <button
           onClick={handleGenerate}
-          className="flex w-full max-w-[520px] items-center justify-center gap-2.5 rounded-xl bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 px-6 py-4 text-[15px] font-bold text-white shadow-xl shadow-purple-500/20 transition-all hover:shadow-2xl hover:shadow-purple-500/30"
+          disabled={isGenerating}
+          className="flex w-full max-w-[520px] items-center justify-center gap-2.5 rounded-xl bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 px-6 py-4 text-[15px] font-bold text-white shadow-xl shadow-purple-500/20 transition-all hover:shadow-2xl hover:shadow-purple-500/30 disabled:opacity-60 disabled:cursor-not-allowed"
         >
-          <Sparkles className="h-5 w-5" />
-          Generate Image
+          {isGenerating ? (
+            <>
+              <Loader2 className="h-5 w-5 animate-spin" />
+              Generating...
+            </>
+          ) : (
+            <>
+              <Sparkles className="h-5 w-5" />
+              Generate Image
+            </>
+          )}
         </button>
       </div>
 

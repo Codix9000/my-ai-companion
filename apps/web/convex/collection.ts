@@ -1,4 +1,4 @@
-import { query, mutation } from "./_generated/server";
+import { query, mutation, internalMutation } from "./_generated/server";
 import { v } from "convex/values";
 import { getUser } from "./users";
 import { Id } from "./_generated/dataModel";
@@ -139,5 +139,27 @@ export const deleteMedia = mutation({
       throw new Error("Media not found or unauthorized");
     }
     await ctx.db.delete(args.mediaId);
+  },
+});
+
+// Internal mutation: save generated media (called from RunPod action with explicit userId)
+export const saveGeneratedMediaInternal = internalMutation({
+  args: {
+    userId: v.id("users"),
+    characterId: v.id("characters"),
+    mediaUrl: v.string(),
+    mediaStorageId: v.id("_storage"),
+    mediaType: v.union(v.literal("image"), v.literal("video")),
+    prompt: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    return await ctx.db.insert("userMedia", {
+      userId: args.userId,
+      characterId: args.characterId,
+      mediaUrl: args.mediaUrl,
+      mediaStorageId: args.mediaStorageId,
+      mediaType: args.mediaType,
+      prompt: args.prompt,
+    });
   },
 });
