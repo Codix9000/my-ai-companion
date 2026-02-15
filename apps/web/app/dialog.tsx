@@ -68,7 +68,6 @@ export const Message = ({
     <div
       className={`flex gap-2.5 ${isCharacter ? "justify-start" : "flex-row-reverse"}`}
     >
-      {/* Avatar — small inline */}
       <Avatar className="mt-0.5 h-7 w-7 shrink-0">
         <AvatarImage
           src={cardImageUrl || ""}
@@ -80,7 +79,6 @@ export const Message = ({
         </AvatarFallback>
       </Avatar>
 
-      {/* Message text — plain, no background boxes */}
       <div className="max-w-[75%]">
         {message?.text === "" ? (
           <div className="flex items-center gap-1 py-2">
@@ -177,7 +175,7 @@ const ChatOptionsPopover = ({
         </AlertDialogContent>
       </AlertDialog>
       <PopoverTrigger asChild>
-        <Button variant="ghost" size="icon" className="h-9 w-9 text-white/60 hover:text-white">
+        <Button variant="ghost" size="icon" className="h-10 w-10 text-white/50 hover:text-white">
           <MoreHorizontal className="h-5 w-5" />
         </Button>
       </PopoverTrigger>
@@ -269,16 +267,16 @@ export function Dialog({
 
   return (
     <div className="flex h-full flex-col">
-      {/* ── Header — candy.ai style: large avatar + bold name ── */}
-      <div className="flex h-16 shrink-0 items-center justify-between border-b border-white/10 px-5">
-        <Link href={`/character/${characterId}`} className="flex items-center gap-3">
-          <Avatar className="h-11 w-11">
+      {/* ── Header — candy.ai: ~80px tall, 52px avatar, ~22px bold name ── */}
+      <div className="flex shrink-0 items-center justify-between border-b border-white/[0.08] px-6 py-4">
+        <Link href={`/character/${characterId}`} className="flex items-center gap-4">
+          <Avatar className="h-[52px] w-[52px]">
             <AvatarImage src={cardImageUrl || ""} alt={name} className="object-cover" />
-            <AvatarFallback className="bg-gradient-to-br from-pink-400 to-purple-500 text-sm text-white">
+            <AvatarFallback className="bg-gradient-to-br from-pink-400 to-purple-500 text-lg text-white">
               {name?.[0] || "?"}
             </AvatarFallback>
           </Avatar>
-          <span className="text-lg font-bold text-white">{name}</span>
+          <span className="text-[22px] font-bold text-white">{name}</span>
         </Link>
         <ChatOptionsPopover
           characterId={characterId}
@@ -290,7 +288,7 @@ export function Dialog({
 
       {/* ── Messages ── */}
       <div
-        className="flex-1 overflow-y-auto px-5 py-5"
+        className="flex-1 overflow-y-auto px-6 py-5"
         ref={listRef}
         onWheel={() => setScrolled(true)}
       >
@@ -327,13 +325,16 @@ export function Dialog({
         </div>
       </div>
 
-      {/* ── Input Area — ONE unified rounded container like candy.ai ── */}
-      <div className="shrink-0 px-4 pb-4 pt-2">
-        <div className="overflow-hidden rounded-2xl border border-white/10 bg-white/[0.04]">
-          {/* Top row: text input */}
+      {/* ── Input Area — candy.ai style ──
+           One rounded container with visible bg, generous side margins,
+           icon buttons with clear dark circle backgrounds -->
+      */}
+      <div className="shrink-0 px-8 pb-5 pt-2 lg:px-12">
+        <div className="overflow-hidden rounded-2xl border border-white/[0.08] bg-white/[0.06]">
+          {/* Text input row */}
           <form onSubmit={handleSend}>
             <input
-              className="w-full border-0 bg-transparent px-4 pb-1 pt-3 text-[14px] text-white placeholder-white/30 outline-none ring-0 focus:outline-none focus:ring-0"
+              className="w-full border-0 bg-transparent px-5 pb-2 pt-4 text-[15px] text-white placeholder-white/30 outline-none ring-0 focus:outline-none focus:ring-0"
               style={{ boxShadow: "none" }}
               autoFocus
               placeholder={t("Write a message...")}
@@ -348,37 +349,37 @@ export function Dialog({
             />
 
             {/* Bottom row: icon buttons (left) + send button (right) */}
-            <div className="flex items-center justify-between px-3 pb-2.5 pt-1">
-              <div className="flex items-center gap-1">
-                {/* Generate Image */}
+            <div className="flex items-center justify-between px-3 pb-3 pt-1">
+              <div className="flex items-center gap-2">
+                {/* Generate Image — visible dark circle */}
                 <button
                   type="button"
-                  className="flex h-10 w-10 items-center justify-center rounded-full text-white/40 transition-colors hover:bg-white/10 hover:text-white/70"
+                  className="flex h-11 w-11 items-center justify-center rounded-full bg-white/[0.08] text-white/50 transition-colors hover:bg-white/[0.14] hover:text-white/80"
                 >
                   <span className="relative">
-                    <ImageIcon className="h-[18px] w-[18px]" />
+                    <ImageIcon className="h-5 w-5" />
                     <Sparkles className="absolute -right-1 -top-1 h-2.5 w-2.5 text-yellow-400" />
                   </span>
                 </button>
-                {/* Generate Video */}
+                {/* Generate Video — visible dark circle */}
                 <button
                   type="button"
-                  className="flex h-10 w-10 items-center justify-center rounded-full text-white/40 transition-colors hover:bg-white/10 hover:text-white/70"
+                  className="flex h-11 w-11 items-center justify-center rounded-full bg-white/[0.08] text-white/50 transition-colors hover:bg-white/[0.14] hover:text-white/80"
                 >
                   <span className="relative">
-                    <Video className="h-[18px] w-[18px]" />
+                    <Video className="h-5 w-5" />
                     <Sparkles className="absolute -right-1 -top-1 h-2.5 w-2.5 text-yellow-400" />
                   </span>
                 </button>
               </div>
 
-              {/* Send button — gradient circle */}
+              {/* Send button — gradient circle, slightly larger */}
               <button
                 type="submit"
                 disabled={!input.trim()}
-                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gradient-to-r from-pink-500 to-purple-500 text-white shadow-lg shadow-pink-500/20 transition-all disabled:opacity-30 hover:from-pink-600 hover:to-purple-600"
+                className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-gradient-to-r from-pink-500 to-purple-500 text-white shadow-lg shadow-pink-500/25 transition-all disabled:opacity-25 hover:from-pink-600 hover:to-purple-600"
               >
-                <Send className="h-[16px] w-[16px]" />
+                <Send className="h-[18px] w-[18px]" />
               </button>
             </div>
           </form>
