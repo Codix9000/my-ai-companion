@@ -10,6 +10,11 @@ import { Buffer } from "buffer";
 const HARDCODED_STYLE =
   ", candid amateur smartphone photo, slight grain, realistic skin pores and imperfections,";
 
+// ── Helper: sleep for polling ──
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
 // ── ComfyUI Workflow Template ──
 function buildWorkflow({
   loraName,
@@ -110,10 +115,143 @@ function buildWorkflow({
   };
 }
 
-// ── Extract LoRA name from imagePromptInstructions (first word) ──
+// ── Extract LoRA name from imagePromptInstructions (first word, stripped of punctuation) ──
 function extractLoraName(imagePromptInstructions: string): string {
-  const firstWord = imagePromptInstructions.trim().split(/\s+/)[0];
-  return firstWord || "default";
+  const firstWord = imagePromptInstructions.trim().split(/\s+/)[0] || "";
+  // Strip trailing commas, periods, semicolons, and other punctuation
+  const cleaned = firstWord.replace(/[,;:.!?]+$/, "");
+  return cleaned || "default";
+}
+
+// ── Poll RunPod /status endpoint until job completes ──
+async function pollForResult(
+  endpointId: string,
+  jobId: string,
+  apiKey: string,
+): Promise<any> {
+  const statusUrl = `https://api.runpod.ai/v2/${endpointId}/status/${jobId}`;
+  const MAX_POLL_TIME_MS = 5 * 60 * 1000; // 5 minutes max
+  const POLL_INTERVAL_MS = 2000; // 2 seconds between polls
+  const startTime = Date.now();
+
+  let attempt = 0;
+  while (Date.now() - startTime < MAX_POLL_TIME_MS) {
+    attempt++;
+    const elapsed = Math.round((Date.now() - startTime) / 1000);
+    console.log(
+      `[RunPod] Polling attempt ${attempt} (${elapsed}s elapsed)...`,
+    );
+
+    const statusResponse = await fetch(statusUrl, {
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+      },
+    });
+
+    if (!statusResponse.ok) {
+      const errText = await statusResponse.text();
+      console.error(
+        `[RunPod] Status poll error (${statusResponse.status}):`,
+        errText,
+      );
+      throw new Error(
+        `RunPod status poll failed (${statusResponse.status}): ${errText}`,
+      );
+    }
+
+    const statusData = await statusResponse.json();
+    console.log(
+      `[RunPod] Status: ${statusData.status}`,
+    );
+
+    if (statusData.status === "COMPLETED") {
+      console.log(
+        "[RunPod] Job completed! Full output:",
+        JSON.stringify(statusData, null, 2),
+      );
+      return statusData;
+    }
+
+    if (statusData.status === "FAILED") {
+      console.error("[RunPod] Job failed:", JSON.stringify(statusData));
+      throw new Error(
+        `RunPod job failed: ${JSON.stringify(statusData.error || statusData)}`,
+      );
+    }
+
+    if (statusData.status === "CANCELLED") {
+      throw new Error("RunPod job was cancelled");
+    }
+
+    // Status is IN_QUEUE or IN_PROGRESS — wait and try again
+    await sleep(POLL_INTERVAL_MS);
+  }
+
+  throw new Error(
+    `RunPod job timed out after ${MAX_POLL_TIME_MS / 1000}s. Job ID: ${jobId}`,
+  );
+}
+
+// ── Extract image from RunPod response output ──
+function extractImageFromOutput(output: any): {
+  base64Image: string | null;
+  imageUrl: string | null;
+} {
+  let base64Image: string | null = null;
+  let imageUrl: string | null = null;
+
+  if (!output) return { base64Image, imageUrl };
+
+  console.log(
+    "[RunPod] Output type:",
+    typeof output,
+    typeof output === "object" ? Object.keys(output) : "",
+  );
+
+  // Format 1: output.images[0].image (base64) — common ComfyUI RunPod format
+  if (output.images && Array.isArray(output.images) && output.images[0]) {
+    if (output.images[0].image) {
+      base64Image = output.images[0].image;
+      console.log("[RunPod] Found base64 image in output.images[0].image");
+    } else if (typeof output.images[0] === "string") {
+      if (output.images[0].startsWith("http")) {
+        imageUrl = output.images[0];
+        console.log("[RunPod] Found image URL in output.images[0]");
+      } else {
+        base64Image = output.images[0];
+        console.log("[RunPod] Found base64 string in output.images[0]");
+      }
+    }
+  }
+
+  // Format 2: output.image (single base64 or URL)
+  if (!base64Image && !imageUrl && output.image) {
+    if (typeof output.image === "string") {
+      if (output.image.startsWith("http")) {
+        imageUrl = output.image;
+      } else {
+        base64Image = output.image;
+      }
+      console.log("[RunPod] Found image in output.image");
+    }
+  }
+
+  // Format 3: output.message (sometimes contains data)
+  if (!base64Image && !imageUrl && output.message) {
+    console.log("[RunPod] output.message:", output.message);
+  }
+
+  // Format 4: output is directly a string (URL or base64)
+  if (!base64Image && !imageUrl && typeof output === "string") {
+    if (output.startsWith("http")) {
+      imageUrl = output;
+    } else if (output.length > 100) {
+      base64Image = output;
+    }
+    console.log("[RunPod] Output is a direct string");
+  }
+
+  return { base64Image, imageUrl };
 }
 
 // ── Main generate action (called from frontend) ──
@@ -149,7 +287,7 @@ export const generateImage = action({
     const imagePromptInstructions =
       (character as any).imagePromptInstructions || "";
 
-    // 2. Extract LoRA name (first word of imagePromptInstructions)
+    // 2. Extract LoRA name (first word, stripped of commas/punctuation)
     const loraName = extractLoraName(imagePromptInstructions);
 
     // 3. Build the full prompt: characterInstruction + userPrompt + hardcodedStyle
@@ -175,15 +313,15 @@ export const generateImage = action({
       );
     }
 
-    const runpodUrl = `https://api.runpod.ai/v2/${endpointId}/runsync`;
+    // 7. Submit async job via /run (NOT /runsync)
+    const runUrl = `https://api.runpod.ai/v2/${endpointId}/run`;
 
-    // 7. Send POST request to RunPod
-    console.log("[RunPod] Sending request to:", runpodUrl);
+    console.log("[RunPod] Submitting async job to:", runUrl);
     console.log("[RunPod] LoRA:", `${loraName}.safetensors`);
     console.log("[RunPod] Prompt:", fullPrompt);
     console.log("[RunPod] Seed:", seed);
 
-    const response = await fetch(runpodUrl, {
+    const submitResponse = await fetch(runUrl, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -196,82 +334,40 @@ export const generateImage = action({
       }),
     });
 
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error("[RunPod] Error response:", response.status, errorText);
+    if (!submitResponse.ok) {
+      const errorText = await submitResponse.text();
+      console.error(
+        "[RunPod] Submit error:",
+        submitResponse.status,
+        errorText,
+      );
       throw new Error(
-        `RunPod request failed (${response.status}): ${errorText}`,
+        `RunPod submit failed (${submitResponse.status}): ${errorText}`,
       );
     }
 
-    const responseData = await response.json();
-    console.log(
-      "[RunPod] Full response:",
-      JSON.stringify(responseData, null, 2),
+    const submitData = await submitResponse.json();
+    const jobId = submitData.id;
+
+    if (!jobId) {
+      console.error(
+        "[RunPod] No job ID in submit response:",
+        JSON.stringify(submitData),
+      );
+      throw new Error("RunPod did not return a job ID");
+    }
+
+    console.log(`[RunPod] Job submitted. ID: ${jobId}, status: ${submitData.status}`);
+
+    // 8. Poll /status/{jobId} until COMPLETED (or FAILED/timeout)
+    const completedData = await pollForResult(endpointId, jobId, apiKey);
+
+    // 9. Extract image from completed response
+    const { base64Image, imageUrl } = extractImageFromOutput(
+      completedData.output,
     );
 
-    // 8. Extract image data from response
-    // RunPod ComfyUI responses can vary. Log everything for debugging.
-    let base64Image: string | null = null;
-    let imageUrl: string | null = null;
-
-    // Check for FAILED status first
-    if (responseData.status === "FAILED") {
-      console.error("[RunPod] Job failed:", responseData);
-      throw new Error(
-        `RunPod job failed: ${JSON.stringify(responseData.error || responseData)}`,
-      );
-    }
-
-    if (responseData.output) {
-      const output = responseData.output;
-      console.log("[RunPod] Output keys:", Object.keys(output));
-
-      // Format 1: output.images[0].image (base64) — common ComfyUI RunPod format
-      if (output.images && Array.isArray(output.images) && output.images[0]) {
-        if (output.images[0].image) {
-          base64Image = output.images[0].image;
-          console.log("[RunPod] Found base64 image in output.images[0].image");
-        } else if (typeof output.images[0] === "string") {
-          if (output.images[0].startsWith("http")) {
-            imageUrl = output.images[0];
-            console.log("[RunPod] Found image URL in output.images[0]");
-          } else {
-            base64Image = output.images[0];
-            console.log("[RunPod] Found base64 string in output.images[0]");
-          }
-        }
-      }
-
-      // Format 2: output.image (single base64 or URL)
-      if (!base64Image && !imageUrl && output.image) {
-        if (typeof output.image === "string") {
-          if (output.image.startsWith("http")) {
-            imageUrl = output.image;
-          } else {
-            base64Image = output.image;
-          }
-          console.log("[RunPod] Found image in output.image");
-        }
-      }
-
-      // Format 3: output.message (sometimes contains data)
-      if (!base64Image && !imageUrl && output.message) {
-        console.log("[RunPod] output.message:", output.message);
-      }
-
-      // Format 4: output is directly a string (URL or base64)
-      if (!base64Image && !imageUrl && typeof output === "string") {
-        if (output.startsWith("http")) {
-          imageUrl = output;
-        } else {
-          base64Image = output;
-        }
-        console.log("[RunPod] Output is a direct string");
-      }
-    }
-
-    // 9. Store the image in Convex storage
+    // 10. Store the image in Convex storage
     let storageId: Id<"_storage"> | null = null;
     let finalImageUrl: string | null = null;
 
@@ -297,14 +393,14 @@ export const generateImage = action({
       }
     } else {
       console.error(
-        "[RunPod] Could not extract image from response. Full response logged above.",
+        "[RunPod] Could not extract image from completed response. Full output logged above.",
       );
       throw new Error(
         "Could not extract image from RunPod response. Check Convex logs for the full response structure.",
       );
     }
 
-    // 10. Save to userMedia collection
+    // 11. Save to userMedia collection
     if (storageId && finalImageUrl) {
       await ctx.runMutation(internal.collection.saveGeneratedMediaInternal, {
         userId: user._id,
@@ -320,8 +416,8 @@ export const generateImage = action({
       success: true,
       imageUrl: finalImageUrl,
       storageId,
-      runpodJobId: responseData.id || null,
-      status: responseData.status || "UNKNOWN",
+      runpodJobId: jobId,
+      status: "COMPLETED",
     };
   },
 });
