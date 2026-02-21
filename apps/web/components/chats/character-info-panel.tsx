@@ -65,9 +65,6 @@ function HighlightsCarousel({
   });
 
   const [currentIdx, setCurrentIdx] = useState(0);
-  const [nextIdx, setNextIdx] = useState<number | null>(null);
-  const [slideDir, setSlideDir] = useState<"left" | "right">("left");
-  const [isAnimating, setIsAnimating] = useState(false);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const items = highlights && highlights.length > 0 ? highlights : null;
@@ -75,29 +72,15 @@ function HighlightsCarousel({
 
   const goTo = useCallback(
     (direction: "left" | "right") => {
-      if (isAnimating || total <= 1) return;
-      const target =
+      if (total <= 1) return;
+      setCurrentIdx((prev) =>
         direction === "left"
-          ? (currentIdx + 1) % total
-          : (currentIdx - 1 + total) % total;
-
-      setSlideDir(direction);
-      setNextIdx(target);
-      // Force a reflow before starting the animation
-      requestAnimationFrame(() => {
-        setIsAnimating(true);
-      });
+          ? (prev + 1) % total
+          : (prev - 1 + total) % total,
+      );
     },
-    [isAnimating, total, currentIdx],
+    [total],
   );
-
-  const handleTransitionEnd = () => {
-    if (nextIdx !== null) {
-      setCurrentIdx(nextIdx);
-    }
-    setNextIdx(null);
-    setIsAnimating(false);
-  };
 
   // Auto-advance every 8 seconds
   useEffect(() => {
@@ -118,46 +101,24 @@ function HighlightsCarousel({
     goTo("left");
   };
 
-  const currentItem = items ? items[currentIdx] : null;
-  const nextItem = nextIdx !== null && items ? items[nextIdx] : null;
-
-  // Slide positions:
-  // Current slide: starts at 0, moves to -100% (left) or +100% (right)
-  // Next slide: starts at +100% (left) or -100% (right), moves to 0
-  const currentTransform = isAnimating
-    ? slideDir === "left"
-      ? "translateX(-100%)"
-      : "translateX(100%)"
-    : "translateX(0)";
-
-  const nextTransform = isAnimating
-    ? "translateX(0)"
-    : slideDir === "left"
-      ? "translateX(100%)"
-      : "translateX(-100%)";
-
   return (
     <div className="group relative w-full overflow-hidden" style={{ aspectRatio: "3/4" }}>
-      {currentItem ? (
+      {items && items.length > 0 ? (
         <>
-          {/* Current slide */}
+          {/* Sliding track: single transform, one smooth animation */}
           <div
-            className="absolute inset-0 transition-transform duration-500 ease-in-out"
-            style={{ transform: currentTransform }}
-            onTransitionEnd={handleTransitionEnd}
+            className="flex h-full transition-transform duration-500 ease-in-out"
+            style={{
+              width: `${total * 100}%`,
+              transform: `translateX(-${(100 / total) * currentIdx}%)`,
+            }}
           >
-            <SlideContent item={currentItem} characterName={characterName} />
+            {items.map((item: { mediaUrl: string; mediaType: string; caption?: string }, i: number) => (
+              <div key={i} className="relative h-full shrink-0" style={{ width: `${100 / total}%` }}>
+                <SlideContent item={item} characterName={characterName} />
+              </div>
+            ))}
           </div>
-
-          {/* Next slide (only rendered during transition) */}
-          {nextItem && (
-            <div
-              className="absolute inset-0 transition-transform duration-500 ease-in-out"
-              style={{ transform: nextTransform }}
-            >
-              <SlideContent item={nextItem} characterName={characterName} />
-            </div>
-          )}
         </>
       ) : fallbackImageUrl ? (
         <Link href={`/character/${characterId}`}>
@@ -193,7 +154,7 @@ function HighlightsCarousel({
 
           {/* Dots */}
           <div className="absolute bottom-3 left-1/2 z-10 flex -translate-x-1/2 gap-1.5">
-            {items!.map((_, i) => (
+            {items!.map((_: unknown, i: number) => (
               <span
                 key={i}
                 className={`h-1.5 w-1.5 rounded-full transition-colors ${
