@@ -1,7 +1,7 @@
 "use client";
 import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import { api } from "../convex/_generated/api";
-import { useMutation } from "convex/react";
+import { useAction, useMutation } from "convex/react";
 import { Id } from "../convex/_generated/dataModel";
 import {
   Image as ImageIcon,
@@ -13,6 +13,8 @@ import {
   Edit,
   Repeat,
   Share,
+  X,
+  Dices,
 } from "lucide-react";
 import { AnimatePresence, motion, useInView } from "framer-motion";
 import { Button } from "@repo/ui/src/components";
@@ -47,6 +49,15 @@ import usePersona from "./lib/hooks/use-persona";
 import React from "react";
 import { FormattedMessage } from "../components/formatted-message";
 import { useResponsivePopover } from "@repo/ui/src/hooks/use-responsive-popover";
+
+// ── Pose suggestions for inline image generation ──
+const POSE_SUGGESTIONS = [
+  { label: "Selfie", promptText: "a selfie" },
+  { label: "Posing", promptText: "posing" },
+  { label: "Sitting", promptText: "sitting" },
+  { label: "Kneeling", promptText: "kneeling" },
+  { label: "Squatting", promptText: "squatting" },
+];
 
 // ─── Message ─────────────────────────────────────────────────────
 export const Message = ({
@@ -225,10 +236,43 @@ export function Dialog({
   const persona = usePersona();
   const username = persona?.name;
   const sendMessage = useMutation(api.messages.send);
+  const generateImage = useAction(api.runpodImageGen.generateImage);
   const posthog = usePostHog();
   const [isScrolled, setScrolled] = useState(false);
   const [input, setInput] = useState("");
   const { openDialog } = useCrystalDialog();
+
+  // ── Image generation mode state ──
+  const [imageGenMode, setImageGenMode] = useState(false);
+  const [isGeneratingImage, setIsGeneratingImage] = useState(false);
+  const [showSuggestions, setShowSuggestions] = useState(true);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  const activateImageGenMode = () => {
+    setImageGenMode(true);
+    setInput("Show me ");
+    setShowSuggestions(true);
+    setTimeout(() => inputRef.current?.focus(), 50);
+  };
+
+  const deactivateImageGenMode = () => {
+    setImageGenMode(false);
+    setInput("");
+    setShowSuggestions(false);
+  };
+
+  const handlePoseSuggestionClick = (promptText: string) => {
+    setInput(`Show me ${promptText}`);
+    inputRef.current?.focus();
+  };
+
+  const handleRandomPose = () => {
+    const random = POSE_SUGGESTIONS[Math.floor(Math.random() * POSE_SUGGESTIONS.length)];
+    if (random) {
+      setInput(`Show me ${random.promptText}`);
+    }
+    inputRef.current?.focus();
+  };
 
   const sendAndReset = async (text: string) => {
     setInput("");
@@ -241,12 +285,37 @@ export function Dialog({
     }
   };
 
-  const handleSend = (event?: FormEvent) => {
+  const handleSend = async (event?: FormEvent) => {
     event?.preventDefault();
-    if (input.trim()) {
+    if (!input.trim()) return;
+
+    if (imageGenMode) {
+      // Send the message to chat first
+      const messageText = input;
+      sendAndReset(messageText);
+      setImageGenMode(false);
+      setShowSuggestions(false);
+
+      // Trigger image generation in background
+      setIsGeneratingImage(true);
+      try {
+        const result = await generateImage({
+          characterId,
+          userPrompt: messageText,
+        });
+        if (result.success) {
+          toast.success("Image generated!");
+        }
+      } catch (error: any) {
+        console.error("[ChatImageGen] Error:", error);
+        toast.error(error?.message || "Failed to generate image.");
+      } finally {
+        setIsGeneratingImage(false);
+      }
+    } else {
       sendAndReset(input);
-      setScrolled(false);
     }
+    setScrolled(false);
   };
 
   const listRef = useRef<HTMLDivElement>(null);
@@ -267,7 +336,7 @@ export function Dialog({
 
   return (
     <div className="flex h-full flex-col">
-      {/* ── Header — candy.ai: ~80px tall, 52px avatar, ~22px bold name ── */}
+      {/* ── Header ── */}
       <div className="flex shrink-0 items-center justify-between border-b border-white/[0.08] px-6 py-4">
         <Link href={`/character/${characterId}`} className="flex items-center gap-4">
           <Avatar className="h-[52px] w-[52px]">
@@ -325,43 +394,135 @@ export function Dialog({
         </div>
       </div>
 
-      {/* ── Input Area — candy.ai style ──
-           One rounded container with visible bg, generous side margins,
-           icon buttons with clear dark circle backgrounds -->
-      */}
+      {/* ── Input Area ── */}
       <div className="shrink-0 px-8 pb-5 pt-2 lg:px-12">
+        {/* ── Pose suggestions bar (visible in image gen mode) ── */}
+        {imageGenMode && showSuggestions && (
+          <div className="mb-2">
+            <div className="flex items-center gap-3 overflow-x-auto pb-1 scrollbar-hide">
+              {/* Dice / Random button */}
+              <button
+                type="button"
+                onClick={handleRandomPose}
+                className="flex shrink-0 flex-col items-center gap-1"
+              >
+                <div className="flex h-[52px] w-[52px] items-center justify-center rounded-xl border border-white/10 bg-white/[0.06] transition-colors hover:bg-white/[0.12]">
+                  <Dices className="h-5 w-5 text-white/60" />
+                </div>
+                <span className="text-[10px] text-white/40">Random</span>
+              </button>
+
+              {/* Pose thumbnails */}
+              {POSE_SUGGESTIONS.map((pose) => (
+                <button
+                  key={pose.label}
+                  type="button"
+                  onClick={() => handlePoseSuggestionClick(pose.promptText)}
+                  className="flex shrink-0 flex-col items-center gap-1"
+                >
+                  <div className="flex h-[52px] w-[52px] items-center justify-center overflow-hidden rounded-xl border border-white/10 bg-white/[0.06] transition-colors hover:bg-white/[0.12]">
+                    <span className="text-lg text-white/30">{pose.label[0]}</span>
+                  </div>
+                  <span className="text-[10px] text-white/40">{pose.label}</span>
+                </button>
+              ))}
+            </div>
+
+            {/* Hide suggestions link */}
+            <button
+              type="button"
+              onClick={() => setShowSuggestions(false)}
+              className="mt-1 flex items-center gap-1 text-[11px] text-white/30 transition-colors hover:text-white/50"
+            >
+              <span>▸</span> Hide suggestions
+            </button>
+          </div>
+        )}
+
+        {/* Show suggestions toggle (collapsed) */}
+        {imageGenMode && !showSuggestions && (
+          <div className="mb-2">
+            <button
+              type="button"
+              onClick={() => setShowSuggestions(true)}
+              className="flex items-center gap-1 text-[11px] text-white/30 transition-colors hover:text-white/50"
+            >
+              <span>▸</span> Show suggestions
+            </button>
+          </div>
+        )}
+
         <div className="overflow-hidden rounded-2xl border border-white/[0.08] bg-white/[0.06]">
           {/* Text input row */}
           <form onSubmit={handleSend}>
-            <input
-              className="w-full border-0 bg-transparent px-5 pb-2 pt-4 text-[15px] text-white placeholder-white/30 outline-none ring-0 focus:outline-none focus:ring-0"
-              style={{ boxShadow: "none" }}
-              autoFocus
-              placeholder={t("Write a message...")}
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter" && !e.shiftKey) {
-                  e.preventDefault();
-                  handleSend();
-                }
-              }}
-            />
+            {/* Input with "Show me" label when in image gen mode */}
+            <div className="flex items-center">
+              {imageGenMode && (
+                <span className="shrink-0 pl-5 pt-0.5 text-[15px] font-medium text-pink-400/80">
+                  Show me
+                </span>
+              )}
+              <input
+                ref={inputRef}
+                className="w-full border-0 bg-transparent px-5 pb-2 pt-4 text-[15px] text-white placeholder-white/30 outline-none ring-0 focus:outline-none focus:ring-0"
+                style={{ boxShadow: "none" }}
+                autoFocus
+                placeholder={imageGenMode ? "a pose or description..." : t("Write a message...")}
+                value={imageGenMode ? input.replace(/^Show me\s*/i, "") : input}
+                onChange={(e) => {
+                  if (imageGenMode) {
+                    setInput(`Show me ${e.target.value}`);
+                  } else {
+                    setInput(e.target.value);
+                  }
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && !e.shiftKey) {
+                    e.preventDefault();
+                    handleSend();
+                  }
+                }}
+              />
+            </div>
 
             {/* Bottom row: icon buttons (left) + send button (right) */}
             <div className="flex items-center justify-between px-3 pb-3 pt-1">
               <div className="flex items-center gap-2">
-                {/* Generate Image — links to generate page */}
-                <Link
-                  href={`/generate-image/${characterId}`}
-                  className="flex h-11 w-11 items-center justify-center rounded-full bg-white/[0.08] text-white/50 transition-colors hover:bg-white/[0.14] hover:text-white/80"
-                >
-                  <span className="relative">
-                    <ImageIcon className="h-5 w-5" />
-                    <Sparkles className="absolute -right-1 -top-1 h-2.5 w-2.5 text-yellow-400" />
-                  </span>
-                </Link>
-                {/* Generate Video — visible dark circle */}
+                {/* Generate Image button — toggles image gen mode */}
+                <div className="flex items-center">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (imageGenMode) {
+                        deactivateImageGenMode();
+                      } else {
+                        activateImageGenMode();
+                      }
+                    }}
+                    className={`flex h-11 w-11 items-center justify-center rounded-full transition-all ${
+                      imageGenMode
+                        ? "border-2 border-pink-500 bg-pink-500/20 text-pink-400"
+                        : "bg-white/[0.08] text-white/50 hover:bg-white/[0.14] hover:text-white/80"
+                    }`}
+                  >
+                    <span className="relative">
+                      <ImageIcon className="h-5 w-5" />
+                      <Sparkles className="absolute -right-1 -top-1 h-2.5 w-2.5 text-yellow-400" />
+                    </span>
+                  </button>
+                  {/* X button to close image gen mode — appears next to the image button */}
+                  {imageGenMode && (
+                    <button
+                      type="button"
+                      onClick={deactivateImageGenMode}
+                      className="ml-1 flex h-7 w-7 items-center justify-center rounded-full bg-white/[0.08] text-white/40 transition-colors hover:bg-white/[0.14] hover:text-white/70"
+                    >
+                      <X className="h-3.5 w-3.5" />
+                    </button>
+                  )}
+                </div>
+
+                {/* Generate Video */}
                 <button
                   type="button"
                   className="flex h-11 w-11 items-center justify-center rounded-full bg-white/[0.08] text-white/50 transition-colors hover:bg-white/[0.14] hover:text-white/80"
@@ -373,13 +534,21 @@ export function Dialog({
                 </button>
               </div>
 
-              {/* Send button — gradient circle, slightly larger */}
+              {/* Send / Generate button */}
               <button
                 type="submit"
-                disabled={!input.trim()}
-                className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-gradient-to-r from-pink-500 to-purple-500 text-white shadow-lg shadow-pink-500/25 transition-all disabled:opacity-25 hover:from-pink-600 hover:to-purple-600"
+                disabled={!input.trim() || isGeneratingImage}
+                className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-white shadow-lg transition-all disabled:opacity-25 ${
+                  imageGenMode
+                    ? "bg-gradient-to-r from-pink-500 to-purple-500 shadow-pink-500/25 hover:from-pink-600 hover:to-purple-600"
+                    : "bg-gradient-to-r from-pink-500 to-purple-500 shadow-pink-500/25 hover:from-pink-600 hover:to-purple-600"
+                }`}
               >
-                <Send className="h-[18px] w-[18px]" />
+                {isGeneratingImage ? (
+                  <Spinner className="h-4 w-4" />
+                ) : (
+                  <Send className="h-[18px] w-[18px]" />
+                )}
               </button>
             </div>
           </form>
