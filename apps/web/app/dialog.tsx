@@ -252,7 +252,14 @@ export function Dialog({
     setImageGenMode(true);
     setInput("Show me ");
     setShowSuggestions(true);
-    setTimeout(() => inputRef.current?.focus(), 50);
+    setTimeout(() => {
+      inputRef.current?.focus();
+      // Place cursor at end
+      if (inputRef.current) {
+        inputRef.current.selectionStart = inputRef.current.value.length;
+        inputRef.current.selectionEnd = inputRef.current.value.length;
+      }
+    }, 50);
   };
 
   const deactivateImageGenMode = () => {
@@ -398,18 +405,18 @@ export function Dialog({
       <div className="shrink-0 px-8 pb-5 pt-2 lg:px-12">
         {/* ── Pose suggestions bar (visible in image gen mode) ── */}
         {imageGenMode && showSuggestions && (
-          <div className="mb-2">
-            <div className="flex items-center gap-3 overflow-x-auto pb-1 scrollbar-hide">
+          <div className="mb-3">
+            <div className="flex items-center gap-4 overflow-x-auto pb-1 scrollbar-hide">
               {/* Dice / Random button */}
               <button
                 type="button"
                 onClick={handleRandomPose}
-                className="flex shrink-0 flex-col items-center gap-1"
+                className="flex shrink-0 flex-col items-center gap-1.5"
               >
-                <div className="flex h-[52px] w-[52px] items-center justify-center rounded-xl border border-white/10 bg-white/[0.06] transition-colors hover:bg-white/[0.12]">
-                  <Dices className="h-5 w-5 text-white/60" />
+                <div className="flex h-[80px] w-[72px] items-center justify-center rounded-xl border border-white/10 bg-white/[0.06] transition-colors hover:bg-white/[0.12]">
+                  <Dices className="h-7 w-7 text-white/60" />
                 </div>
-                <span className="text-[10px] text-white/40">Random</span>
+                <span className="text-[11px] text-white/40">Random</span>
               </button>
 
               {/* Pose thumbnails */}
@@ -418,12 +425,12 @@ export function Dialog({
                   key={pose.label}
                   type="button"
                   onClick={() => handlePoseSuggestionClick(pose.promptText)}
-                  className="flex shrink-0 flex-col items-center gap-1"
+                  className="flex shrink-0 flex-col items-center gap-1.5"
                 >
-                  <div className="flex h-[52px] w-[52px] items-center justify-center overflow-hidden rounded-xl border border-white/10 bg-white/[0.06] transition-colors hover:bg-white/[0.12]">
-                    <span className="text-lg text-white/30">{pose.label[0]}</span>
+                  <div className="flex h-[80px] w-[72px] items-center justify-center overflow-hidden rounded-xl border border-white/10 bg-white/[0.06] transition-colors hover:bg-white/[0.12]">
+                    <span className="text-2xl text-white/30">{pose.label[0]}</span>
                   </div>
-                  <span className="text-[10px] text-white/40">{pose.label}</span>
+                  <span className="text-[11px] text-white/40">{pose.label}</span>
                 </button>
               ))}
             </div>
@@ -432,7 +439,7 @@ export function Dialog({
             <button
               type="button"
               onClick={() => setShowSuggestions(false)}
-              className="mt-1 flex items-center gap-1 text-[11px] text-white/30 transition-colors hover:text-white/50"
+              className="mt-2 flex items-center gap-1 text-[11px] text-white/30 transition-colors hover:text-white/50"
             >
               <span>▸</span> Hide suggestions
             </button>
@@ -455,72 +462,50 @@ export function Dialog({
         <div className="overflow-hidden rounded-2xl border border-white/[0.08] bg-white/[0.06]">
           {/* Text input row */}
           <form onSubmit={handleSend}>
-            {/* Input with "Show me" label when in image gen mode */}
-            <div className="flex items-center">
-              {imageGenMode && (
-                <span className="shrink-0 pl-5 pt-0.5 text-[15px] font-medium text-pink-400/80">
-                  Show me
-                </span>
-              )}
-              <input
-                ref={inputRef}
-                className="w-full border-0 bg-transparent px-5 pb-2 pt-4 text-[15px] text-white placeholder-white/30 outline-none ring-0 focus:outline-none focus:ring-0"
-                style={{ boxShadow: "none" }}
-                autoFocus
-                placeholder={imageGenMode ? "a pose or description..." : t("Write a message...")}
-                value={imageGenMode ? input.replace(/^Show me\s*/i, "") : input}
-                onChange={(e) => {
-                  if (imageGenMode) {
-                    setInput(`Show me ${e.target.value}`);
-                  } else {
-                    setInput(e.target.value);
-                  }
-                }}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" && !e.shiftKey) {
-                    e.preventDefault();
-                    handleSend();
-                  }
-                }}
-              />
-            </div>
+            <input
+              ref={inputRef}
+              className="w-full border-0 bg-transparent px-5 pb-2 pt-4 text-[15px] text-white placeholder-white/30 outline-none ring-0 focus:outline-none focus:ring-0"
+              style={{ boxShadow: "none" }}
+              autoFocus
+              placeholder={t("Write a message...")}
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && !e.shiftKey) {
+                  e.preventDefault();
+                  handleSend();
+                }
+              }}
+            />
 
             {/* Bottom row: icon buttons (left) + send button (right) */}
             <div className="flex items-center justify-between px-3 pb-3 pt-1">
               <div className="flex items-center gap-2">
-                {/* Generate Image button — toggles image gen mode */}
-                <div className="flex items-center">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      if (imageGenMode) {
-                        deactivateImageGenMode();
-                      } else {
-                        activateImageGenMode();
-                      }
-                    }}
-                    className={`flex h-11 w-11 items-center justify-center rounded-full transition-all ${
-                      imageGenMode
-                        ? "border-2 border-pink-500 bg-pink-500/20 text-pink-400"
-                        : "bg-white/[0.08] text-white/50 hover:bg-white/[0.14] hover:text-white/80"
-                    }`}
-                  >
+                {/* Generate Image button — X overlaid inside when active */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (imageGenMode) {
+                      deactivateImageGenMode();
+                    } else {
+                      activateImageGenMode();
+                    }
+                  }}
+                  className={`relative flex h-11 w-11 items-center justify-center rounded-full transition-all ${
+                    imageGenMode
+                      ? "border-2 border-pink-500 bg-pink-500/20 text-pink-400"
+                      : "bg-white/[0.08] text-white/50 hover:bg-white/[0.14] hover:text-white/80"
+                  }`}
+                >
+                  {imageGenMode ? (
+                    <X className="h-5 w-5" />
+                  ) : (
                     <span className="relative">
                       <ImageIcon className="h-5 w-5" />
                       <Sparkles className="absolute -right-1 -top-1 h-2.5 w-2.5 text-yellow-400" />
                     </span>
-                  </button>
-                  {/* X button to close image gen mode — appears next to the image button */}
-                  {imageGenMode && (
-                    <button
-                      type="button"
-                      onClick={deactivateImageGenMode}
-                      className="ml-1 flex h-7 w-7 items-center justify-center rounded-full bg-white/[0.08] text-white/40 transition-colors hover:bg-white/[0.14] hover:text-white/70"
-                    >
-                      <X className="h-3.5 w-3.5" />
-                    </button>
                   )}
-                </div>
+                </button>
 
                 {/* Generate Video */}
                 <button
@@ -538,11 +523,7 @@ export function Dialog({
               <button
                 type="submit"
                 disabled={!input.trim() || isGeneratingImage}
-                className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-white shadow-lg transition-all disabled:opacity-25 ${
-                  imageGenMode
-                    ? "bg-gradient-to-r from-pink-500 to-purple-500 shadow-pink-500/25 hover:from-pink-600 hover:to-purple-600"
-                    : "bg-gradient-to-r from-pink-500 to-purple-500 shadow-pink-500/25 hover:from-pink-600 hover:to-purple-600"
-                }`}
+                className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-gradient-to-r from-pink-500 to-purple-500 text-white shadow-lg shadow-pink-500/25 transition-all disabled:opacity-25 hover:from-pink-600 hover:to-purple-600"
               >
                 {isGeneratingImage ? (
                   <Spinner className="h-4 w-4" />
