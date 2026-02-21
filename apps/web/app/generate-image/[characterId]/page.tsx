@@ -15,6 +15,7 @@ import {
   LayoutGrid,
   Plus,
   Loader2,
+  Dices,
 } from "lucide-react";
 import { toast } from "sonner";
 import { useConvexAuth } from "convex/react";
@@ -156,13 +157,13 @@ export default function GenerateImagePage() {
 
   const generateImage = useAction(api.runpodImageGen.generateImage);
 
-  // Pick a random prompt once on mount
-  const randomPrompt = useRef(
-    RANDOM_PROMPTS[Math.floor(Math.random() * RANDOM_PROMPTS.length)],
+  // Pick a random prompt on mount and pre-fill the textarea with it
+  const initialPrompt = useRef(
+    RANDOM_PROMPTS[Math.floor(Math.random() * RANDOM_PROMPTS.length)] || RANDOM_PROMPTS[0] || "",
   ).current;
 
   const [activeCategory, setActiveCategory] = useState<typeof CATEGORIES[number]["key"]>("outfit");
-  const [prompt, setPrompt] = useState("");
+  const [prompt, setPrompt] = useState(initialPrompt);
   const [isFocused, setIsFocused] = useState(false);
   const [selectedCount, setSelectedCount] = useState(1);
   const [selectedSuggestion, setSelectedSuggestion] = useState<string | null>(null);
@@ -171,9 +172,11 @@ export default function GenerateImagePage() {
 
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-  // The display text: user's typed prompt, or a random suggestion as placeholder
-  const displayText = prompt || "";
-  const placeholderText = randomPrompt;
+  const handleRollDice = () => {
+    const otherPrompts = RANDOM_PROMPTS.filter((p) => p !== prompt);
+    const next = otherPrompts[Math.floor(Math.random() * otherPrompts.length)] || RANDOM_PROMPTS[0] || "";
+    setPrompt(next);
+  };
 
   // Get suggestions for active category (DB or placeholder)
   const currentSuggestions = useMemo(() => {
@@ -198,7 +201,7 @@ export default function GenerateImagePage() {
   };
 
   const handleGenerate = async () => {
-    const finalPrompt = prompt || randomPrompt || "";
+    const finalPrompt = prompt || "";
     if (!finalPrompt.trim()) {
       toast.error("Please enter a prompt or select a suggestion first.");
       return;
@@ -285,28 +288,41 @@ export default function GenerateImagePage() {
           {/* ── Prompt text area — candy.ai style ── */}
           <div
             onClick={handlePromptAreaClick}
-            className={`relative flex h-[200px] flex-1 cursor-text rounded-xl border bg-[#1a1a2e] transition-colors ${
+            className={`relative flex h-[200px] flex-1 cursor-text overflow-hidden rounded-xl border transition-all ${
               isFocused
                 ? "border-purple-500/60 shadow-[0_0_0_1px_rgba(168,85,247,0.3)]"
                 : "border-white/[0.08] hover:border-white/[0.15]"
             }`}
+            style={{ background: "#1a1a2e" }}
           >
             {/* Edit icon — top-left inside the area */}
-            <div className="absolute left-3.5 top-3.5">
+            <div className="absolute left-3.5 top-3.5 z-10">
               <Pen className="h-4 w-4 text-white/25" />
             </div>
 
-            {/* Textarea — fills the box, offset for icon */}
+            {/* Textarea */}
             <textarea
               ref={textareaRef}
-              className="h-full w-full resize-none bg-transparent py-3.5 pl-10 pr-4 text-[14px] leading-relaxed text-white/80 placeholder-white/30 outline-none"
-              style={{ boxShadow: "none", caretColor: "auto" }}
-              value={displayText}
-              placeholder={placeholderText}
+              className="h-full w-full resize-none border-0 bg-transparent py-3.5 pl-10 pr-4 text-[14px] leading-relaxed text-white/80 outline-none ring-0 focus:border-0 focus:outline-none focus:ring-0"
+              style={{ boxShadow: "none", caretColor: "auto", border: "none", outline: "none" }}
+              value={prompt}
               onChange={(e) => setPrompt(e.target.value)}
               onFocus={() => setIsFocused(true)}
               onBlur={() => setIsFocused(false)}
             />
+
+            {/* Dice button — bottom-right corner */}
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                handleRollDice();
+              }}
+              className="absolute bottom-3 right-3 z-10 flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-pink-500/30 to-purple-500/30 text-white/50 transition-all hover:from-pink-500/50 hover:to-purple-500/50 hover:text-white/80"
+              title="Random prompt"
+            >
+              <Dices className="h-4 w-4" />
+            </button>
           </div>
         </div>
 
