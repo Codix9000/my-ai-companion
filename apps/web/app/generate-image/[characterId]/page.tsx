@@ -198,7 +198,7 @@ export default function GenerateImagePage() {
   };
 
   const handleGenerate = async () => {
-    const finalPrompt = prompt || randomPrompt;
+    const finalPrompt = prompt || randomPrompt || "";
     if (!finalPrompt.trim()) {
       toast.error("Please enter a prompt or select a suggestion first.");
       return;
