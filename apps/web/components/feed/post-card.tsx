@@ -120,7 +120,7 @@ const PostCard = ({
     <Card className="w-full overflow-hidden rounded-xl border bg-card">
       {/* Header - Author Info */}
       <div className="flex items-center gap-4 p-4">
-        <Link href={`/character/${author?.id}`}>
+        <Link href={`/character/${author?.id}`} className="shrink-0">
           <Avatar className="h-14 w-14 cursor-pointer ring-2 ring-pink-500/30 transition-all hover:ring-pink-500/60 sm:h-16 sm:w-16">
             <AvatarImage src={author?.avatarUrl || ""} alt={author?.name || ""} />
             <AvatarFallback className="bg-gradient-to-br from-pink-400 to-purple-500 text-xl text-white sm:text-2xl">
