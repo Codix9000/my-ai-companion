@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useRef } from "react";
 import { useQuery, useAction } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import { Id } from "../../../convex/_generated/dataModel";
@@ -9,7 +9,6 @@ import Image from "next/image";
 import {
   Sparkles,
   Pen,
-  Copy,
   Heart,
   Grid2x2,
   Grid3x3,
@@ -21,6 +20,14 @@ import { toast } from "sonner";
 import { useConvexAuth } from "convex/react";
 import { SignIn, useUser } from "@clerk/nextjs";
 import Spinner from "@repo/ui/src/components/spinner";
+
+// ── Random prompt suggestions (shown by default in the text area) ──
+const RANDOM_PROMPTS = [
+  "Sitting down on a sandy beach, wearing a thong bikini, facing the camera, waves and palm trees in the background.",
+  "In a fancy restaurant, wearing a pencil dress, sitting by the table, dim lights, looking seductively at the viewer.",
+  "Leaning against a sports car, wearing a tight mini-skirt, posing with a flirty smile",
+  "Standing in a doorway, wearing lingerie, looking flirtatious, smiling, her silhouette illuminated by soft lighting",
+];
 
 // ── Suggestion categories ──
 const CATEGORIES = [
@@ -149,17 +156,24 @@ export default function GenerateImagePage() {
 
   const generateImage = useAction(api.runpodImageGen.generateImage);
 
+  // Pick a random prompt once on mount
+  const randomPrompt = useRef(
+    RANDOM_PROMPTS[Math.floor(Math.random() * RANDOM_PROMPTS.length)],
+  ).current;
+
   const [activeCategory, setActiveCategory] = useState<typeof CATEGORIES[number]["key"]>("outfit");
   const [prompt, setPrompt] = useState("");
-  const [isEditingPrompt, setIsEditingPrompt] = useState(false);
+  const [isFocused, setIsFocused] = useState(false);
   const [selectedCount, setSelectedCount] = useState(1);
   const [selectedSuggestion, setSelectedSuggestion] = useState<string | null>(null);
   const [lightboxImage, setLightboxImage] = useState<string | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
 
-  // Initialize prompt from character's imagePromptInstructions
-  const defaultPrompt = (character as any)?.imagePromptInstructions || "";
-  const displayPrompt = prompt || defaultPrompt || "Describe the image you want to generate...";
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  // The display text: user's typed prompt, or a random suggestion as placeholder
+  const displayText = prompt || "";
+  const placeholderText = randomPrompt;
 
   // Get suggestions for active category (DB or placeholder)
   const currentSuggestions = useMemo(() => {
@@ -183,13 +197,8 @@ export default function GenerateImagePage() {
     setPrompt(suggestion.promptText);
   };
 
-  const handleCopyPrompt = () => {
-    navigator.clipboard.writeText(prompt || defaultPrompt);
-    toast.success("Prompt copied to clipboard");
-  };
-
   const handleGenerate = async () => {
-    const finalPrompt = prompt || defaultPrompt;
+    const finalPrompt = prompt || randomPrompt;
     if (!finalPrompt.trim()) {
       toast.error("Please enter a prompt or select a suggestion first.");
       return;
@@ -214,6 +223,10 @@ export default function GenerateImagePage() {
     }
   };
 
+  const handlePromptAreaClick = () => {
+    textareaRef.current?.focus();
+  };
+
   if (!isAuthenticated || !user) {
     return (
       <div className="flex h-[100vh] w-full items-start justify-center py-32">
@@ -233,9 +246,9 @@ export default function GenerateImagePage() {
   return (
     <div className="flex h-[calc(100vh-4rem)] w-full overflow-hidden">
       {/* ══════════════════════════════════════════════════
-          LEFT COLUMN — Generate Image
+          LEFT COLUMN — Generate Image (~60%)
          ══════════════════════════════════════════════════ */}
-      <div className="flex-1 overflow-y-auto px-6 py-6 lg:px-10 lg:py-8">
+      <div className="flex min-w-0 flex-[6] flex-col overflow-y-auto px-6 py-6 lg:px-10 lg:py-8">
         {/* Title */}
         <div className="mb-8 flex items-center gap-3">
           <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-gradient-to-br from-pink-500/20 to-purple-500/20">
@@ -244,17 +257,17 @@ export default function GenerateImagePage() {
           <h1 className="text-2xl font-bold text-white">Generate Image</h1>
         </div>
 
-        {/* Character card + prompt area */}
-        <div className="mb-8 flex gap-5">
+        {/* Character card + prompt area — side by side, same height */}
+        <div className="mb-8 flex gap-4">
           {/* Character image card */}
-          <div className="relative h-[180px] w-[150px] shrink-0 overflow-hidden rounded-xl">
+          <div className="relative h-[200px] w-[160px] shrink-0 overflow-hidden rounded-xl">
             {character.cardImageUrl ? (
               <Image
                 src={character.cardImageUrl}
                 alt={character.name || "Character"}
                 fill
                 className="object-cover"
-                sizes="150px"
+                sizes="160px"
               />
             ) : (
               <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-pink-500/30 to-purple-500/30">
@@ -269,45 +282,31 @@ export default function GenerateImagePage() {
             </div>
           </div>
 
-          {/* Prompt text area */}
-          <div className="flex flex-1 flex-col">
-            <div className="flex items-start gap-2">
-              <button
-                onClick={() => setIsEditingPrompt(true)}
-                className="mt-0.5 shrink-0 rounded-md p-1 text-white/40 transition-colors hover:bg-white/10 hover:text-white/70"
-              >
-                <Pen className="h-4 w-4" />
-              </button>
-              <div className="flex-1">
-                {isEditingPrompt ? (
-                  <textarea
-                    className="w-full resize-none rounded-lg border border-white/10 bg-white/[0.04] px-3 py-2 text-[14px] leading-relaxed text-white/80 outline-none focus:border-pink-500/40"
-                    style={{ boxShadow: "none" }}
-                    rows={4}
-                    value={prompt || defaultPrompt}
-                    onChange={(e) => setPrompt(e.target.value)}
-                    onBlur={() => setIsEditingPrompt(false)}
-                    autoFocus
-                  />
-                ) : (
-                  <p
-                    className="cursor-text text-[14px] leading-relaxed text-white/60"
-                    onClick={() => setIsEditingPrompt(true)}
-                  >
-                    {displayPrompt}
-                  </p>
-                )}
-              </div>
+          {/* ── Prompt text area — candy.ai style ── */}
+          <div
+            onClick={handlePromptAreaClick}
+            className={`relative flex h-[200px] flex-1 cursor-text rounded-xl border bg-[#1a1a2e] transition-colors ${
+              isFocused
+                ? "border-purple-500/60 shadow-[0_0_0_1px_rgba(168,85,247,0.3)]"
+                : "border-white/[0.08] hover:border-white/[0.15]"
+            }`}
+          >
+            {/* Edit icon — top-left inside the area */}
+            <div className="absolute left-3.5 top-3.5">
+              <Pen className="h-4 w-4 text-white/25" />
             </div>
-            {/* Copy button */}
-            <div className="mt-3 flex justify-end">
-              <button
-                onClick={handleCopyPrompt}
-                className="rounded-md p-1.5 text-white/30 transition-colors hover:bg-white/10 hover:text-white/60"
-              >
-                <Copy className="h-4 w-4" />
-              </button>
-            </div>
+
+            {/* Textarea — fills the box, offset for icon */}
+            <textarea
+              ref={textareaRef}
+              className="h-full w-full resize-none bg-transparent py-3.5 pl-10 pr-4 text-[14px] leading-relaxed text-white/80 placeholder-white/30 outline-none"
+              style={{ boxShadow: "none", caretColor: "auto" }}
+              value={displayText}
+              placeholder={placeholderText}
+              onChange={(e) => setPrompt(e.target.value)}
+              onFocus={() => setIsFocused(true)}
+              onBlur={() => setIsFocused(false)}
+            />
           </div>
         </div>
 
@@ -391,7 +390,7 @@ export default function GenerateImagePage() {
         <button
           onClick={handleGenerate}
           disabled={isGenerating}
-          className="flex w-full max-w-[520px] items-center justify-center gap-2.5 rounded-xl bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 px-6 py-4 text-[15px] font-bold text-white shadow-xl shadow-purple-500/20 transition-all hover:shadow-2xl hover:shadow-purple-500/30 disabled:opacity-60 disabled:cursor-not-allowed"
+          className="flex w-full max-w-[520px] items-center justify-center gap-2.5 rounded-xl bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 px-6 py-4 text-[15px] font-bold text-white shadow-xl shadow-purple-500/20 transition-all hover:shadow-2xl hover:shadow-purple-500/30 disabled:cursor-not-allowed disabled:opacity-60"
         >
           {isGenerating ? (
             <>
@@ -408,9 +407,9 @@ export default function GenerateImagePage() {
       </div>
 
       {/* ══════════════════════════════════════════════════
-          RIGHT COLUMN — Generated Images
+          RIGHT COLUMN — Generated Images (~40%)
          ══════════════════════════════════════════════════ */}
-      <div className="hidden w-[400px] shrink-0 flex-col border-l border-white/[0.08] lg:flex">
+      <div className="hidden min-w-0 flex-[4] flex-col border-l border-white/[0.08] lg:flex">
         <div className="px-6 pt-8">
           <h2 className="text-xl font-bold text-white">Generated Images</h2>
           <p className="mt-2 text-[13px] leading-relaxed text-white/35">
@@ -446,9 +445,8 @@ export default function GenerateImagePage() {
                     alt={img.prompt || "Generated image"}
                     fill
                     className="object-cover transition-transform duration-200 group-hover:scale-105"
-                    sizes="180px"
+                    sizes="280px"
                   />
-                  {/* Hover overlay */}
                   <div className="absolute inset-0 bg-black/0 transition-colors group-hover:bg-black/20" />
                 </div>
               ))}
