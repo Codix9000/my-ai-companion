@@ -22,6 +22,34 @@ interface CharacterInfoPanelProps {
   age?: number;
 }
 
+// ─── Single Slide renderer ──────────────────────────────────────
+function SlideContent({
+  item,
+  characterName,
+}: {
+  item: { mediaUrl: string; mediaType: string; caption?: string };
+  characterName: string;
+}) {
+  return item.mediaType === "video" ? (
+    <video
+      src={item.mediaUrl}
+      className="h-full w-full object-cover"
+      muted
+      playsInline
+      autoPlay
+      loop
+    />
+  ) : (
+    <Image
+      src={item.mediaUrl}
+      alt={item.caption || characterName}
+      fill
+      className="object-cover"
+      sizes="320px"
+    />
+  );
+}
+
 // ─── Highlights Carousel ─────────────────────────────────────────
 function HighlightsCarousel({
   characterId,
@@ -37,85 +65,100 @@ function HighlightsCarousel({
   });
 
   const [currentIdx, setCurrentIdx] = useState(0);
-  const [isTransitioning, setIsTransitioning] = useState(false);
+  const [nextIdx, setNextIdx] = useState<number | null>(null);
   const [slideDir, setSlideDir] = useState<"left" | "right">("left");
-  const timerRef = useRef<NodeJS.Timeout | null>(null);
+  const [isAnimating, setIsAnimating] = useState(false);
+  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const items = highlights && highlights.length > 0 ? highlights : null;
   const total = items ? items.length : 1;
 
-  const slideTo = useCallback(
+  const goTo = useCallback(
     (direction: "left" | "right") => {
-      if (isTransitioning || total <= 1) return;
+      if (isAnimating || total <= 1) return;
+      const target =
+        direction === "left"
+          ? (currentIdx + 1) % total
+          : (currentIdx - 1 + total) % total;
+
       setSlideDir(direction);
-      setIsTransitioning(true);
-      setTimeout(() => {
-        setCurrentIdx((prev) =>
-          direction === "left" ? (prev + 1) % total : (prev - 1 + total) % total,
-        );
-        setIsTransitioning(false);
-      }, 350);
+      setNextIdx(target);
+      // Force a reflow before starting the animation
+      requestAnimationFrame(() => {
+        setIsAnimating(true);
+      });
     },
-    [isTransitioning, total],
+    [isAnimating, total, currentIdx],
   );
 
-  // Auto-advance
+  const handleTransitionEnd = () => {
+    if (nextIdx !== null) {
+      setCurrentIdx(nextIdx);
+    }
+    setNextIdx(null);
+    setIsAnimating(false);
+  };
+
+  // Auto-advance every 8 seconds
   useEffect(() => {
     if (total <= 1) return;
-    timerRef.current = setInterval(() => slideTo("left"), 4000);
+    timerRef.current = setInterval(() => goTo("left"), 8000);
     return () => {
       if (timerRef.current) clearInterval(timerRef.current);
     };
-  }, [total, slideTo]);
+  }, [total, goTo]);
 
   const handlePrev = () => {
     if (timerRef.current) clearInterval(timerRef.current);
-    slideTo("right");
+    goTo("right");
   };
 
   const handleNext = () => {
     if (timerRef.current) clearInterval(timerRef.current);
-    slideTo("left");
+    goTo("left");
   };
 
-  // Render content
   const currentItem = items ? items[currentIdx] : null;
+  const nextItem = nextIdx !== null && items ? items[nextIdx] : null;
+
+  // Slide positions:
+  // Current slide: starts at 0, moves to -100% (left) or +100% (right)
+  // Next slide: starts at +100% (left) or -100% (right), moves to 0
+  const currentTransform = isAnimating
+    ? slideDir === "left"
+      ? "translateX(-100%)"
+      : "translateX(100%)"
+    : "translateX(0)";
+
+  const nextTransform = isAnimating
+    ? "translateX(0)"
+    : slideDir === "left"
+      ? "translateX(100%)"
+      : "translateX(-100%)";
 
   return (
     <div className="group relative w-full overflow-hidden" style={{ aspectRatio: "3/4" }}>
       {currentItem ? (
-        <div className="relative h-full w-full">
+        <>
           {/* Current slide */}
           <div
-            className="absolute inset-0 transition-transform duration-350 ease-in-out"
-            style={{
-              transform: isTransitioning
-                ? slideDir === "left"
-                  ? "translateX(-100%)"
-                  : "translateX(100%)"
-                : "translateX(0)",
-            }}
+            className="absolute inset-0 transition-transform duration-500 ease-in-out"
+            style={{ transform: currentTransform }}
+            onTransitionEnd={handleTransitionEnd}
           >
-            {currentItem.mediaType === "video" ? (
-              <video
-                src={currentItem.mediaUrl}
-                className="h-full w-full object-cover"
-                muted
-                playsInline
-                autoPlay
-                loop
-              />
-            ) : (
-              <Image
-                src={currentItem.mediaUrl}
-                alt={currentItem.caption || characterName}
-                fill
-                className="object-cover"
-                sizes="320px"
-              />
-            )}
+            <SlideContent item={currentItem} characterName={characterName} />
           </div>
-        </div>
+
+          {/* Next slide (only rendered during transition) */}
+          {nextItem && (
+            <div
+              className="absolute inset-0 transition-transform duration-500 ease-in-out"
+              style={{ transform: nextTransform }}
+            >
+              <SlideContent item={nextItem} characterName={characterName} />
+            </div>
+          )}
+        </>
       ) : fallbackImageUrl ? (
         <Link href={`/character/${characterId}`}>
           <Image
@@ -132,7 +175,7 @@ function HighlightsCarousel({
         </div>
       )}
 
-      {/* Navigation arrows — shown on hover when >1 slide */}
+      {/* Navigation arrows */}
       {total > 1 && (
         <>
           <button
