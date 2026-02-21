@@ -4,11 +4,6 @@ import { useState } from "react";
 import { useQuery } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import { Id } from "../../convex/_generated/dataModel";
-import {
-  Avatar,
-  AvatarFallback,
-  AvatarImage,
-} from "@repo/ui/src/components/avatar";
 import { X, ChevronLeft, ChevronRight } from "lucide-react";
 import Image from "next/image";
 import { formatDistanceToNow } from "date-fns";
@@ -78,12 +73,22 @@ function StoryViewer({
 
         {/* Header */}
         <div className="flex items-center gap-3 px-4 py-3">
-          <Avatar className="h-8 w-8 ring-2 ring-pink-500/50">
-            <AvatarImage src={characterImage} alt={characterName} className="object-cover" />
-            <AvatarFallback className="bg-gradient-to-br from-pink-400 to-purple-500 text-xs text-white">
-              {characterName[0]}
-            </AvatarFallback>
-          </Avatar>
+          <div className="relative h-8 w-8 shrink-0 overflow-hidden rounded-full ring-2 ring-pink-500/50">
+            {characterImage ? (
+              <Image
+                src={characterImage}
+                alt={characterName}
+                fill
+                className="object-cover object-center"
+                sizes="64px"
+                quality={90}
+              />
+            ) : (
+              <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-pink-400 to-purple-500 text-xs text-white">
+                {characterName[0]}
+              </div>
+            )}
+          </div>
           <div className="flex-1">
             <p className="text-sm font-semibold text-white">{characterName}</p>
             {post && (
@@ -190,16 +195,22 @@ export default function StoryBar({ characters }: StoryBarProps) {
               className="flex shrink-0 flex-col items-center gap-2"
             >
               <div className="rounded-full bg-gradient-to-tr from-pink-500 via-purple-500 to-pink-400 p-[3px]">
-                <Avatar className="h-20 w-20 border-[3px] border-background sm:h-24 sm:w-24">
-                  <AvatarImage
-                    src={char.cardImageUrl}
-                    alt={char.name}
-                    className="object-cover"
-                  />
-                  <AvatarFallback className="bg-gradient-to-br from-pink-400 to-purple-500 text-2xl text-white sm:text-3xl">
-                    {char.name[0]}
-                  </AvatarFallback>
-                </Avatar>
+                <div className="relative h-20 w-20 overflow-hidden rounded-full border-[3px] border-background sm:h-24 sm:w-24">
+                  {char.cardImageUrl ? (
+                    <Image
+                      src={char.cardImageUrl}
+                      alt={char.name}
+                      fill
+                      className="object-cover object-center"
+                      sizes="(max-width: 640px) 160px, 192px"
+                      quality={90}
+                    />
+                  ) : (
+                    <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-pink-400 to-purple-500 text-2xl text-white sm:text-3xl">
+                      {char.name[0]}
+                    </div>
+                  )}
+                </div>
               </div>
               <span className="max-w-[6rem] truncate text-sm font-medium text-foreground/90">
                 {char.name}

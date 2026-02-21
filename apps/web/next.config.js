@@ -28,6 +28,12 @@ const nextConfig = {
       },
       {
         protocol: "https",
+        hostname: "*.convex.site",
+        port: "",
+        pathname: "/**",
+      },
+      {
+        protocol: "https",
         hostname: "openroleplay.ai",
         port: "",
         pathname: "/**",

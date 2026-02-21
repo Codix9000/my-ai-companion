@@ -4,11 +4,6 @@ import { Heart, Lock, Play } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
-import {
-  Avatar,
-  AvatarFallback,
-  AvatarImage,
-} from "@repo/ui/src/components/avatar";
 import { Button } from "@repo/ui/src/components";
 import { Card } from "@repo/ui/src/components";
 import { Id } from "../../convex/_generated/dataModel";
@@ -48,7 +43,13 @@ const PostCard = ({
   const [localLikesCount, setLocalLikesCount] = useState(likesCount);
   const [videoEnded, setVideoEnded] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
+  const [avatarError, setAvatarError] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
+
+  // Reset avatar error when author/URL changes
+  useEffect(() => {
+    setAvatarError(false);
+  }, [author?.avatarUrl]);
   const containerRef = useRef<HTMLDivElement>(null);
 
   const handleLikeToggle = () => {
@@ -121,12 +122,23 @@ const PostCard = ({
       {/* Header - Author Info */}
       <div className="flex items-center gap-4 p-4">
         <Link href={`/character/${author?.id}`} className="shrink-0">
-          <Avatar className="h-14 w-14 cursor-pointer ring-2 ring-pink-500/30 transition-all hover:ring-pink-500/60 sm:h-16 sm:w-16">
-            <AvatarImage src={author?.avatarUrl || ""} alt={author?.name || ""} />
-            <AvatarFallback className="bg-gradient-to-br from-pink-400 to-purple-500 text-xl text-white sm:text-2xl">
-              {author?.name?.charAt(0) || "?"}
-            </AvatarFallback>
-          </Avatar>
+          <div className="relative h-14 w-14 shrink-0 cursor-pointer overflow-hidden rounded-full ring-2 ring-pink-500/30 transition-all hover:ring-pink-500/60 sm:h-16 sm:w-16">
+            {author?.avatarUrl && !avatarError ? (
+              <Image
+                src={author.avatarUrl}
+                alt={author?.name || ""}
+                fill
+                className="object-cover object-center"
+                sizes="(max-width: 640px) 112px, 128px"
+                quality={90}
+                onError={() => setAvatarError(true)}
+              />
+            ) : (
+              <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-pink-400 to-purple-500 text-xl text-white sm:text-2xl">
+                {author?.name?.charAt(0) || "?"}
+              </div>
+            )}
+          </div>
         </Link>
         <Link
           href={`/character/${author?.id}`}

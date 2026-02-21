@@ -33,10 +33,17 @@ export const getFeed = query({
 
     const paginatedPosts = await postsQuery.paginate(args.paginationOpts);
 
-    // Join with characters table to get author info
+    // Join with characters table to get author info (resolve storage for full-res avatars)
     const postsWithAuthors = await Promise.all(
       paginatedPosts.page.map(async (post) => {
         const author = await ctx.db.get(post.authorId);
+        let avatarUrl: string | null = null;
+        if (author) {
+          if (author.cardImageStorageId) {
+            avatarUrl = await ctx.storage.getUrl(author.cardImageStorageId);
+          }
+          avatarUrl = avatarUrl ?? author.cardImageUrl ?? null;
+        }
         return {
           ...post,
           author: author
@@ -46,7 +53,7 @@ export const getFeed = query({
                 handle: author.name
                   ? `@${author.name.toLowerCase().replace(/\s+/g, "_")}`
                   : "@unknown",
-                avatarUrl: author.cardImageUrl || null,
+                avatarUrl,
               }
             : null,
         };
@@ -72,6 +79,13 @@ export const getPost = query({
     if (!post) return null;
 
     const author = await ctx.db.get(post.authorId);
+    let avatarUrl: string | null = null;
+    if (author) {
+      if (author.cardImageStorageId) {
+        avatarUrl = await ctx.storage.getUrl(author.cardImageStorageId);
+      }
+      avatarUrl = avatarUrl ?? author.cardImageUrl ?? null;
+    }
     return {
       ...post,
       author: author
@@ -81,7 +95,7 @@ export const getPost = query({
             handle: author.name
               ? `@${author.name.toLowerCase().replace(/\s+/g, "_")}`
               : "@unknown",
-            avatarUrl: author.cardImageUrl || null,
+            avatarUrl,
           }
         : null,
     };
@@ -242,6 +256,13 @@ export const getPostsByAuthor = query({
       .paginate(args.paginationOpts);
 
     const author = await ctx.db.get(args.authorId);
+    let avatarUrl: string | null = null;
+    if (author) {
+      if (author.cardImageStorageId) {
+        avatarUrl = await ctx.storage.getUrl(author.cardImageStorageId);
+      }
+      avatarUrl = avatarUrl ?? author.cardImageUrl ?? null;
+    }
     const authorInfo = author
       ? {
           id: author._id,
@@ -249,7 +270,7 @@ export const getPostsByAuthor = query({
           handle: author.name
             ? `@${author.name.toLowerCase().replace(/\s+/g, "_")}`
             : "@unknown",
-          avatarUrl: author.cardImageUrl || null,
+          avatarUrl,
         }
       : null;
 
