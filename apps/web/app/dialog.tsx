@@ -417,60 +417,86 @@ export function Dialog({
       {/* ── Input Area ── */}
       <div className="shrink-0 px-8 pb-5 pt-2 lg:px-12">
         {/* ── Pose suggestions bar (visible in image gen mode) ── */}
-        {imageGenMode && showSuggestions && (
-          <div className="mb-3">
-            <div className="flex items-center gap-4 overflow-x-auto pb-1 scrollbar-hide">
-              {/* Dice / Random button */}
+        <AnimatePresence mode="wait">
+          {imageGenMode && showSuggestions && (
+            <motion.div
+              key="suggestions-expanded"
+              initial={{ opacity: 0, height: 0, marginBottom: 0 }}
+              animate={{ opacity: 1, height: "auto", marginBottom: 12 }}
+              exit={{ opacity: 0, height: 0, marginBottom: 0 }}
+              transition={{ duration: 0.25, ease: [0.4, 0, 0.2, 1] }}
+              className="overflow-hidden"
+            >
+              <div className="flex items-center gap-4 overflow-x-auto pb-1 scrollbar-hide">
+                {/* Dice / Random button */}
+                <motion.button
+                  type="button"
+                  onClick={handleRandomPose}
+                  className="flex shrink-0 flex-col items-center gap-1.5"
+                  initial={{ opacity: 0, y: -8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.2, delay: 0.05 }}
+                >
+                  <div className="flex h-[80px] w-[72px] items-center justify-center rounded-xl border border-white/10 bg-white/[0.06] transition-colors hover:bg-white/[0.12]">
+                    <Dices className="h-7 w-7 text-white/60" />
+                  </div>
+                  <span className="text-[11px] text-white/40">Random</span>
+                </motion.button>
+
+                {/* Pose thumbnails */}
+                {POSE_SUGGESTIONS.map((pose, i) => (
+                  <motion.button
+                    key={pose.label}
+                    type="button"
+                    onClick={() => handlePoseSuggestionClick(pose.promptText)}
+                    className="flex shrink-0 flex-col items-center gap-1.5"
+                    initial={{ opacity: 0, y: -8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.2, delay: 0.05 + i * 0.03 }}
+                  >
+                    <div className="flex h-[80px] w-[72px] items-center justify-center overflow-hidden rounded-xl border border-white/10 bg-white/[0.06] transition-colors hover:bg-white/[0.12]">
+                      <span className="text-2xl text-white/30">{pose.label[0]}</span>
+                    </div>
+                    <span className="text-[11px] text-white/40">{pose.label}</span>
+                  </motion.button>
+                ))}
+              </div>
+
+              {/* Hide suggestions link */}
+              <motion.button
+                type="button"
+                onClick={() => setShowSuggestions(false)}
+                className="mt-2 flex items-center gap-1 text-[11px] text-white/30 transition-colors hover:text-white/50"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 0.15 }}
+              >
+                <span>▸</span> Hide suggestions
+              </motion.button>
+            </motion.div>
+          )}
+
+          {/* Show suggestions toggle (collapsed) */}
+          {imageGenMode && !showSuggestions && (
+            <motion.div
+              key="suggestions-collapsed"
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: "auto" }}
+              exit={{ opacity: 0, height: 0 }}
+              transition={{ duration: 0.2, ease: [0.4, 0, 0.2, 1] }}
+              className="mb-2 overflow-hidden"
+            >
               <button
                 type="button"
-                onClick={handleRandomPose}
-                className="flex shrink-0 flex-col items-center gap-1.5"
+                onClick={() => setShowSuggestions(true)}
+                className="flex items-center gap-1 text-[11px] text-white/30 transition-colors hover:text-white/50"
               >
-                <div className="flex h-[80px] w-[72px] items-center justify-center rounded-xl border border-white/10 bg-white/[0.06] transition-colors hover:bg-white/[0.12]">
-                  <Dices className="h-7 w-7 text-white/60" />
-                </div>
-                <span className="text-[11px] text-white/40">Random</span>
+                <span>▸</span> Show suggestions
               </button>
+            </motion.div>
+          )}
 
-              {/* Pose thumbnails */}
-              {POSE_SUGGESTIONS.map((pose) => (
-                <button
-                  key={pose.label}
-                  type="button"
-                  onClick={() => handlePoseSuggestionClick(pose.promptText)}
-                  className="flex shrink-0 flex-col items-center gap-1.5"
-                >
-                  <div className="flex h-[80px] w-[72px] items-center justify-center overflow-hidden rounded-xl border border-white/10 bg-white/[0.06] transition-colors hover:bg-white/[0.12]">
-                    <span className="text-2xl text-white/30">{pose.label[0]}</span>
-                  </div>
-                  <span className="text-[11px] text-white/40">{pose.label}</span>
-                </button>
-              ))}
-            </div>
-
-            {/* Hide suggestions link */}
-            <button
-              type="button"
-              onClick={() => setShowSuggestions(false)}
-              className="mt-2 flex items-center gap-1 text-[11px] text-white/30 transition-colors hover:text-white/50"
-            >
-              <span>▸</span> Hide suggestions
-            </button>
-          </div>
-        )}
-
-        {/* Show suggestions toggle (collapsed) */}
-        {imageGenMode && !showSuggestions && (
-          <div className="mb-2">
-            <button
-              type="button"
-              onClick={() => setShowSuggestions(true)}
-              className="flex items-center gap-1 text-[11px] text-white/30 transition-colors hover:text-white/50"
-            >
-              <span>▸</span> Show suggestions
-            </button>
-          </div>
-        )}
+        </AnimatePresence>
 
         <div className="overflow-hidden rounded-2xl border border-white/[0.08] bg-white/[0.06]">
           {/* Text input row */}
@@ -494,8 +520,8 @@ export function Dialog({
             {/* Bottom row: icon buttons (left) + send button (right) */}
             <div className="flex items-center justify-between px-3 pb-3 pt-1">
               <div className="flex items-center gap-2">
-                {/* Generate Image button — when active: wider pill with image+stars + X */}
-                <button
+                {/* Generate Image button — smooth expand/collapse with image+stars + X */}
+                <motion.button
                   type="button"
                   onClick={() => {
                     if (imageGenMode) {
@@ -504,27 +530,40 @@ export function Dialog({
                       activateImageGenMode();
                     }
                   }}
-                  className={`relative flex items-center justify-center gap-2 transition-all ${
+                  animate={{
+                    width: imageGenMode ? 120 : 44,
+                    borderRadius: imageGenMode ? 12 : 22,
+                  }}
+                  transition={{ type: "spring", stiffness: 400, damping: 30 }}
+                  className={`relative flex h-11 items-center justify-center gap-2 overflow-hidden ${
                     imageGenMode
-                      ? "h-11 rounded-xl bg-gradient-to-r from-pink-500 to-purple-500 px-4 text-white shadow-lg shadow-pink-500/25 hover:from-pink-600 hover:to-purple-600"
-                      : "h-11 w-11 rounded-full bg-white/[0.08] text-white/50 hover:bg-white/[0.14] hover:text-white/80"
+                      ? "bg-gradient-to-r from-pink-500 to-purple-500 text-white shadow-lg shadow-pink-500/25 hover:from-pink-600 hover:to-purple-600"
+                      : "bg-white/[0.08] text-white/50 hover:bg-white/[0.14] hover:text-white/80"
                   }`}
                 >
-                  {imageGenMode ? (
-                    <>
-                      <span className="relative flex shrink-0">
-                        <ImageIcon className="h-5 w-5" />
-                        <Sparkles className="absolute -right-1 -top-1 h-2.5 w-2.5 text-yellow-300" />
-                      </span>
-                      <X className="h-5 w-5 shrink-0" />
-                    </>
-                  ) : (
-                    <span className="relative">
-                      <ImageIcon className="h-5 w-5" />
-                      <Sparkles className="absolute -right-1 -top-1 h-2.5 w-2.5 text-yellow-400" />
-                    </span>
-                  )}
-                </button>
+                  <span className="relative flex shrink-0">
+                    <ImageIcon className="h-5 w-5" />
+                    <Sparkles
+                      className={`absolute -right-1 -top-1 h-2.5 w-2.5 ${
+                        imageGenMode ? "text-yellow-300" : "text-yellow-400"
+                      }`}
+                    />
+                  </span>
+                  <AnimatePresence mode="wait">
+                    {imageGenMode && (
+                      <motion.span
+                        key="x-icon"
+                        initial={{ opacity: 0, scale: 0.6 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        exit={{ opacity: 0, scale: 0.6 }}
+                        transition={{ duration: 0.2, ease: [0.4, 0, 0.2, 1] }}
+                        className="flex shrink-0"
+                      >
+                        <X className="h-5 w-5" />
+                      </motion.span>
+                    )}
+                  </AnimatePresence>
+                </motion.button>
 
                 {/* Generate Video */}
                 <button
