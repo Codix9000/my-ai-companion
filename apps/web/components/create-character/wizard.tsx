@@ -3,26 +3,41 @@
 import { useState, useCallback } from "react";
 import { ArrowLeft, ArrowRight, Dices } from "lucide-react";
 import Step1CoreIdentity from "./steps/step1-core-identity";
+import Step2Looks from "./steps/step2-looks";
 
 const TOTAL_STEPS = 5;
 const STEP_LABELS = [
   "Core Identity",
+  "Looks",
   "Personality",
-  "Style & Look",
   "Voice & Chat",
   "Review & Create",
 ];
 
 export interface CharacterDraft {
+  // Step 1
   ethnicity: string | null;
   ageCategory: string | null;
   bodyType: string | null;
+  // Step 2
+  hairStyle: string | null;
+  hairColor: string | null;
+  skinTone: string | null;
+  breastSize: string | null;
+  eyeColor: string | null;
+  makeupIntensity: number;
 }
 
 const INITIAL_DRAFT: CharacterDraft = {
   ethnicity: null,
   ageCategory: null,
   bodyType: null,
+  hairStyle: null,
+  hairColor: null,
+  skinTone: null,
+  breastSize: null,
+  eyeColor: null,
+  makeupIntensity: 30,
 };
 
 export default function CreateCharacterWizard() {
@@ -40,6 +55,9 @@ export default function CreateCharacterWizard() {
     if (step === 1) {
       return !!draft.ethnicity && !!draft.ageCategory && !!draft.bodyType;
     }
+    if (step === 2) {
+      return !!draft.hairStyle && !!draft.hairColor && !!draft.skinTone && !!draft.breastSize && !!draft.eyeColor;
+    }
     return true;
   };
 
@@ -52,14 +70,22 @@ export default function CreateCharacterWizard() {
   };
 
   const handleRandomize = () => {
+    const pick = <T,>(arr: T[]): T => arr[Math.floor(Math.random() * arr.length)]!;
     if (step === 1) {
-      const ethnicities = ["asian", "white", "black", "latina"];
-      const ages = ["young-adult", "early-20s", "mid-20s", "mature", "milf"];
-      const bodies = ["slim", "athletic", "average", "curvy", "voluptuous"];
       updateDraft({
-        ethnicity: ethnicities[Math.floor(Math.random() * ethnicities.length)]!,
-        ageCategory: ages[Math.floor(Math.random() * ages.length)]!,
-        bodyType: bodies[Math.floor(Math.random() * bodies.length)]!,
+        ethnicity: pick(["asian", "white", "black", "latina"]),
+        ageCategory: pick(["young-adult", "early-20s", "mid-20s", "mature", "milf"]),
+        bodyType: pick(["slim", "athletic", "average", "curvy", "voluptuous"]),
+      });
+    }
+    if (step === 2) {
+      updateDraft({
+        hairStyle: pick(["short-pixie", "bob", "shoulder-straight", "long-straight", "wavy-long", "curly-long", "ponytail", "braided", "messy-bun", "bangs", "layered", "beach-waves"]),
+        hairColor: pick(["black", "dark-brown", "light-brown", "blonde", "platinum", "red", "pink", "blue"]),
+        skinTone: pick(["fair", "light", "medium", "olive", "tan", "deep"]),
+        breastSize: pick(["A", "B", "C", "D", "DD", "E", "G"]),
+        eyeColor: pick(["brown", "blue", "green", "hazel"]),
+        makeupIntensity: Math.floor(Math.random() * 100),
       });
     }
   };
@@ -120,13 +146,11 @@ export default function CreateCharacterWizard() {
             <Step1CoreIdentity draft={draft} updateDraft={updateDraft} />
           )}
           {step === 2 && (
-            <div className="flex h-64 items-center justify-center text-white/30">
-              Step 2: Personality — Coming soon
-            </div>
+            <Step2Looks draft={draft} updateDraft={updateDraft} />
           )}
           {step === 3 && (
             <div className="flex h-64 items-center justify-center text-white/30">
-              Step 3: Style & Look — Coming soon
+              Step 3: Personality — Coming soon
             </div>
           )}
           {step === 4 && (
@@ -171,7 +195,7 @@ export default function CreateCharacterWizard() {
           <p className="text-center text-sm font-medium text-white/40">
             Previewing your dream girl…
           </p>
-          {(draft.ethnicity || draft.ageCategory || draft.bodyType) && (
+          {(draft.ethnicity || draft.ageCategory || draft.bodyType || draft.hairStyle || draft.hairColor) && (
             <div className="mt-6 flex flex-wrap justify-center gap-2">
               {draft.ethnicity && (
                 <span className="rounded-full bg-pink-500/20 px-3 py-1 text-xs font-medium text-pink-300 capitalize">
@@ -186,6 +210,31 @@ export default function CreateCharacterWizard() {
               {draft.bodyType && (
                 <span className="rounded-full bg-blue-500/20 px-3 py-1 text-xs font-medium text-blue-300 capitalize">
                   {draft.bodyType}
+                </span>
+              )}
+              {draft.hairStyle && (
+                <span className="rounded-full bg-amber-500/20 px-3 py-1 text-xs font-medium text-amber-300">
+                  {draft.hairStyle.replace(/-/g, " ")}
+                </span>
+              )}
+              {draft.hairColor && (
+                <span className="rounded-full bg-rose-500/20 px-3 py-1 text-xs font-medium text-rose-300">
+                  {draft.hairColor.replace(/-/g, " ")} hair
+                </span>
+              )}
+              {draft.skinTone && (
+                <span className="rounded-full bg-orange-500/20 px-3 py-1 text-xs font-medium text-orange-300 capitalize">
+                  {draft.skinTone} skin
+                </span>
+              )}
+              {draft.eyeColor && (
+                <span className="rounded-full bg-sky-500/20 px-3 py-1 text-xs font-medium text-sky-300">
+                  {draft.eyeColor} eyes
+                </span>
+              )}
+              {draft.breastSize && (
+                <span className="rounded-full bg-fuchsia-500/20 px-3 py-1 text-xs font-medium text-fuchsia-300">
+                  {draft.breastSize} cup
                 </span>
               )}
             </div>
