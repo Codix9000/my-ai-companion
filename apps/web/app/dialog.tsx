@@ -267,7 +267,7 @@ export function Dialog({
 
   const activateImageGenMode = () => {
     setImageGenMode(true);
-    setInput("Send me ");
+    setInput("Show me ");
     setShowSuggestions(true);
     setTimeout(() => {
       inputRef.current?.focus();
@@ -286,14 +286,14 @@ export function Dialog({
   };
 
   const handlePoseSuggestionClick = (promptText: string) => {
-    setInput(`Send me ${promptText}`);
+    setInput(`Show me ${promptText}`);
     inputRef.current?.focus();
   };
 
   const handleRandomPose = () => {
     const random = POSE_SUGGESTIONS[Math.floor(Math.random() * POSE_SUGGESTIONS.length)];
     if (random) {
-      setInput(`Send me ${random.promptText}`);
+      setInput(`Show me ${random.promptText}`);
     }
     inputRef.current?.focus();
   };

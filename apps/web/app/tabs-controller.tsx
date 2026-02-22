@@ -4,6 +4,7 @@ import {
   Gem,
   Home,
   Image as ImageIcon,
+  LayoutDashboard,
   MessageSquare,
   Sparkles,
   Users,
@@ -30,7 +31,7 @@ function TabsController() {
   const firstDir = `/${pathname.split("/")[1] || ""}`;
   const currentSection =
     firstDir === "/feed" ? "/" :
-    firstDir === "/my" ? "/create" :
+    firstDir === "/my" ? "/my" :
     firstDir === "/crystals" ? "/subscriptions" :
     firstDir;
 
@@ -177,6 +178,13 @@ function TabsController() {
         label={t("Premium")}
         isPremium
         badge="70% OFF"
+      />
+      <NavItem
+        href="/my"
+        value="/my"
+        icon={LayoutDashboard}
+        label={t("Manage")}
+        hideOnMobile
       />
 
       {/* Spacer to push bottom section down - Desktop Only */}
