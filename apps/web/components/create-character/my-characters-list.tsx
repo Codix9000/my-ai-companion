@@ -6,8 +6,8 @@ import { Plus, Sparkles } from "lucide-react";
 
 interface Character {
   _id: string;
-  name: string;
-  cardImageUrl: string;
+  name?: string;
+  cardImageUrl?: string;
   description?: string;
   numChats?: number;
 }
@@ -15,7 +15,7 @@ interface Character {
 export default function MyCharactersList({
   characters,
 }: {
-  characters: Character[];
+  characters: any[];
 }) {
   return (
     <div className="mx-auto w-full max-w-4xl px-4 py-10 lg:px-8">
