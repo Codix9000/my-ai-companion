@@ -274,6 +274,156 @@ function extractImageFromOutput(output: any): {
   return { base64Image, imageUrl };
 }
 
+// ── Chat image generation: LLM rewrite → RunPod → message with image ──
+export const generateChatImage = action({
+  args: {
+    characterId: v.id("characters"),
+    chatId: v.id("chats"),
+    userMessage: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) throw new Error("You must be logged in to generate images");
+
+    const user = await ctx.runQuery(internal.users.getUserByToken, {
+      tokenIdentifier: identity.tokenIdentifier,
+    });
+    if (!user) throw new Error("User not found");
+
+    // 1. Create a placeholder character message (shows loading in chat)
+    const messageId: Id<"messages"> = await ctx.runMutation(
+      internal.llm.addCharacterMessage,
+      { chatId: args.chatId, characterId: args.characterId, text: "" },
+    );
+
+    try {
+      // 2. Call LLM to rewrite the user's message into a proper image gen prompt
+      const rewrittenPrompt: string = await ctx.runAction(
+        internal.llm.rewriteImagePrompt,
+        {
+          characterId: args.characterId,
+          chatId: args.chatId,
+          userMessage: args.userMessage,
+        },
+      );
+
+      if (!rewrittenPrompt) {
+        await ctx.runMutation(internal.llm.updateCharacterMessage, {
+          messageId,
+          text: "hmm i'm not sure what kind of pic you want... try asking differently? 😅",
+        });
+        return { success: false, error: "Could not parse image request" };
+      }
+
+      // 3. Fetch character for imagePromptInstructions + LoRA
+      const character = await ctx.runQuery(
+        internal.characters.getCharacter,
+        { id: args.characterId },
+      );
+      if (!character) throw new Error("Character not found");
+
+      const imagePromptInstructions =
+        (character as any).imagePromptInstructions || "";
+      const loraName = extractLoraName(imagePromptInstructions);
+      const fullPrompt = `${imagePromptInstructions}, ${rewrittenPrompt}${HARDCODED_STYLE}`;
+      const seed = Math.floor(Math.random() * 2147483647);
+
+      const workflow = buildWorkflow({ loraName, promptText: fullPrompt, seed });
+
+      // 4. Submit to RunPod
+      const apiKey = process.env.RUNPOD_API_KEY;
+      const endpointId = process.env.RUNPOD_ENDPOINT_ID;
+      if (!apiKey || !endpointId)
+        throw new Error("RUNPOD_API_KEY and RUNPOD_ENDPOINT_ID must be set");
+
+      // Update placeholder text while generating
+      await ctx.runMutation(internal.llm.updateCharacterMessage, {
+        messageId,
+        text: "taking a pic for u rn... 📸",
+      });
+
+      const runUrl = `https://api.runpod.ai/v2/${endpointId}/run`;
+      console.log("[ChatImageGen] Submitting job. LoRA:", loraName, "Seed:", seed);
+
+      const submitResponse = await fetch(runUrl, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${apiKey}`,
+        },
+        body: JSON.stringify({ input: { workflow } }),
+      });
+
+      if (!submitResponse.ok) {
+        const errText = await submitResponse.text();
+        throw new Error(`RunPod submit failed (${submitResponse.status}): ${errText}`);
+      }
+
+      const submitData = await submitResponse.json();
+      const jobId = submitData.id;
+      if (!jobId) throw new Error("RunPod did not return a job ID");
+
+      console.log(`[ChatImageGen] Job submitted. ID: ${jobId}`);
+
+      // 5. Poll for result
+      const completedData = await pollForResult(endpointId, jobId, apiKey);
+      const { base64Image, imageUrl } = extractImageFromOutput(completedData.output);
+
+      // 6. Store image in Convex storage
+      let storageId: Id<"_storage"> | null = null;
+      let finalImageUrl: string | null = null;
+
+      if (base64Image) {
+        const binaryData = Buffer.from(base64Image, "base64");
+        const imageBlob = new Blob([binaryData as unknown as BlobPart], { type: "image/png" });
+        storageId = await ctx.storage.store(imageBlob as Blob);
+        finalImageUrl = await ctx.storage.getUrl(storageId);
+      } else if (imageUrl) {
+        const imgResponse = await fetch(imageUrl);
+        if (!imgResponse.ok) throw new Error(`Failed to fetch image from URL: ${imageUrl}`);
+        const buffer = await imgResponse.arrayBuffer();
+        const imageBlob = new Blob([buffer], { type: "image/png" });
+        storageId = await ctx.storage.store(imageBlob as Blob);
+        finalImageUrl = await ctx.storage.getUrl(storageId);
+      } else {
+        throw new Error("Could not extract image from RunPod response");
+      }
+
+      // 7. Update the character message with the image
+      await ctx.runMutation(internal.llm.updateCharacterMessageWithImage, {
+        messageId,
+        text: "",
+        imageUrl: finalImageUrl!,
+      });
+
+      // 8. Save to userMedia collection
+      if (storageId && finalImageUrl) {
+        await ctx.runMutation(
+          (internal as any).collection.saveGeneratedMediaInternal,
+          {
+            userId: user._id,
+            characterId: args.characterId,
+            mediaUrl: finalImageUrl,
+            mediaStorageId: storageId,
+            mediaType: "image" as const,
+            prompt: rewrittenPrompt,
+          },
+        );
+      }
+
+      console.log("[ChatImageGen] Image delivered to chat. messageId:", messageId);
+      return { success: true, imageUrl: finalImageUrl };
+    } catch (error: any) {
+      console.error("[ChatImageGen] Error:", error);
+      await ctx.runMutation(internal.llm.updateCharacterMessage, {
+        messageId,
+        text: "sorry couldn't take a pic rn... try again? 😔",
+      });
+      return { success: false, error: error?.message || "Image generation failed" };
+    }
+  },
+});
+
 // ── Main generate action (called from frontend) ──
 export const generateImage = action({
   args: {

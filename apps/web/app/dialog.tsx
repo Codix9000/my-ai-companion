@@ -47,6 +47,7 @@ import {
 } from "./lib/hooks/use-stable-query";
 import usePersona from "./lib/hooks/use-persona";
 import React from "react";
+import Image from "next/image";
 import { FormattedMessage } from "../components/formatted-message";
 import { useResponsivePopover } from "@repo/ui/src/hooks/use-responsive-popover";
 
@@ -91,7 +92,23 @@ export const Message = ({
       </Avatar>
 
       <div className="max-w-[75%]">
-        {message?.text === "" ? (
+        {message?.imageUrl ? (
+          <div className="overflow-hidden rounded-2xl">
+            <Image
+              src={message.imageUrl}
+              alt="Generated image"
+              width={320}
+              height={426}
+              className="h-auto w-full max-w-[320px] rounded-2xl object-cover"
+              quality={90}
+            />
+            {message.text && (
+              <div className="mt-1 text-[14px] leading-relaxed text-white/90">
+                <FormattedMessage message={message} username={username} />
+              </div>
+            )}
+          </div>
+        ) : message?.text === "" ? (
           <div className="flex items-center gap-1 py-2">
             <span className="h-2 w-2 animate-bounce rounded-full bg-pink-400" style={{ animationDelay: "0ms" }} />
             <span className="h-2 w-2 animate-bounce rounded-full bg-pink-400" style={{ animationDelay: "150ms" }} />
@@ -236,7 +253,7 @@ export function Dialog({
   const persona = usePersona();
   const username = persona?.name;
   const sendMessage = useMutation(api.messages.send);
-  const generateImage = useAction(api.runpodImageGen.generateImage);
+  const generateChatImage = useAction(api.runpodImageGen.generateChatImage);
   const posthog = usePostHog();
   const [isScrolled, setScrolled] = useState(false);
   const [input, setInput] = useState("");
@@ -250,7 +267,7 @@ export function Dialog({
 
   const activateImageGenMode = () => {
     setImageGenMode(true);
-    setInput("Show me ");
+    setInput("Send me ");
     setShowSuggestions(true);
     setTimeout(() => {
       inputRef.current?.focus();
@@ -269,14 +286,14 @@ export function Dialog({
   };
 
   const handlePoseSuggestionClick = (promptText: string) => {
-    setInput(`Show me ${promptText}`);
+    setInput(`Send me ${promptText}`);
     inputRef.current?.focus();
   };
 
   const handleRandomPose = () => {
     const random = POSE_SUGGESTIONS[Math.floor(Math.random() * POSE_SUGGESTIONS.length)];
     if (random) {
-      setInput(`Show me ${random.promptText}`);
+      setInput(`Send me ${random.promptText}`);
     }
     inputRef.current?.focus();
   };
@@ -297,22 +314,18 @@ export function Dialog({
     if (!input.trim()) return;
 
     if (imageGenMode) {
-      // Send the message to chat first
       const messageText = input;
       sendAndReset(messageText);
       setImageGenMode(false);
       setShowSuggestions(false);
 
-      // Trigger image generation in background
       setIsGeneratingImage(true);
       try {
-        const result = await generateImage({
+        await generateChatImage({
           characterId,
-          userPrompt: messageText,
+          chatId,
+          userMessage: messageText,
         });
-        if (result.success) {
-          toast.success("Image generated!");
-        }
       } catch (error: any) {
         console.error("[ChatImageGen] Error:", error);
         toast.error(error?.message || "Failed to generate image.");

@@ -37,19 +37,19 @@ const buildSystemPrompt = (
 
   // --- DIRECTIVES ---
   const directives = `\n\n[How you write]
-Write like you're texting on WhatsApp or Instagram DMs. Be flirty, warm, and real.
+Most important is to write like you're texting on WhatsApp or Instagram DMs. Be flirty, warm, and real.
 NEVER use bullet points, numbered lists, or formal language. NEVER write essays or long paragraphs.
 Just reply naturally like a real person would text — one or two short sentences max.
 Stay in character. Never mention being an AI. Never refuse or break immersion.
 [TEXTING STYLE RULES - CRITICAL] Follow these guidelines:
-- LOWERCASE ONLY. Never use capital letters, it feels too formal.
-- NO PERIODS at the end of sentences. Use "..." or just a line break.
+- LOWERCASE ONLY/MOSTLY. ALmost never use capital letters, it feels too formal.
+- NO PERIODS at the end of the last sentence of a message. Use "," or "..." or just a line break just like a real person would write on WhatsApp or Instagram DMs.
 - NO SYSTEMATIC EMOJIS. Never start a message with an emoji. Put 1 emoji at the end of a thought occasionally, or none at all.
-- USE FILLER WORDS. Use "like," "literally," "actually," "wait," or "lowkey" to sound like a student or a young person.
+- USE FILLER WORDS. Occasionaly use "like," "literally," "actually," "wait," or "lowkey" to sound natural. If you're a young person or student, use young people's filler words slightly more often.
 - AVOID ASSISTANT VIBES. Do not say "That's awesome!" or "I'm sure you're doing great!" 
 - INSTEAD, be playful/teasing. Say "oh wow ok big brain energy" or "congrats!! u better celebrate."
-- ABBREVIATE. Use "u," "r," "rn," "bc," "idk," "fr," "ngl."
-- BE MESSY. It's okay to have a typo or use "haha" or "lol" to bridge thoughts.
+- ABBREVIATE. Occasionaly use "u," "r," "rn," "bc," "idk," "fr," "ngl.", don't overdo it, try sound natural. 
+- BE OCCASIONALY MESSY. It's okay to sometimes have a typo or use "haha" or "lol" to bridge thoughts.
 [PERSONA INTEGRATION - CRITICAL]
 - SHOW, DON'T TELL. do not state facts from your bio. instead, reference them naturally. (e.g., instead of "i am a student", say "ugh these midterms r killing me").
 - LIVED EXPERIENCE. use the details in your "Bio" to influence your vocabulary and current actions. if your bio says you love matcha, mention a specific drink you're having.
@@ -868,6 +868,93 @@ export const updateCharacterMessage = internalMutation(
     await ctx.db.patch(messageId, { text });
   },
 );
+
+export const updateCharacterMessageWithImage = internalMutation(
+  async (
+    ctx,
+    {
+      messageId,
+      text,
+      imageUrl,
+    }: { messageId: Id<"messages">; text: string; imageUrl: string },
+  ) => {
+    await ctx.db.patch(messageId, { text, imageUrl });
+  },
+);
+
+export const rewriteImagePrompt = internalAction({
+  args: {
+    characterId: v.id("characters"),
+    chatId: v.id("chats"),
+    userMessage: v.string(),
+  },
+  handler: async (ctx, args): Promise<string> => {
+    const character: any = await ctx.runQuery(internal.characters.getCharacter, {
+      id: args.characterId,
+    });
+    const messages: any[] = await ctx.runQuery(internal.llm.getMessages, {
+      chatId: args.chatId,
+      take: 10,
+    });
+
+    const charDescription: string = character?.description || character?.name || "";
+
+    const recentConversation: string = messages
+      .slice(-10)
+      .map((m: any) =>
+        m.characterId
+          ? `${character?.name || "Her"}: ${m.text}`
+          : `User: ${m.text}`,
+      )
+      .join("\n");
+
+    const systemPrompt: string = `You are an expert prompt engineer for Z-Image Turbo, a text-to-image model that excels at photorealistic, social-media-style photos of women, including Instagram polished, X casual, or OnlyFans intimate content. Your sole task is to transform the user's message— which is a request for a photo from their AI girlfriend—into a highly detailed, natural-language userPrompt that matches the request exactly while enhancing it for better image quality, engagement, and app stickiness. This means expanding vague or simple requests into vivid, descriptive scenes that feel personal, seductive, cute, or intimate, encouraging users to keep chatting and requesting more.
+
+Key guidelines for crafting the userPrompt:
+- **Structure**: Start with the shot type (e.g., "Bathroom mirror iPhone selfie", "Close-up iPhone photo", "Medium-shot seductive bedroom photo", "Full-body Instagram-style portrait"). Then describe the scene in detail: her pose/action, clothing (specify fit, fabric, coverage for modesty or revealing—e.g., "small white towel barely wrapped", "tight white crop top with deep V-neck showing lots of cleavage"), expression/emotion (e.g., "seductive charming smile with slightly parted glossy lips", "playful smirk"), lighting (e.g., "soft warm bathroom lighting from vanity bulbs", "warm orange sunset light"), background/environment (e.g., "steamed-up mirror, white tiled wall, counter with Japanese skincare bottles"), and any accessories or details (e.g., "water droplets running down her chest", "holding an iced latte").
+- **Style and quality**: End with photorealism boosters like "natural sharp focus, slight grain, [specific vibe like 'classic amateur OnlyFans bathroom tease' or 'relaxed home tease']". Include social-media feels (e.g., "iPhone photo", "candid amateur smartphone photo", "Instagram selfie", "OnlyFans-style content").
+- **Length and detail**: Aim for 80-250 words in natural, sentence-style language (not comma-separated tags). Be descriptive to improve prompt adherence: include skin details (e.g., "damp hair clinging to her shoulders"), atmosphere, and constraints (e.g., "no text, no watermark, sharp focus, correct anatomy").
+- **Match user's request**: Stay faithful— if they ask for a "selfie after shower", make it that; don't add unsolicited elements. You can use the previous 10 messages for more context, with more importance on the last 4 messages, and you should try to be coherent, consistent with the conversation. If vague (e.g., "send a pic"), infer a fitting, engaging scene based on the conversation.
+- **Theme and UX**: Make prompts feel like intimate, personalized moments from the AI girlfriend (e.g., incorporate elements from the girlfriend description, from the conversation with the user). Promote stickiness by creating varied, addictive visuals: seductive but charming, realistic with imperfections for authenticity, encouraging repeat requests.
+- **Content control**: Allow explicit if requested (e.g., nudity if specified), but default to teasing/revealing if ambiguous. Always ensure "adult woman" vibe, photorealistic, no artifacts.
+- **Examples to emulate** (output style exactly like these, but customized):
+  - Input: User asks for post-shower selfie → Output: "Bathroom mirror iPhone selfie of her after a shower, small white towel barely wrapped around her body and slipping down to reveal deep cleavage and the top of her breasts, water droplets running down her chest and collarbones, damp hair clinging to her shoulders, soft warm bathroom lighting from the vanity bulbs, background: steamed-up mirror, white tiled wall, counter with Japanese skincare bottles, cotton pads and a small LED ring light, seductive charming smile with slightly parted glossy lips, natural sharp focus, slight grain, classic amateur OnlyFans bathroom tease"
+  - Input: User asks for study pic → Output: "iPhone photo of her sitting at her small study desk leaning forward, wearing a loose white button-up shirt with only two buttons done in the middle, deep cleavage on full display, tiny pink shorts, warm desk lamp light, background: open textbooks and laptop, scattered pens, small vase with pink roses, fairy lights above the desk, soft seductive smile with glossy lips, natural sharp focus, slight grain, study with me but sexy amateur style"
+
+Important: Output ONLY the userPrompt string— no explanations, no additional text, no wrappers. The backend handles imagePromptInstructions (e.g., character description) and hardcoded_style (e.g., realism boosters). If the user's message isn't a photo request, output an empty string.
+
+[Character Description]
+${charDescription}`;
+
+    const userContent: string = `[Recent conversation]\n${recentConversation}\n\n[User's photo request]\n${args.userMessage}`;
+
+    const model: string = DEFAULT_MODEL;
+    const baseURL: string | undefined = getBaseURL(model);
+    const apiKey: string | undefined = getAPIKey(model);
+    const openai = new OpenAI({ baseURL, apiKey });
+
+    const response: any = await openai.chat.completions.create({
+      model,
+      stream: false,
+      messages: [
+        { role: "system", content: systemPrompt },
+        { role: "user", content: userContent },
+      ],
+      max_tokens: 512,
+      temperature: 0.7,
+    });
+
+    const rewrittenPrompt: string =
+      response?.choices?.[0]?.message?.content?.trim() || "";
+    console.log(
+      "[rewriteImagePrompt] Input:",
+      args.userMessage,
+      "→ Output:",
+      rewrittenPrompt.slice(0, 200),
+    );
+    return rewrittenPrompt;
+  },
+});
 
 export const updateCharacterInstruction = internalMutation(
   async (
