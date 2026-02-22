@@ -5,13 +5,14 @@ import { ArrowLeft, ArrowRight, Dices } from "lucide-react";
 import Step1CoreIdentity from "./steps/step1-core-identity";
 import Step2Looks from "./steps/step2-looks";
 import Step3Personality from "./steps/step3-personality";
+import Step4NameStory from "./steps/step4-name-story";
 
 const TOTAL_STEPS = 5;
 const STEP_LABELS = [
   "Core Identity",
   "Looks",
   "Personality & Desires",
-  "Voice & Chat",
+  "Name & Story",
   "Review & Create",
 ];
 
@@ -34,6 +35,9 @@ export interface CharacterDraft {
   relationshipStyle: string | null;
   occupations: string[];
   customOccupation: string;
+  // Step 4
+  characterName: string;
+  backstory: string;
 }
 
 const INITIAL_DRAFT: CharacterDraft = {
@@ -52,6 +56,8 @@ const INITIAL_DRAFT: CharacterDraft = {
   relationshipStyle: null,
   occupations: [],
   customOccupation: "",
+  characterName: "",
+  backstory: "",
 };
 
 export default function CreateCharacterWizard() {
@@ -74,6 +80,9 @@ export default function CreateCharacterWizard() {
     }
     if (step === 3) {
       return draft.personalityTraits.length >= 2 && !!draft.relationshipStyle;
+    }
+    if (step === 4) {
+      return draft.characterName.trim().length >= 2;
     }
     return true;
   };
@@ -118,6 +127,19 @@ export default function CreateCharacterWizard() {
         relationshipStyle: pick(allStyles),
         occupations: [pick(allOccupations)],
         customOccupation: "",
+      });
+    }
+    if (step === 4) {
+      const namesByEthnicity: Record<string, string[]> = {
+        asian: ["Aiko", "Yuki", "Mei", "Hana", "Suki", "Rina", "Sakura", "Mika", "Nari", "Jia"],
+        white: ["Emma", "Sophie", "Chloe", "Mia", "Lily", "Ava", "Grace", "Olivia", "Isla", "Ruby"],
+        black: ["Zara", "Nia", "Amara", "Imani", "Kira", "Aaliyah", "Jade", "Sade", "Ebony", "Naomi"],
+        latina: ["Luna", "Valentina", "Isabella", "Camila", "Sofia", "Rosa", "Carmen", "Lucia", "Elena", "Marisol"],
+      };
+      const pool = namesByEthnicity[draft.ethnicity || "white"] || namesByEthnicity["white"]!;
+      updateDraft({
+        characterName: pick(pool),
+        backstory: "",
       });
     }
   };
@@ -184,9 +206,7 @@ export default function CreateCharacterWizard() {
             <Step3Personality draft={draft} updateDraft={updateDraft} />
           )}
           {step === 4 && (
-            <div className="flex h-64 items-center justify-center text-white/30">
-              Step 4: Voice & Chat — Coming soon
-            </div>
+            <Step4NameStory draft={draft} updateDraft={updateDraft} />
           )}
           {step === 5 && (
             <div className="flex h-64 items-center justify-center text-white/30">
@@ -222,10 +242,21 @@ export default function CreateCharacterWizard() {
           <div className="mb-6 flex h-48 w-48 items-center justify-center rounded-full bg-gradient-to-br from-pink-500/20 to-purple-500/20">
             <span className="text-6xl">👩</span>
           </div>
-          <p className="text-center text-sm font-medium text-white/40">
-            Previewing your dream girl…
-          </p>
-          {(draft.ethnicity || draft.ageCategory || draft.bodyType || draft.hairStyle || draft.hairColor || draft.personalityTraits.length > 0 || draft.relationshipStyle) && (
+          {draft.characterName ? (
+            <p className="text-center text-lg font-bold text-white">
+              {draft.characterName}
+            </p>
+          ) : (
+            <p className="text-center text-sm font-medium text-white/40">
+              Previewing your dream girl…
+            </p>
+          )}
+          {draft.backstory && (
+            <p className="mt-2 line-clamp-3 text-center text-xs italic text-white/30">
+              &ldquo;{draft.backstory}&rdquo;
+            </p>
+          )}
+          {(draft.ethnicity || draft.ageCategory || draft.bodyType || draft.hairStyle || draft.hairColor || draft.personalityTraits.length > 0 || draft.relationshipStyle || draft.characterName) && (
             <div className="mt-6 flex flex-wrap justify-center gap-2">
               {draft.ethnicity && (
                 <span className="rounded-full bg-pink-500/20 px-3 py-1 text-xs font-medium text-pink-300 capitalize">
