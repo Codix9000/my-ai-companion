@@ -494,7 +494,7 @@ export function Dialog({
             {/* Bottom row: icon buttons (left) + send button (right) */}
             <div className="flex items-center justify-between px-3 pb-3 pt-1">
               <div className="flex items-center gap-2">
-                {/* Generate Image button — X overlaid inside when active */}
+                {/* Generate Image button — when active: wider pill with image+stars + X */}
                 <button
                   type="button"
                   onClick={() => {
@@ -504,14 +504,20 @@ export function Dialog({
                       activateImageGenMode();
                     }
                   }}
-                  className={`relative flex h-11 w-11 items-center justify-center rounded-full transition-all ${
+                  className={`relative flex items-center justify-center gap-2 transition-all ${
                     imageGenMode
-                      ? "border-2 border-pink-500 bg-pink-500/20 text-pink-400"
-                      : "bg-white/[0.08] text-white/50 hover:bg-white/[0.14] hover:text-white/80"
+                      ? "h-11 rounded-xl bg-gradient-to-r from-pink-500 to-purple-500 px-4 text-white shadow-lg shadow-pink-500/25 hover:from-pink-600 hover:to-purple-600"
+                      : "h-11 w-11 rounded-full bg-white/[0.08] text-white/50 hover:bg-white/[0.14] hover:text-white/80"
                   }`}
                 >
                   {imageGenMode ? (
-                    <X className="h-5 w-5" />
+                    <>
+                      <span className="relative flex shrink-0">
+                        <ImageIcon className="h-5 w-5" />
+                        <Sparkles className="absolute -right-1 -top-1 h-2.5 w-2.5 text-yellow-300" />
+                      </span>
+                      <X className="h-5 w-5 shrink-0" />
+                    </>
                   ) : (
                     <span className="relative">
                       <ImageIcon className="h-5 w-5" />
