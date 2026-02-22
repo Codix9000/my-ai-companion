@@ -66,6 +66,7 @@ export const Message = ({
   message,
   cardImageUrl,
   username = "You",
+  onImageClick,
 }: {
   index?: number;
   name: string;
@@ -73,6 +74,7 @@ export const Message = ({
   cardImageUrl: string;
   username?: string;
   chatId?: Id<"chats">;
+  onImageClick?: (imageUrl: string) => void;
 }) => {
   const isCharacter = !!message?.characterId;
 
@@ -94,14 +96,20 @@ export const Message = ({
       <div className="max-w-[75%]">
         {message?.imageUrl ? (
           <div className="overflow-hidden rounded-2xl">
-            <Image
-              src={message.imageUrl}
-              alt="Generated image"
-              width={320}
-              height={426}
-              className="h-auto w-full max-w-[320px] rounded-2xl object-cover"
-              quality={90}
-            />
+            <button
+              type="button"
+              onClick={() => onImageClick?.(message.imageUrl)}
+              className="block w-full cursor-zoom-in text-left outline-none focus:outline-none focus-visible:ring-2 focus-visible:ring-pink-500/50 focus-visible:ring-offset-2 focus-visible:ring-offset-background rounded-2xl"
+            >
+              <Image
+                src={message.imageUrl}
+                alt="Generated image"
+                width={320}
+                height={426}
+                className="h-auto w-full max-w-[320px] rounded-2xl object-cover transition-opacity hover:opacity-95"
+                quality={90}
+              />
+            </button>
             {message.text && (
               <div className="mt-1 text-[14px] leading-relaxed text-white/90">
                 <FormattedMessage message={message} username={username} />
@@ -265,6 +273,9 @@ export function Dialog({
   const [showSuggestions, setShowSuggestions] = useState(true);
   const inputRef = useRef<HTMLInputElement>(null);
 
+  // ── Full-screen image lightbox ──
+  const [zoomedImageUrl, setZoomedImageUrl] = useState<string | null>(null);
+
   const activateImageGenMode = () => {
     setImageGenMode(true);
     setInput("Show me ");
@@ -354,8 +365,64 @@ export function Dialog({
     if (inView && isScrolled) loadMore(5);
   }, [inView, loadMore]);
 
+  useEffect(() => {
+    if (zoomedImageUrl) {
+      document.body.style.overflow = "hidden";
+      const onEscape = (e: KeyboardEvent) => {
+        if (e.key === "Escape") setZoomedImageUrl(null);
+      };
+      window.addEventListener("keydown", onEscape);
+      return () => {
+        document.body.style.overflow = "";
+        window.removeEventListener("keydown", onEscape);
+      };
+    }
+  }, [zoomedImageUrl]);
+
   return (
-    <div className="flex h-full flex-col">
+    <div className="relative flex h-full flex-col">
+      {/* ── Full-screen image lightbox ── */}
+      <AnimatePresence>
+        {zoomedImageUrl && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            className="fixed inset-0 z-50 flex cursor-pointer items-center justify-center bg-black/60 backdrop-blur-md"
+            onClick={() => setZoomedImageUrl(null)}
+          >
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              transition={{ duration: 0.2, ease: [0.4, 0, 0.2, 1] }}
+              className="relative flex max-h-[90vh] max-w-[90vw] cursor-default items-center justify-center"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="relative h-[85vh] w-[85vw] max-w-4xl">
+                <Image
+                  src={zoomedImageUrl}
+                  alt="Full screen"
+                  fill
+                  className="rounded-xl object-contain shadow-2xl"
+                  quality={95}
+                  sizes="85vw"
+                />
+              </div>
+              <button
+                type="button"
+                onClick={() => setZoomedImageUrl(null)}
+                className="absolute right-3 top-3 flex h-9 w-9 items-center justify-center rounded-full bg-white/10 text-white/90 transition-colors hover:bg-white/20 hover:text-white"
+                aria-label="Close"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* ── Header ── */}
       <div className="flex shrink-0 items-center justify-between border-b border-white/[0.08] px-6 py-4">
         <Link href={`/character/${characterId}`} className="flex items-center gap-4">
@@ -406,6 +473,7 @@ export function Dialog({
                     }
                     username={(username as string) || "You"}
                     chatId={chatId}
+                    onImageClick={setZoomedImageUrl}
                   />
                 </motion.div>
               ))
