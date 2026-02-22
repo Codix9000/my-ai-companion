@@ -508,7 +508,14 @@ export function Dialog({
               autoFocus
               placeholder={t("Write a message...")}
               value={input}
-              onChange={(e) => setInput(e.target.value)}
+              onChange={(e) => {
+                const value = e.target.value;
+                setInput(value);
+                if (value.startsWith("Show me ")) {
+                  setImageGenMode(true);
+                  setShowSuggestions(false);
+                }
+              }}
               onKeyDown={(e) => {
                 if (e.key === "Enter" && !e.shiftKey) {
                   e.preventDefault();
