@@ -4,12 +4,13 @@ import { useState, useCallback } from "react";
 import { ArrowLeft, ArrowRight, Dices } from "lucide-react";
 import Step1CoreIdentity from "./steps/step1-core-identity";
 import Step2Looks from "./steps/step2-looks";
+import Step3Personality from "./steps/step3-personality";
 
 const TOTAL_STEPS = 5;
 const STEP_LABELS = [
   "Core Identity",
   "Looks",
-  "Personality",
+  "Personality & Desires",
   "Voice & Chat",
   "Review & Create",
 ];
@@ -26,6 +27,13 @@ export interface CharacterDraft {
   breastSize: string | null;
   eyeColor: string | null;
   makeupIntensity: number;
+  // Step 3
+  personalityTraits: string[];
+  kinks: string[];
+  nsfwIntensity: number;
+  relationshipStyle: string | null;
+  occupations: string[];
+  customOccupation: string;
 }
 
 const INITIAL_DRAFT: CharacterDraft = {
@@ -38,6 +46,12 @@ const INITIAL_DRAFT: CharacterDraft = {
   breastSize: null,
   eyeColor: null,
   makeupIntensity: 30,
+  personalityTraits: [],
+  kinks: [],
+  nsfwIntensity: 40,
+  relationshipStyle: null,
+  occupations: [],
+  customOccupation: "",
 };
 
 export default function CreateCharacterWizard() {
@@ -57,6 +71,9 @@ export default function CreateCharacterWizard() {
     }
     if (step === 2) {
       return !!draft.hairStyle && !!draft.hairColor && !!draft.skinTone && !!draft.breastSize && !!draft.eyeColor;
+    }
+    if (step === 3) {
+      return draft.personalityTraits.length >= 2 && !!draft.relationshipStyle;
     }
     return true;
   };
@@ -86,6 +103,21 @@ export default function CreateCharacterWizard() {
         breastSize: pick(["A", "B", "C", "D", "DD", "E", "G"]),
         eyeColor: pick(["brown", "blue", "green", "hazel"]),
         makeupIntensity: Math.floor(Math.random() * 100),
+      });
+    }
+    if (step === 3) {
+      const allTraits = ["bubbly", "shy", "confident", "playful", "dominant", "submissive", "intellectual", "nurturing", "sassy", "loyal", "adventurous", "romantic", "teasing", "mysterious", "funny", "caring", "bold", "gentle", "wild", "calm"];
+      const allKinks = ["light-tease", "romantic", "explicit", "dominant-sub", "roleplay", "lingerie", "public-tease"];
+      const allStyles = ["casual-fling", "loving-girlfriend", "dominant-gf", "submissive", "friends-with-benefits", "long-distance"];
+      const allOccupations = ["nurse", "gamer", "fitness-coach", "artist", "office-lady", "college-student", "traveler"];
+      const shuffled = [...allTraits].sort(() => Math.random() - 0.5);
+      updateDraft({
+        personalityTraits: shuffled.slice(0, 3 + Math.floor(Math.random() * 3)),
+        kinks: [pick(allKinks), pick(allKinks)].filter((v, i, a) => a.indexOf(v) === i),
+        nsfwIntensity: Math.floor(Math.random() * 100),
+        relationshipStyle: pick(allStyles),
+        occupations: [pick(allOccupations)],
+        customOccupation: "",
       });
     }
   };
@@ -149,9 +181,7 @@ export default function CreateCharacterWizard() {
             <Step2Looks draft={draft} updateDraft={updateDraft} />
           )}
           {step === 3 && (
-            <div className="flex h-64 items-center justify-center text-white/30">
-              Step 3: Personality — Coming soon
-            </div>
+            <Step3Personality draft={draft} updateDraft={updateDraft} />
           )}
           {step === 4 && (
             <div className="flex h-64 items-center justify-center text-white/30">
@@ -195,7 +225,7 @@ export default function CreateCharacterWizard() {
           <p className="text-center text-sm font-medium text-white/40">
             Previewing your dream girl…
           </p>
-          {(draft.ethnicity || draft.ageCategory || draft.bodyType || draft.hairStyle || draft.hairColor) && (
+          {(draft.ethnicity || draft.ageCategory || draft.bodyType || draft.hairStyle || draft.hairColor || draft.personalityTraits.length > 0 || draft.relationshipStyle) && (
             <div className="mt-6 flex flex-wrap justify-center gap-2">
               {draft.ethnicity && (
                 <span className="rounded-full bg-pink-500/20 px-3 py-1 text-xs font-medium text-pink-300 capitalize">
@@ -235,6 +265,26 @@ export default function CreateCharacterWizard() {
               {draft.breastSize && (
                 <span className="rounded-full bg-fuchsia-500/20 px-3 py-1 text-xs font-medium text-fuchsia-300">
                   {draft.breastSize} cup
+                </span>
+              )}
+              {draft.personalityTraits.map((t) => (
+                <span key={t} className="rounded-full bg-violet-500/20 px-3 py-1 text-xs font-medium text-violet-300 capitalize">
+                  {t}
+                </span>
+              ))}
+              {draft.relationshipStyle && (
+                <span className="rounded-full bg-red-500/20 px-3 py-1 text-xs font-medium text-red-300">
+                  {draft.relationshipStyle.replace(/-/g, " ")}
+                </span>
+              )}
+              {draft.occupations.map((o) => (
+                <span key={o} className="rounded-full bg-emerald-500/20 px-3 py-1 text-xs font-medium text-emerald-300">
+                  {o.replace(/-/g, " ")}
+                </span>
+              ))}
+              {draft.customOccupation && (
+                <span className="rounded-full bg-emerald-500/20 px-3 py-1 text-xs font-medium text-emerald-300">
+                  {draft.customOccupation}
                 </span>
               )}
             </div>
