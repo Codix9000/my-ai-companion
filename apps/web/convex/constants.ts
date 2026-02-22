@@ -79,6 +79,12 @@ export const getImageModelCrystalPrice = (modelName: string) => {
 // Model metadata is hard-coded due to frequent updates in open-source LLM.
 export const modelData = [
   {
+    value: "Sao10K/L3.3-70B-Euryale-v2.3",
+    description: "L3.3 70B Euryale v2.3 (DeepInfra)",
+    crystalPrice: 1,
+    isNSFW: true,
+  },
+  {
     value: "Gryphe/MythoMax-L2-13b",
     description: "MythoMax L2 13B (DeepInfra)",
     crystalPrice: 0,

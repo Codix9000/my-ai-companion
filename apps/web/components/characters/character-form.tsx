@@ -23,6 +23,7 @@ import {
 } from "@repo/ui/src/components/form";
 import { useMutation, useQuery } from "convex/react";
 import { api } from "../../convex/_generated/api";
+import { DEFAULT_MODEL } from "../../convex/constants";
 import { useEffect, useRef, useState } from "react";
 import { useDebouncedCallback } from "use-debounce";
 import { useResponsivePopover } from "@repo/ui/src/hooks/use-responsive-popover";
@@ -85,7 +86,7 @@ export default function CharacterForm() {
     instructions = searchParams.get("instructions") || "",
     greetings = searchParams.get("greetings") || "Hi.",
     cardImageUrl = searchParams.get("cardImageUrl") || "",
-    model = (searchParams.get("model") as any) || "Gryphe/MythoMax-L2-13b",
+    model = (searchParams.get("model") as any) || DEFAULT_MODEL,
     voiceId = (searchParams.get("voiceId") as any) || "MjxppkSa4IoDSRGySayZ",
     isDraft = searchParams.get("isDraft") || true,
     age,

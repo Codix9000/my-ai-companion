@@ -387,9 +387,8 @@ export const generateFollowups = internalAction({
         })
       : undefined;
     try {
-      const model = "gryphe/mythomax-l2-13b";
-      const baseURL = getBaseURL(model);
-      const apiKey = getAPIKey(model);
+      const baseURL = getBaseURL(DEFAULT_MODEL);
+      const apiKey = getAPIKey(DEFAULT_MODEL);
       const openai = new OpenAI({
         baseURL,
         apiKey,
@@ -408,11 +407,11 @@ export const generateFollowups = internalAction({
           persona && "name" in persona ? persona?.name : username;
         const userPrefix = `${userRole}:`;
         const models = [
-          "gryphe/mythomax-l2-13b",
+          DEFAULT_MODEL,
           "gryphe/mythomist-7b:free",
           "huggingfaceh4/zephyr-7b-beta:free",
           "teknium/openhermes-2-mistral-7b",
-        ].sort(() => Math.random() - 0.5);
+        ];
         let instruction;
         for (let i = 1; i <= (user?.subscriptionTier === "plus" ? 4 : 3); i++) {
           try {

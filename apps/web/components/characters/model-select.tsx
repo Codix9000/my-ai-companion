@@ -21,7 +21,7 @@ import { DEFAULT_MODEL } from "../../convex/constants";
 // Single default model for all characters
 const defaultModelOption = {
   value: DEFAULT_MODEL,
-  description: "MythoMax L2 13B",
+  description: "L3.3 70B Euryale v2.3 (DeepInfra)",
 };
 
 export const ModelSelect = ({

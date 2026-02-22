@@ -51,7 +51,7 @@ export const insertFact = internalMutation({
 /**
  * Action: Extract personal facts from recent messages using the same LLM model.
  * Runs as a background job after each AI response.
- * Uses the same DeepInfra/MythoMax model to keep things consistent (especially for sensitive content).
+ * Uses the default model (DEFAULT_MODEL) to keep things consistent (especially for sensitive content).
  */
 export const extractFacts = internalAction({
   args: {
