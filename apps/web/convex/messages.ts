@@ -120,6 +120,42 @@ export const send = mutation({
   },
 });
 
+export const sendImageRequest = mutation({
+  args: {
+    message: v.string(),
+    chatId: v.id("chats"),
+    characterId: v.id("characters"),
+    personaId: v.optional(v.id("personas")),
+  },
+  handler: async (ctx, { message, chatId, characterId, personaId }) => {
+    const user = await getUser(ctx);
+    await ctx.db.insert("messages", {
+      text: message,
+      chatId,
+      personaId,
+    });
+    const chat = await ctx.db.get(chatId);
+    if (chat?.userId !== user._id) {
+      throw new Error("User does not own the chat");
+    }
+
+    const character = await ctx.db.get(characterId);
+    const crystalPrice = getCrystalPrice(character?.model as string);
+    if (user?.crystals < crystalPrice) {
+      throw new ConvexError("Not enough crystals.");
+    }
+    const updatedAt = new Date().toISOString();
+    const newNumChats = character?.numChats ? character?.numChats + 1 : 1;
+    await ctx.db.patch(characterId, {
+      numChats: newNumChats,
+      updatedAt,
+    });
+    if (crystalPrice >= 1) {
+      await ctx.db.insert("followUps", { chatId });
+    }
+  },
+});
+
 export const clear = mutation({
   args: {
     chatId: v.id("chats"),

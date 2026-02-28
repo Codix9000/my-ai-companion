@@ -232,9 +232,9 @@ export const answer = internalAction({
                 : conv.imagePrompt
               : null;
             const photoNote = promptPreview
-              ? `[${character?.name || "Character"} sent a picture of: ${promptPreview}]`
-              : `[${character?.name || "Character"} sent a photo]`;
-            content = content ? `${photoNote}\n${content}` : photoNote;
+              ? `(context: you sent a selfie/photo showing: ${promptPreview})`
+              : `(context: you sent a photo)`;
+            content = content ? `${content} ${photoNote}` : photoNote;
           }
           return {
             role: conv.characterId ? ("assistant" as const) : ("user" as const),

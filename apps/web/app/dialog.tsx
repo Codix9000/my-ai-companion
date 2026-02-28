@@ -261,6 +261,7 @@ export function Dialog({
   const persona = usePersona();
   const username = persona?.name;
   const sendMessage = useMutation(api.messages.send);
+  const sendImageRequest = useMutation(api.messages.sendImageRequest);
   const generateChatImage = useAction(api.runpodImageGen.generateChatImage);
   const posthog = usePostHog();
   const [isScrolled, setScrolled] = useState(false);
@@ -326,12 +327,17 @@ export function Dialog({
 
     if (imageGenMode) {
       const messageText = input;
-      sendAndReset(messageText);
+      setInput("");
       setImageGenMode(false);
       setShowSuggestions(false);
 
       setIsGeneratingImage(true);
       try {
+        await sendImageRequest({
+          message: messageText,
+          chatId,
+          characterId,
+        });
         await generateChatImage({
           characterId,
           chatId,
