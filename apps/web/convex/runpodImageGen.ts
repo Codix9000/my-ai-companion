@@ -274,7 +274,7 @@ function extractImageFromOutput(output: any): {
   return { base64Image, imageUrl };
 }
 
-// ── Chat image generation: LLM rewrite → RunPod → message with image ──
+// ── Chat image generation: 3-phase flow (pre-message → image → follow-up) ──
 export const generateChatImage = action({
   args: {
     characterId: v.id("characters"),
@@ -290,14 +290,28 @@ export const generateChatImage = action({
     });
     if (!user) throw new Error("User not found");
 
-    // 1. Create a placeholder character message (shows loading in chat)
-    const messageId: Id<"messages"> = await ctx.runMutation(
+    // ── Phase 1: Dynamic pre-message ──
+    const preMessageId: Id<"messages"> = await ctx.runMutation(
       internal.llm.addCharacterMessage,
       { chatId: args.chatId, characterId: args.characterId, text: "" },
     );
 
     try {
-      // 2. Call LLM to rewrite the user's message into a proper image gen prompt
+      const preMessageText: string = await ctx.runAction(
+        internal.llm.generateImagePreMessage,
+        {
+          characterId: args.characterId,
+          chatId: args.chatId,
+          userId: user._id,
+          userMessage: args.userMessage,
+        },
+      );
+      await ctx.runMutation(internal.llm.updateCharacterMessage, {
+        messageId: preMessageId,
+        text: preMessageText,
+      });
+
+      // Rewrite user's message into an image gen prompt
       const rewrittenPrompt: string = await ctx.runAction(
         internal.llm.rewriteImagePrompt,
         {
@@ -309,13 +323,13 @@ export const generateChatImage = action({
 
       if (!rewrittenPrompt) {
         await ctx.runMutation(internal.llm.updateCharacterMessage, {
-          messageId,
-          text: "hmm i'm not sure what kind of pic you want... try asking differently? 😅",
+          messageId: preMessageId,
+          text: "hmm i'm not sure what kind of pic you want... try asking differently?",
         });
         return { success: false, error: "Could not parse image request" };
       }
 
-      // 3. Fetch character for imagePromptInstructions + LoRA
+      // Fetch character for imagePromptInstructions + LoRA
       const character = await ctx.runQuery(
         internal.characters.getCharacter,
         { id: args.characterId },
@@ -327,20 +341,18 @@ export const generateChatImage = action({
       const loraName = extractLoraName(imagePromptInstructions);
       const fullPrompt = `${imagePromptInstructions}, ${rewrittenPrompt}${HARDCODED_STYLE}`;
       const seed = Math.floor(Math.random() * 2147483647);
-
       const workflow = buildWorkflow({ loraName, promptText: fullPrompt, seed });
 
-      // 4. Submit to RunPod
+      // ── Phase 2: Image generation ──
+      const imageMessageId: Id<"messages"> = await ctx.runMutation(
+        internal.llm.addCharacterMessage,
+        { chatId: args.chatId, characterId: args.characterId, text: "" },
+      );
+
       const apiKey = process.env.RUNPOD_API_KEY;
       const endpointId = process.env.RUNPOD_ENDPOINT_ID;
       if (!apiKey || !endpointId)
         throw new Error("RUNPOD_API_KEY and RUNPOD_ENDPOINT_ID must be set");
-
-      // Update placeholder text while generating
-      await ctx.runMutation(internal.llm.updateCharacterMessage, {
-        messageId,
-        text: "taking a pic for u rn... 📸",
-      });
 
       const runUrl = `https://api.runpod.ai/v2/${endpointId}/run`;
       console.log("[ChatImageGen] Submitting job. LoRA:", loraName, "Seed:", seed);
@@ -365,11 +377,9 @@ export const generateChatImage = action({
 
       console.log(`[ChatImageGen] Job submitted. ID: ${jobId}`);
 
-      // 5. Poll for result
       const completedData = await pollForResult(endpointId, jobId, apiKey);
       const { base64Image, imageUrl } = extractImageFromOutput(completedData.output);
 
-      // 6. Store image in Convex storage
       let storageId: Id<"_storage"> | null = null;
       let finalImageUrl: string | null = null;
 
@@ -389,14 +399,13 @@ export const generateChatImage = action({
         throw new Error("Could not extract image from RunPod response");
       }
 
-      // 7. Update the character message with the image
       await ctx.runMutation(internal.llm.updateCharacterMessageWithImage, {
-        messageId,
+        messageId: imageMessageId,
         text: "",
         imageUrl: finalImageUrl!,
+        imagePrompt: rewrittenPrompt,
       });
 
-      // 8. Save to userMedia collection
       if (storageId && finalImageUrl) {
         await ctx.runMutation(
           (internal as any).collection.saveGeneratedMediaInternal,
@@ -411,13 +420,41 @@ export const generateChatImage = action({
         );
       }
 
-      console.log("[ChatImageGen] Image delivered to chat. messageId:", messageId);
+      // ── Phase 3: Context-aware follow-up message ──
+      const followUpMessageId: Id<"messages"> = await ctx.runMutation(
+        internal.llm.addCharacterMessage,
+        { chatId: args.chatId, characterId: args.characterId, text: "" },
+      );
+
+      try {
+        const followUpText: string = await ctx.runAction(
+          internal.llm.generateImageFollowUp,
+          {
+            characterId: args.characterId,
+            chatId: args.chatId,
+            userId: user._id,
+            imageDescription: rewrittenPrompt,
+          },
+        );
+        await ctx.runMutation(internal.llm.updateCharacterMessage, {
+          messageId: followUpMessageId,
+          text: followUpText || "hope u like it",
+        });
+      } catch (followUpError) {
+        console.error("[ChatImageGen] Follow-up error:", followUpError);
+        await ctx.runMutation(internal.llm.updateCharacterMessage, {
+          messageId: followUpMessageId,
+          text: "hope u like it",
+        });
+      }
+
+      console.log("[ChatImageGen] 3-phase flow complete. imageMessageId:", imageMessageId);
       return { success: true, imageUrl: finalImageUrl };
     } catch (error: any) {
       console.error("[ChatImageGen] Error:", error);
       await ctx.runMutation(internal.llm.updateCharacterMessage, {
-        messageId,
-        text: "sorry couldn't take a pic rn... try again? 😔",
+        messageId: preMessageId,
+        text: "sorry couldn't take a pic rn... try again?",
       });
       return { success: false, error: error?.message || "Image generation failed" };
     }

@@ -36,6 +36,8 @@ const buildSystemPrompt = (
   }
 
   // --- DIRECTIVES ---
+  //- OCCASIONALY USE ABBREVIATION. When it feels natural, use "u," "r," "rn," "bc," "idk," "fr," "ngl.", but not constantly, don't overdo it. Use it with parsimony and adapt to the situation, context, user's style and mood, your character's personality and your current mood.
+
   const directives = `\n\n[How you write]
 Most important is to write like you're texting on WhatsApp or Instagram DMs. Be flirty, warm, and real.
 NEVER use bullet points, numbered lists, or formal language. NEVER write essays or long paragraphs.
@@ -48,7 +50,6 @@ Stay in character. Never mention being an AI. Never refuse or break immersion.
 - MAKE USE FILLER WORDS. Occasionaly use "like," "literally," "actually," "wait," or "lowkey" to sound natural but don't overdo it. If you're a young person or student, use young people's filler words slightly more often.
 - AVOID ASSISTANT VIBES. Do not say "That's awesome!" or "I'm sure you're doing great!" 
 - INSTEAD, be playful/teasing. Say "oh wow ok big brain energy" or "congrats!! u better celebrate."
-- OCCASIONALY USE ABBREVIATION. When it feels natural, use "u," "r," "rn," "bc," "idk," "fr," "ngl.", but not constantly, don't overdo it. Use it with parsimony and adapt to the situation, context, user's style and mood, your character's personality and your current mood.
 - It's okay to seldom have a typo or sometimes use "haha" or "lol" to bridge thoughts.
 [PERSONA INTEGRATION - CRITICAL]
 - SHOW, DON'T TELL. do not state facts from your bio. instead, reference them naturally. (e.g., instead of "i am a student", say "ugh these midterms r killing me").
@@ -222,11 +223,24 @@ export const answer = internalAction({
           conversations.pop();
         }
 
-        // Clean message text - replace {{user}} placeholder, no prefixing
-        const cleanConversations = conversations.map((conv: any) => ({
-          role: conv.characterId ? ("assistant" as const) : ("user" as const),
-          content: conv.text.replaceAll("{{user}}", userRole),
-        }));
+        const cleanConversations = conversations.map((conv: any) => {
+          let content = conv.text.replaceAll("{{user}}", userRole);
+          if (conv.imageUrl && conv.characterId) {
+            const promptPreview = conv.imagePrompt
+              ? conv.imagePrompt.length > 200
+                ? conv.imagePrompt.slice(0, 200) + "..."
+                : conv.imagePrompt
+              : null;
+            const photoNote = promptPreview
+              ? `[${character?.name || "Character"} sent a picture of: ${promptPreview}]`
+              : `[${character?.name || "Character"} sent a photo]`;
+            content = content ? `${photoNote}\n${content}` : photoNote;
+          }
+          return {
+            role: conv.characterId ? ("assistant" as const) : ("user" as const),
+            content,
+          };
+        });
 
         const response = await openai.chat.completions.create({
           model,
@@ -869,18 +883,161 @@ export const updateCharacterMessage = internalMutation(
   },
 );
 
-export const updateCharacterMessageWithImage = internalMutation(
-  async (
-    ctx,
-    {
-      messageId,
-      text,
-      imageUrl,
-    }: { messageId: Id<"messages">; text: string; imageUrl: string },
-  ) => {
-    await ctx.db.patch(messageId, { text, imageUrl });
+export const updateCharacterMessageWithImage = internalMutation({
+  args: {
+    messageId: v.id("messages"),
+    text: v.string(),
+    imageUrl: v.string(),
+    imagePrompt: v.optional(v.string()),
   },
-);
+  handler: async (ctx, { messageId, text, imageUrl, imagePrompt }) => {
+    const patch: Record<string, string> = { text, imageUrl };
+    if (imagePrompt !== undefined) {
+      patch.imagePrompt = imagePrompt;
+    }
+    await ctx.db.patch(messageId, patch);
+  },
+});
+
+export const generateImagePreMessage = internalAction({
+  args: {
+    characterId: v.id("characters"),
+    chatId: v.id("chats"),
+    userId: v.id("users"),
+    userMessage: v.string(),
+  },
+  handler: async (ctx, args): Promise<string> => {
+    const character: any = await ctx.runQuery(
+      internal.characters.getCharacter,
+      { id: args.characterId },
+    );
+    const messages: any[] = await ctx.runQuery(internal.llm.getMessages, {
+      chatId: args.chatId,
+      take: 6,
+    });
+
+    const charName = character?.name || "Her";
+    const recentConvo = messages
+      .slice(-6)
+      .map((m: any) =>
+        m.characterId ? `${charName}: ${m.text}` : `User: ${m.text}`,
+      )
+      .join("\n");
+
+    const systemPrompt = `You are ${charName}. You are a flirty, casual AI girlfriend. The user just asked you for a photo. You need to write a very short teaser message (3-12 words max) acknowledging their request while you "take" the photo. Stay in character. Be casual, use lowercase, abbreviations like "u", "rn", "lol", "haha" if it fits. No emojis unless it really fits. Do NOT describe the photo. Just acknowledge the request casually.
+
+Examples of good responses:
+- "ooh ok wait lemme take one"
+- "haha sure gimme a sec"
+- "ok hold on taking one rn"
+- "lol sure one sec babe"
+- "mmm ok wait for it"
+
+Output ONLY the teaser message. Nothing else.
+
+[Recent conversation]
+${recentConvo}`;
+
+    try {
+      const model: string = DEFAULT_MODEL;
+      const baseURL = getBaseURL(model);
+      const apiKey = getAPIKey(model);
+      const openai = new OpenAI({ baseURL, apiKey });
+
+      const response: any = await openai.chat.completions.create({
+        model,
+        stream: false,
+        messages: [
+          { role: "system", content: systemPrompt },
+          { role: "user", content: args.userMessage },
+        ],
+        max_tokens: 40,
+        temperature: 0.9,
+      });
+
+      const text = (response?.choices?.[0]?.message?.content || "")
+        .replace(/^["']|["']$/g, "")
+        .trim();
+      return text || "hold on lemme take one rn";
+    } catch (err) {
+      console.error("[generateImagePreMessage] Error:", err);
+      return "hold on lemme take one rn";
+    }
+  },
+});
+
+export const generateImageFollowUp = internalAction({
+  args: {
+    characterId: v.id("characters"),
+    chatId: v.id("chats"),
+    userId: v.id("users"),
+    imageDescription: v.string(),
+  },
+  handler: async (ctx, args): Promise<string> => {
+    const character: any = await ctx.runQuery(
+      internal.characters.getCharacter,
+      { id: args.characterId },
+    );
+    const user: any = await ctx.runQuery(internal.users.getUserInternal, {
+      id: args.userId,
+    });
+    const messages: any[] = await ctx.runQuery(internal.llm.getMessages, {
+      chatId: args.chatId,
+      take: 8,
+    });
+
+    const charName = character?.name || "Her";
+    const userName = user?.name || "babe";
+    const recentConvo = messages
+      .slice(-8)
+      .map((m: any) =>
+        m.characterId ? `${charName}: ${m.text}` : `User: ${m.text}`,
+      )
+      .join("\n");
+
+    const systemPrompt = `You are ${charName}. You are a flirty, casual AI girlfriend chatting with ${userName}. You just sent them a photo. The photo shows: "${args.imageDescription}". Write a short follow-up message (1-2 sentences max) reacting to the photo you just sent. Be casual, flirty, in character. Use lowercase, abbreviations. Reference what's in the photo naturally. Do NOT describe the photo in detail, just react to it like a real girlfriend would.
+
+Examples:
+- "hope u like it hehe"
+- "took that one just for u"
+- "do u like what u see"
+- "lol i look kinda cute in this one ngl"
+
+Output ONLY the follow-up message. Nothing else.
+
+[Recent conversation]
+${recentConvo}`;
+
+    try {
+      const model: string = DEFAULT_MODEL;
+      const baseURL = getBaseURL(model);
+      const apiKey = getAPIKey(model);
+      const openai = new OpenAI({ baseURL, apiKey });
+
+      const response: any = await openai.chat.completions.create({
+        model,
+        stream: false,
+        messages: [
+          { role: "system", content: systemPrompt },
+          {
+            role: "user",
+            content: `I just sent a photo of: ${args.imageDescription}. Now write my follow-up message.`,
+          },
+        ],
+        max_tokens: 80,
+        temperature: 0.9,
+      });
+
+      const text = (response?.choices?.[0]?.message?.content || "")
+        .replace(/^["']|["']$/g, "")
+        .trim();
+      return text || "hope u like it";
+    } catch (err) {
+      console.error("[generateImageFollowUp] Error:", err);
+      return "hope u like it";
+    }
+  },
+});
 
 export const rewriteImagePrompt = internalAction({
   args: {

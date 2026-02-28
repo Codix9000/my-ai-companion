@@ -18,6 +18,7 @@ export default defineSchema({
       ),
     ),
     imageUrl: v.optional(v.string()),
+    imagePrompt: v.optional(v.string()),
     speechUrl: v.optional(v.string()),
   })
     .index("byCharacterId", ["characterId"])
