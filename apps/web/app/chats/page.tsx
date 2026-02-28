@@ -150,7 +150,7 @@ export default function Page() {
               </div>
             )}
           >
-            <ActiveChat characterId={characterId} />
+            <ActiveChat key={characterId} characterId={characterId} />
           </ErrorBoundary>
         ) : (
           <EmptyState />
