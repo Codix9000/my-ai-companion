@@ -16,13 +16,15 @@ import {
   SelectValue,
 } from "@repo/ui/src/components/select";
 import { useTranslation } from "react-i18next";
-import { DEFAULT_MODEL } from "../../convex/constants";
+import { DEFAULT_MODEL, modelData } from "../../convex/constants";
 
-// Single default model for all characters
-const defaultModelOption = {
-  value: DEFAULT_MODEL,
-  description: "L3.3 70B Euryale v2.3 (DeepInfra)",
-};
+const selectableModels = modelData.filter((m) =>
+  [
+    "NousResearch/Hermes-3-Llama-3.1-70B",
+    "Sao10K/L3.3-70B-Euryale-v2.3",
+    "Gryphe/MythoMax-L2-13b",
+  ].includes(m.value),
+);
 
 export const ModelSelect = ({
   form,
@@ -35,11 +37,6 @@ export const ModelSelect = ({
 }) => {
   const { t } = useTranslation();
 
-  // Always force the model to the default
-  if (form.getValues("model") !== DEFAULT_MODEL) {
-    form.setValue("model", DEFAULT_MODEL);
-  }
-
   return (
     <FormField
       control={form.control}
@@ -50,7 +47,7 @@ export const ModelSelect = ({
           <Select
             onValueChange={field.onChange}
             defaultValue={DEFAULT_MODEL}
-            value={DEFAULT_MODEL}
+            value={field.value || DEFAULT_MODEL}
           >
             <FormControl>
               <SelectTrigger>
@@ -58,9 +55,11 @@ export const ModelSelect = ({
               </SelectTrigger>
             </FormControl>
             <SelectContent>
-              <SelectItem value={defaultModelOption.value}>
-                {defaultModelOption.description}
-              </SelectItem>
+              {selectableModels.map((m) => (
+                <SelectItem key={m.value} value={m.value}>
+                  {m.description}
+                </SelectItem>
+              ))}
             </SelectContent>
           </Select>
           <FormDescription>

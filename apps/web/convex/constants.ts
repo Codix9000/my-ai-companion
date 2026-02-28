@@ -1,6 +1,6 @@
 export const SIGN_UP_FREE_CRYSTALS = 50;
 export const DIVIDEND_RATE = 0.25;
-export const DEFAULT_MODEL = "Sao10K/L3.3-70B-Euryale-v2.3";
+export const DEFAULT_MODEL = "NousResearch/Hermes-3-Llama-3.1-70B";
 export const PERPLEXITY_API_URL = "https://api.perplexity.ai";
 export const OPENAI_API_URL = "https://api.openai.com/v1";
 export const FIREWORK_API_URL = "https://api.fireworks.ai/inference/v1";
@@ -29,6 +29,7 @@ export const getBaseURL = (modelName: string) => {
       return PERPLEXITY_API_URL;
     case "Gryphe/MythoMax-L2-13b":
     case "Sao10K/L3.3-70B-Euryale-v2.3":
+    case "NousResearch/Hermes-3-Llama-3.1-70B":
       return DEEPINFRA_API_URL;
     default:
       return DEEPINFRA_API_URL;
@@ -54,6 +55,7 @@ export const getAPIKey = (modelName: string) => {
       return process.env.MISTRAL_API_KEY;
     case "Gryphe/MythoMax-L2-13b":
     case "Sao10K/L3.3-70B-Euryale-v2.3":
+    case "NousResearch/Hermes-3-Llama-3.1-70B":
       return process.env.DEEPINFRA_API_KEY;
     default:
       return process.env.DEEPINFRA_API_KEY;
@@ -78,6 +80,12 @@ export const getImageModelCrystalPrice = (modelName: string) => {
 
 // Model metadata is hard-coded due to frequent updates in open-source LLM.
 export const modelData = [
+  {
+    value: "NousResearch/Hermes-3-Llama-3.1-70B",
+    description: "Hermes 3 Llama 3.1 70B (DeepInfra)",
+    crystalPrice: 1,
+    isNSFW: true,
+  },
   {
     value: "Sao10K/L3.3-70B-Euryale-v2.3",
     description: "L3.3 70B Euryale v2.3 (DeepInfra)",
