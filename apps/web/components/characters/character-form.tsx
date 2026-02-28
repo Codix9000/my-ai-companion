@@ -58,6 +58,7 @@ const formSchema = z.object({
   greetings: z.optional(z.string().max(1024)),
   model: z.string(),
   imagePromptInstructions: z.optional(z.string().max(1024)),
+  loraStrength: z.optional(z.number().min(0.5).max(1.5)),
   voiceId: z.string(),
   age: z.optional(z.number().min(18).max(99)),
 });
@@ -91,6 +92,7 @@ export default function CharacterForm() {
     isDraft = searchParams.get("isDraft") || true,
     age,
     imagePromptInstructions = "",
+    loraStrength,
     visibility: _visibility = searchParams.get("visibility") || "private",
   } = character || remixCharacter || {};
 
@@ -114,6 +116,7 @@ export default function CharacterForm() {
       greetings: Array.isArray(greetings) ? greetings[0] : greetings,
       model,
       imagePromptInstructions: imagePromptInstructions || "",
+      loraStrength: loraStrength ?? 0.9,
       voiceId,
       age: age ?? undefined,
     },
@@ -127,6 +130,7 @@ export default function CharacterForm() {
       greetings: Array.isArray(greetings) ? greetings[0] : greetings,
       model,
       imagePromptInstructions: imagePromptInstructions || "",
+      loraStrength: loraStrength ?? 0.9,
       voiceId,
       age: age ?? undefined,
     });
@@ -138,6 +142,7 @@ export default function CharacterForm() {
     greetings,
     model,
     imagePromptInstructions,
+    loraStrength,
     voiceId,
     age,
   ]);
@@ -147,13 +152,14 @@ export default function CharacterForm() {
   }, [_visibility]);
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
-    const { greetings, age: formAge, imagePromptInstructions: imgPrompt, ...otherValues } = values;
+    const { greetings, age: formAge, imagePromptInstructions: imgPrompt, loraStrength: formLoraStrength, ...otherValues } = values;
     const character = await upsert({
       ...(characterId ? { id: characterId } : {}),
       greetings: [greetings as string],
       ...otherValues,
       ...(formAge ? { age: formAge } : {}),
       ...(imgPrompt ? { imagePromptInstructions: imgPrompt } : {}),
+      ...(formLoraStrength !== undefined ? { loraStrength: formLoraStrength } : {}),
       ...(cardImageUrl ? { cardImageUrl } : {}),
       ...(remixId ? { remixId } : {}),
     });
@@ -556,6 +562,42 @@ export default function CharacterForm() {
                         "e.g. A 25-year-old woman with long black hair, brown eyes, fair skin, wearing a white sundress...",
                       )}
                       {...field}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            {/* LoRA Strength */}
+            <FormField
+              control={form.control}
+              name="loraStrength"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className="flex items-center gap-1">
+                    {t("LoRA Strength")}
+                    <span className="text-muted-foreground">
+                      {t("(optional)")}
+                    </span>
+                    <InfoTooltip
+                      content={
+                        "Controls how strongly the LoRA model influences image generation. Lower values (0.5) produce more generic images, higher values (1.5) produce stronger character likeness. Default is 0.9."
+                      }
+                    />
+                  </FormLabel>
+                  <FormControl>
+                    <Input
+                      type="number"
+                      step="0.05"
+                      min="0.5"
+                      max="1.5"
+                      placeholder="0.9"
+                      value={field.value ?? 0.9}
+                      onChange={(e) => {
+                        const val = parseFloat(e.target.value);
+                        if (!isNaN(val)) field.onChange(val);
+                      }}
                     />
                   </FormControl>
                   <FormMessage />

@@ -20,10 +20,12 @@ function buildWorkflow({
   loraName,
   promptText,
   seed,
+  loraStrength = 0.9,
 }: {
   loraName: string;
   promptText: string;
   seed: number;
+  loraStrength?: number;
 }) {
   return {
     "9": {
@@ -107,7 +109,7 @@ function buildWorkflow({
     "71": {
       inputs: {
         lora_name: `${loraName}.safetensors`,
-        strength_model: 0.9,
+        strength_model: loraStrength,
         model: ["66", 0],
       },
       class_type: "LoraLoaderModelOnly",
@@ -338,10 +340,11 @@ export const generateChatImage = action({
 
       const imagePromptInstructions =
         (character as any).imagePromptInstructions || "";
+      const charLoraStrength = (character as any).loraStrength ?? 0.9;
       const loraName = extractLoraName(imagePromptInstructions);
       const fullPrompt = `${imagePromptInstructions}, ${rewrittenPrompt}${HARDCODED_STYLE}`;
       const seed = Math.floor(Math.random() * 2147483647);
-      const workflow = buildWorkflow({ loraName, promptText: fullPrompt, seed });
+      const workflow = buildWorkflow({ loraName, promptText: fullPrompt, seed, loraStrength: charLoraStrength });
 
       // ── Phase 2: Image generation ──
       const imageMessageId: Id<"messages"> = await ctx.runMutation(
@@ -493,6 +496,7 @@ export const generateImage = action({
 
     const imagePromptInstructions =
       (character as any).imagePromptInstructions || "";
+    const charLoraStrength = (character as any).loraStrength ?? 0.9;
 
     // 2. Extract LoRA name (first word, stripped of commas/punctuation)
     const loraName = extractLoraName(imagePromptInstructions);
@@ -507,6 +511,7 @@ export const generateImage = action({
     const workflow = buildWorkflow({
       loraName,
       promptText: fullPrompt,
+      loraStrength: charLoraStrength,
       seed,
     });
 

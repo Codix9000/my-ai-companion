@@ -21,11 +21,15 @@ const buildSystemPrompt = (
   const userRole = persona?.name ? persona?.name : username;
 
   // --- IDENTITY ---
-  const identity = character?.instructions
+  let identity = character?.instructions
     ? character.instructions
     : character?.description
       ? `You are ${character.name}. ${character.description}`
       : `You are ${character.name}.`;
+
+  if (character?.instructions && character?.description) {
+    identity = `You are ${character.name}. ${character.description}\n\n${character.instructions}`;
+  }
 
   // --- MEMORY: What you know about the user ---
   let memorySection = "";
