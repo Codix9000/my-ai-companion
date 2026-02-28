@@ -18,6 +18,7 @@ export default defineSchema({
       ),
     ),
     imageUrl: v.optional(v.string()),
+    imagePrompt: v.optional(v.string()), // TEMPORARY: tolerate orphaned field, will be cleaned up
     speechUrl: v.optional(v.string()),
   })
     .index("byCharacterId", ["characterId"])
@@ -119,6 +120,7 @@ export default defineSchema({
     isUnlocked: v.optional(v.boolean()),
     characterId: v.optional(v.id("characters")),
     joinedAt: v.optional(v.string()),
+    intimacyScore: v.optional(v.number()), // TEMPORARY: tolerate orphaned field, will be cleaned up
   })
     .index("byUserId", ["userId"])
     .index("byCharacterId", ["characterId"])
