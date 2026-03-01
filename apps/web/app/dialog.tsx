@@ -557,7 +557,7 @@ export function Dialog({
                 ))}
               </div>
 
-              {/* Bottom row: Hide suggestions + NSFW toggle */}
+              {/* Bottom row: NSFW toggle (left) + Hide suggestions (right) */}
               <motion.div
                 className="mt-2 flex items-center justify-between"
                 initial={{ opacity: 0 }}
@@ -566,30 +566,36 @@ export function Dialog({
               >
                 <button
                   type="button"
-                  onClick={() => setShowSuggestions(false)}
-                  className="flex items-center gap-1 text-[11px] text-white/30 transition-colors hover:text-white/50"
+                  onClick={() => setIsNSFW(!isNSFW)}
+                  className={`group flex items-center gap-2 rounded-full px-3.5 py-1.5 text-[12px] font-semibold tracking-wide transition-all duration-200 ${
+                    isNSFW
+                      ? "bg-gradient-to-r from-red-500 to-orange-500 text-white shadow-lg shadow-red-500/30 ring-1 ring-red-400/40"
+                      : "bg-gradient-to-r from-red-500/10 to-orange-500/10 text-orange-300/70 ring-1 ring-red-500/20 hover:from-red-500/20 hover:to-orange-500/20 hover:text-orange-300/90 hover:ring-red-500/30"
+                  }`}
                 >
-                  <span>▸</span> Hide suggestions
+                  <motion.span
+                    animate={{ rotate: [0, -12, 12, -8, 0], scale: [1, 1.3, 1.2, 1.25, 1] }}
+                    transition={{ duration: 0.6, repeat: Infinity, repeatDelay: 4.5, ease: "easeInOut" }}
+                    className="flex"
+                  >
+                    <Flame className={`h-3.5 w-3.5 ${isNSFW ? "text-yellow-300" : "text-orange-400/60 group-hover:text-orange-400/80"}`} />
+                  </motion.span>
+                  NSFW
+                  <span className={`flex h-4 w-7 items-center rounded-full p-0.5 transition-colors duration-200 ${isNSFW ? "justify-end bg-white/25" : "justify-start bg-red-500/15"}`}>
+                    <motion.span
+                      layout
+                      transition={{ type: "spring", stiffness: 500, damping: 30 }}
+                      className={`block h-3 w-3 rounded-full ${isNSFW ? "bg-white" : "bg-orange-400/40"}`}
+                    />
+                  </span>
                 </button>
 
                 <button
                   type="button"
-                  onClick={() => setIsNSFW(!isNSFW)}
-                  className={`flex items-center gap-2 rounded-full px-3.5 py-1.5 text-[12px] font-semibold tracking-wide transition-all duration-200 ${
-                    isNSFW
-                      ? "bg-gradient-to-r from-red-500/90 to-orange-500/90 text-white shadow-md shadow-red-500/20 ring-1 ring-red-400/30"
-                      : "bg-white/[0.06] text-white/40 ring-1 ring-white/[0.08] hover:bg-white/[0.10] hover:text-white/60"
-                  }`}
+                  onClick={() => setShowSuggestions(false)}
+                  className="flex items-center gap-1 text-[11px] text-white/30 transition-colors hover:text-white/50"
                 >
-                  <Flame className={`h-3.5 w-3.5 ${isNSFW ? "text-yellow-300" : "text-white/30"}`} />
-                  NSFW
-                  <span className={`flex h-4 w-7 items-center rounded-full p-0.5 transition-colors duration-200 ${isNSFW ? "justify-end bg-white/20" : "justify-start bg-white/[0.08]"}`}>
-                    <motion.span
-                      layout
-                      transition={{ type: "spring", stiffness: 500, damping: 30 }}
-                      className={`block h-3 w-3 rounded-full ${isNSFW ? "bg-white" : "bg-white/30"}`}
-                    />
-                  </span>
+                  <span>▸</span> Hide suggestions
                 </button>
               </motion.div>
             </motion.div>
@@ -607,30 +613,36 @@ export function Dialog({
             >
               <button
                 type="button"
-                onClick={() => setShowSuggestions(true)}
-                className="flex items-center gap-1 text-[11px] text-white/30 transition-colors hover:text-white/50"
+                onClick={() => setIsNSFW(!isNSFW)}
+                className={`group flex items-center gap-2 rounded-full px-3.5 py-1.5 text-[12px] font-semibold tracking-wide transition-all duration-200 ${
+                  isNSFW
+                    ? "bg-gradient-to-r from-red-500 to-orange-500 text-white shadow-lg shadow-red-500/30 ring-1 ring-red-400/40"
+                    : "bg-gradient-to-r from-red-500/10 to-orange-500/10 text-orange-300/70 ring-1 ring-red-500/20 hover:from-red-500/20 hover:to-orange-500/20 hover:text-orange-300/90 hover:ring-red-500/30"
+                }`}
               >
-                <span>▸</span> Show suggestions
+                <motion.span
+                  animate={{ rotate: [0, -12, 12, -8, 0], scale: [1, 1.3, 1.2, 1.25, 1] }}
+                  transition={{ duration: 0.6, repeat: Infinity, repeatDelay: 4.5, ease: "easeInOut" }}
+                  className="flex"
+                >
+                  <Flame className={`h-3.5 w-3.5 ${isNSFW ? "text-yellow-300" : "text-orange-400/60 group-hover:text-orange-400/80"}`} />
+                </motion.span>
+                NSFW
+                <span className={`flex h-4 w-7 items-center rounded-full p-0.5 transition-colors duration-200 ${isNSFW ? "justify-end bg-white/25" : "justify-start bg-red-500/15"}`}>
+                  <motion.span
+                    layout
+                    transition={{ type: "spring", stiffness: 500, damping: 30 }}
+                    className={`block h-3 w-3 rounded-full ${isNSFW ? "bg-white" : "bg-orange-400/40"}`}
+                  />
+                </span>
               </button>
 
               <button
                 type="button"
-                onClick={() => setIsNSFW(!isNSFW)}
-                className={`flex items-center gap-2 rounded-full px-3.5 py-1.5 text-[12px] font-semibold tracking-wide transition-all duration-200 ${
-                  isNSFW
-                    ? "bg-gradient-to-r from-red-500/90 to-orange-500/90 text-white shadow-md shadow-red-500/20 ring-1 ring-red-400/30"
-                    : "bg-white/[0.06] text-white/40 ring-1 ring-white/[0.08] hover:bg-white/[0.10] hover:text-white/60"
-                }`}
+                onClick={() => setShowSuggestions(true)}
+                className="flex items-center gap-1 text-[11px] text-white/30 transition-colors hover:text-white/50"
               >
-                <Flame className={`h-3.5 w-3.5 ${isNSFW ? "text-yellow-300" : "text-white/30"}`} />
-                NSFW
-                <span className={`flex h-4 w-7 items-center rounded-full p-0.5 transition-colors duration-200 ${isNSFW ? "justify-end bg-white/20" : "justify-start bg-white/[0.08]"}`}>
-                  <motion.span
-                    layout
-                    transition={{ type: "spring", stiffness: 500, damping: 30 }}
-                    className={`block h-3 w-3 rounded-full ${isNSFW ? "bg-white" : "bg-white/30"}`}
-                  />
-                </span>
+                <span>▸</span> Show suggestions
               </button>
             </motion.div>
           )}
