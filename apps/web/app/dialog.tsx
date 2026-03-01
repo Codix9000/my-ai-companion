@@ -55,6 +55,8 @@ import { useResponsivePopover } from "@repo/ui/src/hooks/use-responsive-popover"
 
 const PHOTO_REQUEST_PATTERN = /\b(send\s+me|show\s+me|can\s+you\s+(show|send)|take\s+a?\s*(pic|photo|selfie|picture)|send\s+a?\s*(pic|photo|selfie|picture)|i\s+want\s+a?\s*(pic|photo|picture)|i\s+wanna\s+see|let\s+me\s+see)/i;
 
+const NSFW_DETECT_PATTERN = /\b(naked|nude|topless|nsfw|strip|undress|lingerie|panties|bra\b|ass\b|boobs|tits|pussy|dick|cock|blowjob|sex\b|fuck|horny|naughty|explicit|thong|nipple|orgasm|cum\b|wet\b|spread|bent\s*over|no\s*cloth|take.*off|nothing\s*on|titties|butt|cleavage|underwear)\b/i;
+
 // ── Pose suggestions for inline image generation ──
 const POSE_SUGGESTIONS = [
   { label: "Selfie", promptText: "a selfie" },
@@ -346,18 +348,12 @@ export function Dialog({
           chatId,
           characterId,
         });
-        const result = await generateChatImage({
+        await generateChatImage({
           characterId,
           chatId,
           userMessage: messageText,
           isNSFW,
         });
-        if (result?.nsfwRequestDetected && !isNSFW) {
-          setHighlightNSFW(true);
-          setImageGenMode(true);
-          setShowSuggestions(true);
-          setTimeout(() => setHighlightNSFW(false), 12000);
-        }
       } catch (error: any) {
         console.error("[ChatImageGen] Error:", error);
         toast.error(error?.message || "Failed to generate image.");
@@ -575,19 +571,17 @@ export function Dialog({
                   type="button"
                   onClick={() => { setIsNSFW(!isNSFW); setHighlightNSFW(false); }}
                   animate={highlightNSFW ? {
-                    scale: [1, 1.08, 1, 1.08, 1],
+                    scale: [1, 1.04, 1],
                     boxShadow: [
-                      "0 0 0px rgba(239,68,68,0)",
-                      "0 0 16px rgba(239,68,68,0.6)",
-                      "0 0 6px rgba(239,68,68,0.2)",
-                      "0 0 16px rgba(239,68,68,0.6)",
-                      "0 0 0px rgba(239,68,68,0)",
+                      "0 0 0px rgba(251,146,60,0), 0 0 0px rgba(239,68,68,0)",
+                      "0 0 12px rgba(251,146,60,0.4), 0 0 24px rgba(239,68,68,0.15)",
+                      "0 0 0px rgba(251,146,60,0), 0 0 0px rgba(239,68,68,0)",
                     ],
                   } : {}}
-                  transition={highlightNSFW ? { duration: 1.5, repeat: Infinity, ease: "easeInOut" } : {}}
-                  className={`group flex items-center gap-2 rounded-full px-3.5 py-1.5 text-[12px] font-semibold tracking-wide transition-all duration-200 ${
+                  transition={highlightNSFW ? { duration: 2.5, repeat: Infinity, ease: "easeInOut" } : {}}
+                  className={`group flex items-center gap-2 rounded-full px-3.5 py-1.5 text-[12px] font-semibold tracking-wide transition-all duration-300 ${
                     highlightNSFW
-                      ? "bg-gradient-to-r from-red-500/30 to-orange-500/30 text-orange-200 ring-2 ring-red-400/60"
+                      ? "bg-gradient-to-r from-red-500/25 to-orange-500/25 text-orange-200 ring-1 ring-orange-400/50"
                       : isNSFW
                         ? "bg-gradient-to-r from-red-500 to-orange-500 text-white shadow-lg shadow-red-500/30 ring-1 ring-red-400/40"
                         : "bg-gradient-to-r from-red-500/10 to-orange-500/10 text-orange-300/70 ring-1 ring-red-500/20 hover:from-red-500/20 hover:to-orange-500/20 hover:text-orange-300/90 hover:ring-red-500/30"
@@ -595,10 +589,9 @@ export function Dialog({
                 >
                   <motion.span
                     animate={highlightNSFW ? {
-                      y: [0, -2, 1, -3, 0.5, -2, 0, -2.5, 1, -3.5, 0],
-                      scaleY: [1, 1.4, 1.05, 1.5, 1.1, 1.35, 1, 1.45, 1.05, 1.55, 1],
-                      scaleX: [1, 0.85, 1.05, 0.8, 1, 0.88, 1, 0.82, 1.02, 0.78, 1],
-                      opacity: [1, 0.8, 1, 0.7, 1, 0.85, 1, 0.75, 1, 0.65, 1],
+                      y: [0, -1, 0],
+                      scale: [1, 1.15, 1],
+                      opacity: [0.85, 1, 0.85],
                     } : {
                       y: [0, -1.5, 0.5, -2, 0.5, -1, 0, -1.5, 0.5, -2.5, 0],
                       scaleY: [1, 1.25, 1.05, 1.35, 1.1, 1.2, 1, 1.3, 1.05, 1.4, 1],
@@ -606,13 +599,13 @@ export function Dialog({
                       opacity: [1, 0.85, 1, 0.75, 1, 0.9, 1, 0.8, 1, 0.7, 1],
                     }}
                     transition={highlightNSFW
-                      ? { duration: 0.8, repeat: Infinity, ease: "easeInOut" }
+                      ? { duration: 2, repeat: Infinity, ease: "easeInOut" }
                       : { duration: 1.2, repeat: Infinity, repeatDelay: 4, ease: "easeInOut" }
                     }
-                    style={{ originY: 1, filter: highlightNSFW ? "drop-shadow(0 0 6px rgba(239,68,68,0.8))" : isNSFW ? "drop-shadow(0 0 4px rgba(251,191,36,0.6))" : "drop-shadow(0 0 3px rgba(251,146,60,0.3))" }}
+                    style={{ originY: 1, filter: highlightNSFW ? "drop-shadow(0 0 5px rgba(251,146,60,0.5))" : isNSFW ? "drop-shadow(0 0 4px rgba(251,191,36,0.6))" : "drop-shadow(0 0 3px rgba(251,146,60,0.3))" }}
                     className="flex"
                   >
-                    <Flame className={`h-3.5 w-3.5 ${highlightNSFW ? "text-red-400" : isNSFW ? "text-yellow-300" : "text-orange-400/60 group-hover:text-orange-400/80"}`} />
+                    <Flame className={`h-3.5 w-3.5 ${highlightNSFW ? "text-orange-400" : isNSFW ? "text-yellow-300" : "text-orange-400/60 group-hover:text-orange-400/80"}`} />
                   </motion.span>
                   NSFW
                   <span className={`flex h-4 w-7 items-center rounded-full p-0.5 transition-colors duration-200 ${isNSFW ? "justify-end bg-white/25" : "justify-start bg-red-500/15"}`}>
@@ -649,19 +642,17 @@ export function Dialog({
                 type="button"
                 onClick={() => { setIsNSFW(!isNSFW); setHighlightNSFW(false); }}
                 animate={highlightNSFW ? {
-                  scale: [1, 1.08, 1, 1.08, 1],
+                  scale: [1, 1.04, 1],
                   boxShadow: [
-                    "0 0 0px rgba(239,68,68,0)",
-                    "0 0 16px rgba(239,68,68,0.6)",
-                    "0 0 6px rgba(239,68,68,0.2)",
-                    "0 0 16px rgba(239,68,68,0.6)",
-                    "0 0 0px rgba(239,68,68,0)",
+                    "0 0 0px rgba(251,146,60,0), 0 0 0px rgba(239,68,68,0)",
+                    "0 0 12px rgba(251,146,60,0.4), 0 0 24px rgba(239,68,68,0.15)",
+                    "0 0 0px rgba(251,146,60,0), 0 0 0px rgba(239,68,68,0)",
                   ],
                 } : {}}
-                transition={highlightNSFW ? { duration: 1.5, repeat: Infinity, ease: "easeInOut" } : {}}
-                className={`group flex items-center gap-2 rounded-full px-3.5 py-1.5 text-[12px] font-semibold tracking-wide transition-all duration-200 ${
+                transition={highlightNSFW ? { duration: 2.5, repeat: Infinity, ease: "easeInOut" } : {}}
+                className={`group flex items-center gap-2 rounded-full px-3.5 py-1.5 text-[12px] font-semibold tracking-wide transition-all duration-300 ${
                   highlightNSFW
-                    ? "bg-gradient-to-r from-red-500/30 to-orange-500/30 text-orange-200 ring-2 ring-red-400/60"
+                    ? "bg-gradient-to-r from-red-500/25 to-orange-500/25 text-orange-200 ring-1 ring-orange-400/50"
                     : isNSFW
                       ? "bg-gradient-to-r from-red-500 to-orange-500 text-white shadow-lg shadow-red-500/30 ring-1 ring-red-400/40"
                       : "bg-gradient-to-r from-red-500/10 to-orange-500/10 text-orange-300/70 ring-1 ring-red-500/20 hover:from-red-500/20 hover:to-orange-500/20 hover:text-orange-300/90 hover:ring-red-500/30"
@@ -669,10 +660,9 @@ export function Dialog({
               >
                 <motion.span
                   animate={highlightNSFW ? {
-                    y: [0, -2, 1, -3, 0.5, -2, 0, -2.5, 1, -3.5, 0],
-                    scaleY: [1, 1.4, 1.05, 1.5, 1.1, 1.35, 1, 1.45, 1.05, 1.55, 1],
-                    scaleX: [1, 0.85, 1.05, 0.8, 1, 0.88, 1, 0.82, 1.02, 0.78, 1],
-                    opacity: [1, 0.8, 1, 0.7, 1, 0.85, 1, 0.75, 1, 0.65, 1],
+                    y: [0, -1, 0],
+                    scale: [1, 1.15, 1],
+                    opacity: [0.85, 1, 0.85],
                   } : {
                     y: [0, -1.5, 0.5, -2, 0.5, -1, 0, -1.5, 0.5, -2.5, 0],
                     scaleY: [1, 1.25, 1.05, 1.35, 1.1, 1.2, 1, 1.3, 1.05, 1.4, 1],
@@ -680,13 +670,13 @@ export function Dialog({
                     opacity: [1, 0.85, 1, 0.75, 1, 0.9, 1, 0.8, 1, 0.7, 1],
                   }}
                   transition={highlightNSFW
-                    ? { duration: 0.8, repeat: Infinity, ease: "easeInOut" }
+                    ? { duration: 2, repeat: Infinity, ease: "easeInOut" }
                     : { duration: 1.2, repeat: Infinity, repeatDelay: 4, ease: "easeInOut" }
                   }
-                  style={{ originY: 1, filter: highlightNSFW ? "drop-shadow(0 0 6px rgba(239,68,68,0.8))" : isNSFW ? "drop-shadow(0 0 4px rgba(251,191,36,0.6))" : "drop-shadow(0 0 3px rgba(251,146,60,0.3))" }}
+                  style={{ originY: 1, filter: highlightNSFW ? "drop-shadow(0 0 5px rgba(251,146,60,0.5))" : isNSFW ? "drop-shadow(0 0 4px rgba(251,191,36,0.6))" : "drop-shadow(0 0 3px rgba(251,146,60,0.3))" }}
                   className="flex"
                 >
-                  <Flame className={`h-3.5 w-3.5 ${highlightNSFW ? "text-red-400" : isNSFW ? "text-yellow-300" : "text-orange-400/60 group-hover:text-orange-400/80"}`} />
+                  <Flame className={`h-3.5 w-3.5 ${highlightNSFW ? "text-orange-400" : isNSFW ? "text-yellow-300" : "text-orange-400/60 group-hover:text-orange-400/80"}`} />
                 </motion.span>
                 NSFW
                 <span className={`flex h-4 w-7 items-center rounded-full p-0.5 transition-colors duration-200 ${isNSFW ? "justify-end bg-white/25" : "justify-start bg-red-500/15"}`}>
@@ -742,6 +732,46 @@ export function Dialog({
           )}
         </AnimatePresence>
 
+        {/* ── NSFW detected tip banner ── */}
+        <AnimatePresence>
+          {highlightNSFW && !imageGenMode && (
+            <motion.div
+              initial={{ opacity: 0, y: 8, height: 0, marginBottom: 0 }}
+              animate={{ opacity: 1, y: 0, height: "auto", marginBottom: 10 }}
+              exit={{ opacity: 0, y: 8, height: 0, marginBottom: 0 }}
+              transition={{ duration: 0.3, ease: [0.4, 0, 0.2, 1] }}
+              className="overflow-hidden"
+            >
+              <div className="flex w-full items-center gap-3 rounded-xl border border-red-500/20 bg-gradient-to-r from-red-500/[0.07] to-orange-500/[0.07] px-4 py-2.5">
+                <motion.div
+                  animate={{ scale: [1, 1.15, 1], opacity: [0.8, 1, 0.8] }}
+                  transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+                  className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-red-500/20 to-orange-500/20"
+                >
+                  <Flame className="h-4 w-4 text-orange-400" />
+                </motion.div>
+                <div className="min-w-0 flex-1">
+                  <p className="text-[13px] font-medium text-orange-200/80">
+                    Enable <span className="font-bold text-orange-300">NSFW</span> mode in image generation for spicier content
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    activateImageGenMode();
+                    setIsNSFW(true);
+                    setHighlightNSFW(false);
+                  }}
+                  className="flex shrink-0 items-center gap-1.5 rounded-lg bg-gradient-to-r from-red-500/20 to-orange-500/20 px-3 py-1.5 text-[11px] font-semibold text-orange-300 ring-1 ring-red-500/25 transition-all hover:from-red-500/30 hover:to-orange-500/30 hover:text-orange-200"
+                >
+                  <Flame className="h-3 w-3" />
+                  Enable
+                </button>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
         <div className="overflow-hidden rounded-2xl border border-white/[0.08] bg-white/[0.06]">
           {/* Text input row */}
           <form onSubmit={handleSend}>
@@ -761,8 +791,12 @@ export function Dialog({
                 if (!imageGenMode && !value.startsWith("Show me ")) {
                   const isPhotoRequest = PHOTO_REQUEST_PATTERN.test(value);
                   setShowPhotoTip(isPhotoRequest && value.length > 5);
+
+                  const hasNsfwWords = NSFW_DETECT_PATTERN.test(value);
+                  setHighlightNSFW(hasNsfwWords && value.length > 3 && !isNSFW);
                 } else {
                   setShowPhotoTip(false);
+                  if (!imageGenMode) setHighlightNSFW(false);
                 }
               }}
               onKeyDown={(e) => {
@@ -789,19 +823,21 @@ export function Dialog({
                   animate={{
                     width: imageGenMode ? 120 : 44,
                     borderRadius: imageGenMode ? 12 : 22,
-                    scale: showPhotoTip && !imageGenMode ? [1, 1.08, 1] : 1,
+                    scale: (showPhotoTip || highlightNSFW) && !imageGenMode ? [1, 1.08, 1] : 1,
                   }}
                   transition={
-                    showPhotoTip && !imageGenMode
+                    (showPhotoTip || highlightNSFW) && !imageGenMode
                       ? { scale: { repeat: Infinity, duration: 1.5, ease: "easeInOut" }, type: "spring", stiffness: 400, damping: 30 }
                       : { type: "spring", stiffness: 400, damping: 30 }
                   }
                   className={`relative flex h-11 items-center justify-center gap-2 overflow-hidden ${
                     imageGenMode
                       ? "bg-gradient-to-r from-pink-500 to-purple-500 text-white shadow-lg shadow-pink-500/25 hover:from-pink-600 hover:to-purple-600"
-                      : showPhotoTip
-                        ? "bg-gradient-to-r from-pink-500/30 to-purple-500/30 text-white/80 shadow-md shadow-pink-500/15 ring-1 ring-pink-500/30 hover:from-pink-500/40 hover:to-purple-500/40"
-                        : "bg-white/[0.08] text-white/50 hover:bg-white/[0.14] hover:text-white/80"
+                      : highlightNSFW
+                        ? "bg-gradient-to-r from-red-500/25 to-orange-500/25 text-orange-200/90 shadow-md shadow-red-500/15 ring-1 ring-red-500/30 hover:from-red-500/35 hover:to-orange-500/35"
+                        : showPhotoTip
+                          ? "bg-gradient-to-r from-pink-500/30 to-purple-500/30 text-white/80 shadow-md shadow-pink-500/15 ring-1 ring-pink-500/30 hover:from-pink-500/40 hover:to-purple-500/40"
+                          : "bg-white/[0.08] text-white/50 hover:bg-white/[0.14] hover:text-white/80"
                   }`}
                 >
                   <span className="relative flex shrink-0">
