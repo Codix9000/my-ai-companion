@@ -362,12 +362,19 @@ export function Dialog({
 
   const listRef = useRef<HTMLDivElement>(null);
 
+  const isNearBottom = () => {
+    const el = listRef.current;
+    if (!el) return true;
+    return el.scrollHeight - el.scrollTop - el.clientHeight < 150;
+  };
+
   useEffect(() => {
-    if (isScrolled) return;
+    if (isScrolled && !isNearBottom()) return;
+    setScrolled(false);
     setTimeout(() => {
       listRef.current?.scrollTo({ top: listRef.current.scrollHeight, behavior: "smooth" });
     }, 0);
-  }, [messages, isScrolled]);
+  }, [messages]);
 
   const ref = useRef(null);
   const inView = useInView(ref);

@@ -438,6 +438,7 @@ export const generateChatImage = action({
             chatId: args.chatId,
             userId: user._id,
             imageDescription: rewrittenPrompt,
+            userMessage: args.userMessage,
           },
         );
         await ctx.runMutation(internal.llm.updateCharacterMessage, {
