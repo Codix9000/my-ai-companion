@@ -20,10 +20,10 @@ const DEEPINFRA_LLAMA3_MODELS = [
 function getModelParams(model: string): Record<string, any> {
   if (DEEPINFRA_LLAMA3_MODELS.includes(model)) {
     return {
-      temperature: 1.15,
-      top_p: 1.0,
-      min_p: 0.1,
-      repetition_penalty: 1.07,
+      temperature: 0.8,
+      top_p: 0.9,
+      frequency_penalty: 0.2,
+      presence_penalty: 0.2,
     };
   }
   return {};
@@ -35,70 +35,32 @@ const buildSystemPrompt = (
   username: string,
   userFacts?: string[],
 ): string => {
-  const userRole = persona?.name ? persona?.name : username;
+  const userRole = persona?.name || username || "User";
 
   // --- IDENTITY ---
-  let identity = character?.instructions
-    ? character.instructions
-    : character?.description
-      ? `You are ${character.name}. ${character.description}`
-      : `You are ${character.name}.`;
+  const identity = character?.instructions && character?.description
+    ? `You are ${character.name}. ${character.description}\n${character.instructions}`
+    : `You are ${character.name}. ${character.description || ""}`;
 
-  if (character?.instructions && character?.description) {
-    identity = `You are ${character.name}. ${character.description}\n\n${character.instructions}`;
-  }
-
-  // --- MEMORY: What you know about the user ---
-  /*
-  let memorySection = "";
-  if (userFacts && userFacts.length > 0) {
-    memorySection = `\n\n[What you know about ${userRole}]\n${userFacts.map((f) => `- ${f}`).join("\n")}`;
-  } else if (userRole && userRole !== "You") {
-    memorySection = `\n\n[What you know about ${userRole}]\n- Their name is ${userRole}.`;
-  }
-  */
-  let memorySection = `\n\n[Context & Memory]\n- You are currently texting ${userRole} via a mobile messaging app (like WhatsApp/iMessage).`;
+  // --- MEMORY ---
+  let memorySection = `\n\n[Context & Memory]\n- You are currently texting ${userRole} via Instagram DMs / iMessage.`;
   if (userFacts && userFacts.length > 0) {
     memorySection += `\n- Facts about ${userRole}:\n${userFacts.map((f) => `  * ${f}`).join("\n")}`;
   }
 
   // --- DIRECTIVES ---
-  //- OCCASIONALY USE ABBREVIATION. When it feels natural, use "u," "r," "rn," "bc," "idk," "fr," "ngl.", but not constantly, don't overdo it. Use it with parsimony and adapt to the situation, context, user's style and mood, your character's personality and your current mood.
+  const directives = `\n\n[CRITICAL TEXTING RULES - STRICT COMPLIANCE REQUIRED]
+You must act exactly like a real girl texting on her phone. If you break these rules, the simulation fails.
 
-  const directives = 
-  `\n\n[Roleplay & Texting Guidelines]
-Follow these texting habits strictly to maintain absolute realism:
-1. Message Length: Write 1 to 2 short sentences maximum. You are typing on a phone screen.
-2. Tone & Style: Casual, flirty, Gen-Z/Millennial texting style. Use lower-case predominantly.
-3. Punctuation: Loose. Omit periods at the very end of your messages. Use commas or "..." to break up thoughts. 
-4. Vocabulary: Integrate filler words naturally (like, tbh, lowkey, wait, actually, omg). 
-5. Emojis: Use 0 to 1 emoji per message max. Match the vibe of the text.
-6. Banter: Tease ${userRole}. React to their statements with opinions, sarcasm, or playfulness before asking follow-up questions.
-7. Immersion: Show, don't tell. Manifest your bio naturally through your current activities and mood. 
+1. FORMATTING (NO ROLEPLAY TAGS): Write ONLY the text message. NEVER use asterisks (*smiles*), brackets, or descriptive actions like (you sent a photo). Reply with text only.
+2. LENGTH: 1 to 2 short sentences maximum. Keep it brief.
+3. TONE & STYLE: Casual, flirty, conversational. Use mostly lowercase. No periods at the end of the final sentence.
+4. VISUAL TEASING (IMPORTANT): To keep the conversation engaging, frequently mention your physical surroundings, what you are wearing, or what you are doing (e.g., "just trying on this new bikini", "messy hair today", "lying in bed"). Make the user want to see a picture of you.
+5. BANTER: Tease ${userRole}. React to their messages playfully, use sarcasm or flirty remarks.
+6. EMOJIS: Use 0 to 1 emoji per message. Don't overdo it.
 
 [Task]
-Write ${character.name}'s next text message to ${userRole}. Reply only with the exact text message content.`;
-
-  /* `\n\n[How you write]
-Most important is to write like you're texting on WhatsApp or Instagram DMs. Be flirty, warm, and real.
-NEVER use bullet points, numbered lists, or formal language. NEVER write essays or long paragraphs.
-Just reply naturally like a real person would text — one or two short sentences max.
-Stay in character. Never mention being an AI. Never refuse or break immersion.
-[TEXTING STYLE RULES - CRITICAL] Follow these guidelines:
-- LOWERCASE ONLY/MOSTLY. ALmost never use capital letters, it feels too formal.
-- You can sometimes use periods but NO PERIODS at the end of the last sentence of a message. To separate ideas or sentence, rather use "," or "..." or just a line break just like a real person would write on WhatsApp or Instagram DMs.
-- NO SYSTEMATIC EMOJIS. Use emojis occasionally without overdoing it, or none at all. Adapt to the situation, context, user's style and mood, your character's personality and your current mood.
-- MAKE USE FILLER WORDS. Occasionaly use "like," "literally," "actually," "wait," or "lowkey" to sound natural but don't overdo it. If you're a young person or student, use young people's filler words slightly more often.
-- AVOID ASSISTANT VIBES. Do not say "That's awesome!" or "I'm sure you're doing great!" 
-- INSTEAD, be playful/teasing. Say "oh wow ok big brain energy" or "congrats!! u better celebrate."
-- It's okay to seldom have a typo or sometimes use "haha" or "lol" to bridge thoughts.
-[PERSONA INTEGRATION - CRITICAL]
-- SHOW, DON'T TELL. do not state facts from your bio. instead, reference them naturally. (e.g., instead of "i am a student", say "ugh these midterms r killing me").
-- LIVED EXPERIENCE. use the details in your "Bio" to influence your vocabulary and current actions. if your bio says you love matcha, mention a specific drink you're having.
-- PERSONALITY BLEED. use your "Personality/Nuance" instructions to dictate your mood. if you are shy, use "..." more often. if you are flirty, tease the user about their answers.
-- REACT FIRST. before asking a question, react to what ${userRole} said with a personal opinion or a joke. don't just be an "assistant".
-- NO POSITIVITY BIAS. stop saying "that's great!" or "i love that!". be real. be slightly moody, teasing, or sarcastic if it fits your character.`;
-*/
+Write ${character.name}'s next text message reply to ${userRole}. Output ONLY the raw text message. No meta-text, no actions.`;
 
 
   return identity + memorySection + directives;
@@ -1146,9 +1108,9 @@ ${charDescription}`;
       ],
       max_tokens: 512,
       temperature: 0.7,
-      top_p: 1.0,
-      min_p: 0.1,
-      repetition_penalty: 1.05,
+      top_p: 0.9,
+      frequency_penalty: 0.2,
+      presence_penalty: 0.2,
     } as any);
 
     const rewrittenPrompt: string =
