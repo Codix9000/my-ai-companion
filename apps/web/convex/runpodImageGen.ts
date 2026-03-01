@@ -341,9 +341,10 @@ export const generateChatImage = action({
       const imagePromptInstructions =
         (character as any).imagePromptInstructions || "";
       const charLoraStrength = (character as any).loraStrength ?? 0.9;
+      const charSeed = (character as any).seed;
       const loraName = extractLoraName(imagePromptInstructions);
       const fullPrompt = `${imagePromptInstructions}, ${rewrittenPrompt}${HARDCODED_STYLE}`;
-      const seed = Math.floor(Math.random() * 2147483647);
+      const seed = typeof charSeed === "number" ? charSeed : Math.floor(Math.random() * 2147483647);
       const workflow = buildWorkflow({ loraName, promptText: fullPrompt, seed, loraStrength: charLoraStrength });
 
       // ── Phase 2: Image generation ──
@@ -497,6 +498,7 @@ export const generateImage = action({
     const imagePromptInstructions =
       (character as any).imagePromptInstructions || "";
     const charLoraStrength = (character as any).loraStrength ?? 0.9;
+    const charSeed = (character as any).seed;
 
     // 2. Extract LoRA name (first word, stripped of commas/punctuation)
     const loraName = extractLoraName(imagePromptInstructions);
@@ -504,8 +506,8 @@ export const generateImage = action({
     // 3. Build the full prompt: characterInstruction + userPrompt + hardcodedStyle
     const fullPrompt = `${imagePromptInstructions}, ${args.userPrompt}${HARDCODED_STYLE}`;
 
-    // 4. Generate a random seed
-    const seed = Math.floor(Math.random() * 2147483647);
+    // 4. Use character seed if set, otherwise random
+    const seed = typeof charSeed === "number" ? charSeed : Math.floor(Math.random() * 2147483647);
 
     // 5. Build the ComfyUI workflow
     const workflow = buildWorkflow({

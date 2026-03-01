@@ -74,6 +74,7 @@ export default defineSchema({
     age: v.optional(v.number()),
     imagePromptInstructions: v.optional(v.string()), // Prompt block injected into image generation for this character
     loraStrength: v.optional(v.number()), // LoRA strength for image generation (0.5-1.5, default 0.9)
+    seed: v.optional(v.number()), // Fixed seed for reproducible image generation
     updatedAt: v.string(),
   })
     .index("byUserId", ["creatorId"])

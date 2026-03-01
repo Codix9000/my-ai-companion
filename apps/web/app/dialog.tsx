@@ -5,6 +5,7 @@ import { useAction, useMutation } from "convex/react";
 import { Id } from "../convex/_generated/dataModel";
 import {
   Image as ImageIcon,
+  Lightbulb,
   MoreHorizontal,
   Send,
   Video,
@@ -50,6 +51,8 @@ import React from "react";
 import Image from "next/image";
 import { FormattedMessage } from "../components/formatted-message";
 import { useResponsivePopover } from "@repo/ui/src/hooks/use-responsive-popover";
+
+const PHOTO_REQUEST_PATTERN = /\b(send\s+me|show\s+me|can\s+you\s+(show|send)|take\s+a?\s*(pic|photo|selfie|picture)|send\s+a?\s*(pic|photo|selfie|picture)|i\s+want\s+a?\s*(pic|photo|picture)|i\s+wanna\s+see|let\s+me\s+see)/i;
 
 // ── Pose suggestions for inline image generation ──
 const POSE_SUGGESTIONS = [
@@ -272,6 +275,7 @@ export function Dialog({
   const [imageGenMode, setImageGenMode] = useState(false);
   const [isGeneratingImage, setIsGeneratingImage] = useState(false);
   const [showSuggestions, setShowSuggestions] = useState(true);
+  const [showPhotoTip, setShowPhotoTip] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
   // ── Full-screen image lightbox ──
@@ -281,9 +285,9 @@ export function Dialog({
     setImageGenMode(true);
     setInput("Show me ");
     setShowSuggestions(true);
+    setShowPhotoTip(false);
     setTimeout(() => {
       inputRef.current?.focus();
-      // Place cursor at end
       if (inputRef.current) {
         inputRef.current.selectionStart = inputRef.current.value.length;
         inputRef.current.selectionEnd = inputRef.current.value.length;
@@ -295,6 +299,7 @@ export function Dialog({
     setImageGenMode(false);
     setInput("");
     setShowSuggestions(false);
+    setShowPhotoTip(false);
   };
 
   const handlePoseSuggestionClick = (promptText: string) => {
@@ -572,6 +577,38 @@ export function Dialog({
 
         </AnimatePresence>
 
+        {/* ── Photo request tip banner ── */}
+        <AnimatePresence>
+          {showPhotoTip && !imageGenMode && (
+            <motion.div
+              initial={{ opacity: 0, y: 8, height: 0, marginBottom: 0 }}
+              animate={{ opacity: 1, y: 0, height: "auto", marginBottom: 10 }}
+              exit={{ opacity: 0, y: 8, height: 0, marginBottom: 0 }}
+              transition={{ duration: 0.25, ease: [0.4, 0, 0.2, 1] }}
+              className="overflow-hidden"
+            >
+              <button
+                type="button"
+                onClick={activateImageGenMode}
+                className="flex w-full items-center gap-3 rounded-xl border border-pink-500/20 bg-gradient-to-r from-pink-500/10 to-purple-500/10 px-4 py-2.5 text-left transition-all hover:border-pink-500/40 hover:from-pink-500/15 hover:to-purple-500/15"
+              >
+                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-yellow-400/20 to-amber-500/20">
+                  <Lightbulb className="h-4 w-4 text-yellow-400" />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="text-[13px] font-medium text-white/80">
+                    Want to generate an image? Use the action button below
+                  </p>
+                </div>
+                <div className="flex shrink-0 items-center gap-1 rounded-lg bg-white/[0.08] px-2.5 py-1.5 text-[11px] font-medium text-white/60">
+                  <ImageIcon className="h-3.5 w-3.5" />
+                  <Sparkles className="h-2.5 w-2.5 text-yellow-400" />
+                </div>
+              </button>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
         <div className="overflow-hidden rounded-2xl border border-white/[0.08] bg-white/[0.06]">
           {/* Text input row */}
           <form onSubmit={handleSend}>
@@ -585,9 +622,14 @@ export function Dialog({
               onChange={(e) => {
                 const value = e.target.value;
                 setInput(value);
-                if (value.startsWith("Show me ")) {
+                if (value.startsWith("Show me ") && !imageGenMode) {
                   setImageGenMode(true);
-                  setShowSuggestions(false);
+                }
+                if (!imageGenMode && !value.startsWith("Show me ")) {
+                  const isPhotoRequest = PHOTO_REQUEST_PATTERN.test(value);
+                  setShowPhotoTip(isPhotoRequest && value.length > 5);
+                } else {
+                  setShowPhotoTip(false);
                 }
               }}
               onKeyDown={(e) => {
@@ -614,12 +656,19 @@ export function Dialog({
                   animate={{
                     width: imageGenMode ? 120 : 44,
                     borderRadius: imageGenMode ? 12 : 22,
+                    scale: showPhotoTip && !imageGenMode ? [1, 1.08, 1] : 1,
                   }}
-                  transition={{ type: "spring", stiffness: 400, damping: 30 }}
+                  transition={
+                    showPhotoTip && !imageGenMode
+                      ? { scale: { repeat: Infinity, duration: 1.5, ease: "easeInOut" }, type: "spring", stiffness: 400, damping: 30 }
+                      : { type: "spring", stiffness: 400, damping: 30 }
+                  }
                   className={`relative flex h-11 items-center justify-center gap-2 overflow-hidden ${
                     imageGenMode
                       ? "bg-gradient-to-r from-pink-500 to-purple-500 text-white shadow-lg shadow-pink-500/25 hover:from-pink-600 hover:to-purple-600"
-                      : "bg-white/[0.08] text-white/50 hover:bg-white/[0.14] hover:text-white/80"
+                      : showPhotoTip
+                        ? "bg-gradient-to-r from-pink-500/30 to-purple-500/30 text-white/80 shadow-md shadow-pink-500/15 ring-1 ring-pink-500/30 hover:from-pink-500/40 hover:to-purple-500/40"
+                        : "bg-white/[0.08] text-white/50 hover:bg-white/[0.14] hover:text-white/80"
                   }`}
                 >
                   <span className="relative flex shrink-0">

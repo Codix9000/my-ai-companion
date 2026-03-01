@@ -59,6 +59,7 @@ const formSchema = z.object({
   model: z.string(),
   imagePromptInstructions: z.optional(z.string().max(1024)),
   loraStrength: z.optional(z.number().min(0.5).max(1.5)),
+  seed: z.optional(z.number().int()),
   voiceId: z.string(),
   age: z.optional(z.number().min(18).max(99)),
 });
@@ -93,6 +94,7 @@ export default function CharacterForm() {
     age,
     imagePromptInstructions = "",
     loraStrength,
+    seed,
     visibility: _visibility = searchParams.get("visibility") || "private",
   } = character || remixCharacter || {};
 
@@ -117,6 +119,7 @@ export default function CharacterForm() {
       model,
       imagePromptInstructions: imagePromptInstructions || "",
       loraStrength: loraStrength ?? 0.9,
+      seed: seed ?? undefined,
       voiceId,
       age: age ?? undefined,
     },
@@ -131,6 +134,7 @@ export default function CharacterForm() {
       model,
       imagePromptInstructions: imagePromptInstructions || "",
       loraStrength: loraStrength ?? 0.9,
+      seed: seed ?? undefined,
       voiceId,
       age: age ?? undefined,
     });
@@ -143,6 +147,7 @@ export default function CharacterForm() {
     model,
     imagePromptInstructions,
     loraStrength,
+    seed,
     voiceId,
     age,
   ]);
@@ -152,7 +157,7 @@ export default function CharacterForm() {
   }, [_visibility]);
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
-    const { greetings, age: formAge, imagePromptInstructions: imgPrompt, loraStrength: formLoraStrength, ...otherValues } = values;
+    const { greetings, age: formAge, imagePromptInstructions: imgPrompt, loraStrength: formLoraStrength, seed: formSeed, ...otherValues } = values;
     const character = await upsert({
       ...(characterId ? { id: characterId } : {}),
       greetings: [greetings as string],
@@ -160,6 +165,7 @@ export default function CharacterForm() {
       ...(formAge ? { age: formAge } : {}),
       ...(imgPrompt ? { imagePromptInstructions: imgPrompt } : {}),
       ...(formLoraStrength !== undefined ? { loraStrength: formLoraStrength } : {}),
+      ...(formSeed !== undefined ? { seed: formSeed } : {}),
       ...(cardImageUrl ? { cardImageUrl } : {}),
       ...(remixId ? { remixId } : {}),
     });
@@ -597,6 +603,47 @@ export default function CharacterForm() {
                       onChange={(e) => {
                         const val = parseFloat(e.target.value);
                         if (!isNaN(val)) field.onChange(val);
+                      }}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            {/* Image Generation Seed */}
+            <FormField
+              control={form.control}
+              name="seed"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className="flex items-center gap-1">
+                    {t("Image Seed")}
+                    <span className="text-muted-foreground">
+                      {t("(optional)")}
+                    </span>
+                    <InfoTooltip
+                      content={
+                        "A fixed integer seed for reproducible image generation. Leave empty for random seed each time. Use the same seed to get consistent-looking images."
+                      }
+                    />
+                  </FormLabel>
+                  <FormControl>
+                    <Input
+                      type="number"
+                      step="1"
+                      min="0"
+                      max="2147483647"
+                      placeholder="Random"
+                      value={field.value ?? ""}
+                      onChange={(e) => {
+                        const raw = e.target.value;
+                        if (raw === "") {
+                          field.onChange(undefined);
+                        } else {
+                          const val = parseInt(raw, 10);
+                          if (!isNaN(val)) field.onChange(val);
+                        }
                       }}
                     />
                   </FormControl>
