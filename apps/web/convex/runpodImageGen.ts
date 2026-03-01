@@ -166,7 +166,7 @@ function buildWorkflowNSFW({
     },
     "66": {
       inputs: {
-        unet_name: "z_image_turbo_bf16.safetensors",
+        unet_name: "moodyPornMix_zitV9.safetensors",
         weight_dtype: "default",
       },
       class_type: "UNETLoader",
@@ -189,10 +189,10 @@ function buildWorkflowNSFW({
     "69": {
       inputs: {
         seed,
-        steps: 7,
+        steps: 9,
         cfg: 1,
-        sampler_name: "res_multistep",
-        scheduler: "simple",
+        sampler_name: "dpmpp_2m_sde",
+        scheduler: "beta",
         denoise: 1,
         model: ["70", 0],
         positive: ["67", 0],
