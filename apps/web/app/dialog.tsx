@@ -381,12 +381,23 @@ export function Dialog({
     setScrolled(false);
     const isInitial = !hasInitiallyScrolled.current && messages.length > 0;
     if (isInitial) hasInitiallyScrolled.current = true;
-    setTimeout(() => {
+
+    const scrollToBottom = () => {
       listRef.current?.scrollTo({
         top: listRef.current.scrollHeight,
         behavior: isInitial ? "instant" : "smooth",
       });
-    }, 0);
+    };
+
+    if (isInitial) {
+      requestAnimationFrame(() => {
+        scrollToBottom();
+        setTimeout(scrollToBottom, 100);
+        setTimeout(scrollToBottom, 300);
+      });
+    } else {
+      setTimeout(scrollToBottom, 0);
+    }
   }, [messages]);
 
   const ref = useRef(null);
