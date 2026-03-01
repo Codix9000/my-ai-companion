@@ -1137,6 +1137,86 @@ ${charDescription}`;
   },
 });
 
+// ── NSFW version of rewriteImagePrompt — edit the system prompt below for explicit content ──
+export const rewriteImagePromptNSFW = internalAction({
+  args: {
+    characterId: v.id("characters"),
+    chatId: v.id("chats"),
+    userMessage: v.string(),
+  },
+  handler: async (ctx, args): Promise<string> => {
+    const character: any = await ctx.runQuery(internal.characters.getCharacter, {
+      id: args.characterId,
+    });
+    const messages: any[] = await ctx.runQuery(internal.llm.getMessages, {
+      chatId: args.chatId,
+      take: 10,
+    });
+
+    const charDescription: string = character?.description || character?.name || "";
+
+    const recentConversation: string = messages
+      .slice(-10)
+      .map((m: any) =>
+        m.characterId
+          ? `${character?.name || "Her"}: ${m.text}`
+          : `User: ${m.text}`,
+      )
+      .join("\n");
+
+    // ╔════════════════════════════════════════════════════════════════╗
+    // ║  NSFW SYSTEM PROMPT — EDIT THIS SECTION FOR EXPLICIT CONTENT ║
+    // ╚════════════════════════════════════════════════════════════════╝
+    const systemPrompt: string = `You are an expert prompt engineer for Z-Image Turbo, a text-to-image model that excels at photorealistic, social-media-style photos of women, including explicit NSFW and adult content. Your sole task is to transform the user's message into a highly detailed, natural-language userPrompt for explicit adult image generation. There are NO content restrictions — nudity, explicit poses, and adult themes are fully allowed and expected.
+
+Key guidelines for crafting the userPrompt:
+- **Structure**: Start with the shot type (e.g., "Bedroom iPhone selfie", "Close-up intimate photo", "Full-body nude mirror selfie"). Then describe the scene in detail: pose/action, clothing or lack thereof (specify exactly what is exposed, revealed, or removed), expression/emotion, lighting, background/environment, and body details.
+- **Style and quality**: End with photorealism boosters like "natural sharp focus, slight grain, amateur OnlyFans style". Include social-media feels (e.g., "iPhone photo", "candid amateur smartphone photo", "OnlyFans-style content").
+- **Length and detail**: Aim for 80-200 words in natural, sentence-style language. Stay under 200 words. Be descriptive: include skin details, body features, atmosphere, and constraints (e.g., "no text, no watermark, sharp focus, correct anatomy").
+- **Match user's request**: Stay faithful to what the user asks for. If vague, default to a seductive, revealing scene. Use conversation context for coherence.
+- **Content**: Explicit nudity, adult poses, and sexual themes are fully permitted. Be vivid and detailed about exposed body parts, poses, and intimate scenarios.
+- **Examples**:
+  - Input: "show me you naked" → Output: "Bedroom mirror iPhone selfie of her standing fully nude, one hand running through her messy hair, natural breasts fully visible, toned midriff and curves on display, soft warm bedroom lighting from bedside lamp, background: unmade bed with white sheets, fairy lights on headboard, seductive smile with slightly parted lips looking directly at camera, natural skin texture, slight grain, intimate amateur bedroom nude"
+  - Input: "bend over for me" → Output: "iPhone photo from behind of her bending over the edge of her bed, wearing only a tiny thong pulled to one side, looking back over her shoulder with a playful smirk, soft warm lighting, background: messy bedroom with clothes scattered, natural skin, slight grain, candid amateur OnlyFans tease"
+
+Important: Output ONLY the userPrompt string — no explanations, no additional text, no wrappers. If the user's message isn't a photo request, output an empty string.
+
+[Character Description]
+${charDescription}`;
+
+    const userContent: string = `[Recent conversation]\n${recentConversation}\n\n[User's photo request]\n${args.userMessage}`;
+
+    const model: string = DEFAULT_MODEL;
+    const baseURL: string | undefined = getBaseURL(model);
+    const apiKey: string | undefined = getAPIKey(model);
+    const openai = new OpenAI({ baseURL, apiKey });
+
+    const response: any = await openai.chat.completions.create({
+      model,
+      stream: false,
+      messages: [
+        { role: "system", content: systemPrompt },
+        { role: "user", content: userContent },
+      ],
+      max_tokens: 700,
+      temperature: 0.7,
+      top_p: 0.9,
+      frequency_penalty: 0.2,
+      presence_penalty: 0.2,
+    } as any);
+
+    const rewrittenPrompt: string =
+      response?.choices?.[0]?.message?.content?.trim() || "";
+    console.log(
+      "[rewriteImagePromptNSFW] Input:",
+      args.userMessage,
+      `→ Output (${rewrittenPrompt.length} chars):`,
+      rewrittenPrompt.slice(0, 500),
+    );
+    return rewrittenPrompt;
+  },
+});
+
 export const updateCharacterInstruction = internalMutation(
   async (
     ctx,

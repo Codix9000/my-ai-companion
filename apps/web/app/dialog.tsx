@@ -5,6 +5,7 @@ import { useAction, useMutation } from "convex/react";
 import { Id } from "../convex/_generated/dataModel";
 import {
   Image as ImageIcon,
+  Flame,
   Lightbulb,
   MoreHorizontal,
   Send,
@@ -276,6 +277,7 @@ export function Dialog({
   const [isGeneratingImage, setIsGeneratingImage] = useState(false);
   const [showSuggestions, setShowSuggestions] = useState(true);
   const [showPhotoTip, setShowPhotoTip] = useState(false);
+  const [isNSFW, setIsNSFW] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
   // ── Full-screen image lightbox ──
@@ -347,6 +349,7 @@ export function Dialog({
           characterId,
           chatId,
           userMessage: messageText,
+          isNSFW,
         });
       } catch (error: any) {
         console.error("[ChatImageGen] Error:", error);
@@ -361,6 +364,7 @@ export function Dialog({
   };
 
   const listRef = useRef<HTMLDivElement>(null);
+  const hasInitiallyScrolled = useRef(false);
 
   const isNearBottom = () => {
     const el = listRef.current;
@@ -371,8 +375,13 @@ export function Dialog({
   useEffect(() => {
     if (isScrolled && !isNearBottom()) return;
     setScrolled(false);
+    const isInitial = !hasInitiallyScrolled.current && messages.length > 0;
+    if (isInitial) hasInitiallyScrolled.current = true;
     setTimeout(() => {
-      listRef.current?.scrollTo({ top: listRef.current.scrollHeight, behavior: "smooth" });
+      listRef.current?.scrollTo({
+        top: listRef.current.scrollHeight,
+        behavior: isInitial ? "instant" : "smooth",
+      });
     }, 0);
   }, [messages]);
 
@@ -548,21 +557,45 @@ export function Dialog({
                 ))}
               </div>
 
-              {/* Hide suggestions link */}
-              <motion.button
-                type="button"
-                onClick={() => setShowSuggestions(false)}
-                className="mt-2 flex items-center gap-1 text-[11px] text-white/30 transition-colors hover:text-white/50"
+              {/* Bottom row: Hide suggestions + NSFW toggle */}
+              <motion.div
+                className="mt-2 flex items-center justify-between"
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ delay: 0.15 }}
               >
-                <span>▸</span> Hide suggestions
-              </motion.button>
+                <button
+                  type="button"
+                  onClick={() => setShowSuggestions(false)}
+                  className="flex items-center gap-1 text-[11px] text-white/30 transition-colors hover:text-white/50"
+                >
+                  <span>▸</span> Hide suggestions
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setIsNSFW(!isNSFW)}
+                  className={`flex items-center gap-2 rounded-full px-3.5 py-1.5 text-[12px] font-semibold tracking-wide transition-all duration-200 ${
+                    isNSFW
+                      ? "bg-gradient-to-r from-red-500/90 to-orange-500/90 text-white shadow-md shadow-red-500/20 ring-1 ring-red-400/30"
+                      : "bg-white/[0.06] text-white/40 ring-1 ring-white/[0.08] hover:bg-white/[0.10] hover:text-white/60"
+                  }`}
+                >
+                  <Flame className={`h-3.5 w-3.5 ${isNSFW ? "text-yellow-300" : "text-white/30"}`} />
+                  NSFW
+                  <span className={`flex h-4 w-7 items-center rounded-full p-0.5 transition-colors duration-200 ${isNSFW ? "justify-end bg-white/20" : "justify-start bg-white/[0.08]"}`}>
+                    <motion.span
+                      layout
+                      transition={{ type: "spring", stiffness: 500, damping: 30 }}
+                      className={`block h-3 w-3 rounded-full ${isNSFW ? "bg-white" : "bg-white/30"}`}
+                    />
+                  </span>
+                </button>
+              </motion.div>
             </motion.div>
           )}
 
-          {/* Show suggestions toggle (collapsed) */}
+          {/* Show suggestions toggle + NSFW (collapsed) */}
           {imageGenMode && !showSuggestions && (
             <motion.div
               key="suggestions-collapsed"
@@ -570,7 +603,7 @@ export function Dialog({
               animate={{ opacity: 1, height: "auto" }}
               exit={{ opacity: 0, height: 0 }}
               transition={{ duration: 0.2, ease: [0.4, 0, 0.2, 1] }}
-              className="mb-2 overflow-hidden"
+              className="mb-2 flex items-center justify-between overflow-hidden"
             >
               <button
                 type="button"
@@ -578,6 +611,26 @@ export function Dialog({
                 className="flex items-center gap-1 text-[11px] text-white/30 transition-colors hover:text-white/50"
               >
                 <span>▸</span> Show suggestions
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setIsNSFW(!isNSFW)}
+                className={`flex items-center gap-2 rounded-full px-3.5 py-1.5 text-[12px] font-semibold tracking-wide transition-all duration-200 ${
+                  isNSFW
+                    ? "bg-gradient-to-r from-red-500/90 to-orange-500/90 text-white shadow-md shadow-red-500/20 ring-1 ring-red-400/30"
+                    : "bg-white/[0.06] text-white/40 ring-1 ring-white/[0.08] hover:bg-white/[0.10] hover:text-white/60"
+                }`}
+              >
+                <Flame className={`h-3.5 w-3.5 ${isNSFW ? "text-yellow-300" : "text-white/30"}`} />
+                NSFW
+                <span className={`flex h-4 w-7 items-center rounded-full p-0.5 transition-colors duration-200 ${isNSFW ? "justify-end bg-white/20" : "justify-start bg-white/[0.08]"}`}>
+                  <motion.span
+                    layout
+                    transition={{ type: "spring", stiffness: 500, damping: 30 }}
+                    className={`block h-3 w-3 rounded-full ${isNSFW ? "bg-white" : "bg-white/30"}`}
+                  />
+                </span>
               </button>
             </motion.div>
           )}
