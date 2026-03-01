@@ -1,14 +1,15 @@
 "use client";
 
 import { useState } from "react";
-import { useQuery } from "convex/react";
+import { useQuery, useMutation } from "convex/react";
 import { api } from "../../convex/_generated/api";
+import { Id } from "../../convex/_generated/dataModel";
 import {
   Avatar,
   AvatarFallback,
   AvatarImage,
 } from "@repo/ui/src/components/avatar";
-import { ArrowDownUp, Image as ImageIcon, Video } from "lucide-react";
+import { ArrowDownUp, Image as ImageIcon, Video, Trash2 } from "lucide-react";
 import Image from "next/image";
 import Spinner from "@repo/ui/src/components/spinner";
 
@@ -28,8 +29,10 @@ export default function CollectionPage() {
     url: string;
     type: "image" | "video";
   } | null>(null);
+  const [confirmDelete, setConfirmDelete] = useState<Id<"userMedia"> | null>(null);
 
   const collection = useQuery(api.collection.getMyCollection, { sortBy });
+  const deleteMedia = useMutation(api.collection.deleteMedia);
 
   return (
     <div className="flex flex-col gap-4 px-3 pb-24 sm:px-4 lg:px-2">
@@ -167,6 +170,17 @@ export default function CollectionPage() {
 
                     {/* Hover overlay */}
                     <div className="absolute inset-0 bg-black/0 transition-colors group-hover:bg-black/20" />
+
+                    {/* Delete button on hover */}
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setConfirmDelete(item._id);
+                      }}
+                      className="absolute left-1.5 top-1.5 flex h-7 w-7 items-center justify-center rounded-full bg-black/50 text-white/70 opacity-0 backdrop-blur-sm transition-all hover:bg-red-500/80 hover:text-white group-hover:opacity-100"
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </button>
                   </div>
                 ))}
               </div>
@@ -208,6 +222,46 @@ export default function CollectionPage() {
               playsInline
             />
           )}
+        </div>
+      )}
+
+      {/* Delete confirmation dialog */}
+      {confirmDelete && (
+        <div
+          className="fixed inset-0 z-[60] flex items-center justify-center bg-black/70 p-4"
+          onClick={() => setConfirmDelete(null)}
+        >
+          <div
+            className="w-full max-w-sm rounded-2xl border border-border bg-card p-6 shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="mb-4 flex items-center gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-red-500/10">
+                <Trash2 className="h-5 w-5 text-red-500" />
+              </div>
+              <h3 className="text-lg font-semibold text-foreground">Delete media?</h3>
+            </div>
+            <p className="mb-6 text-sm text-muted-foreground">
+              This will permanently remove this item from your collection. This action cannot be undone.
+            </p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setConfirmDelete(null)}
+                className="flex-1 rounded-lg border border-border bg-transparent px-4 py-2.5 text-sm font-medium text-foreground transition-colors hover:bg-accent"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={async () => {
+                  await deleteMedia({ mediaId: confirmDelete });
+                  setConfirmDelete(null);
+                }}
+                className="flex-1 rounded-lg bg-red-500 px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-red-600"
+              >
+                Delete
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>
