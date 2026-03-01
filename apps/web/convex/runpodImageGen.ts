@@ -395,6 +395,9 @@ export const generateChatImage = action({
     });
     if (!user) throw new Error("User not found");
 
+    const NSFW_KEYWORDS = /\b(naked|nude|topless|nsfw|sexy|strip|undress|lingerie|panties|bra|ass|boobs|tits|pussy|dick|cock|blowjob|sex|fuck|horny|naughty|explicit|xxx|porn|erotic|thong|bikini|nipple|orgasm|cum|wet|spread|bent\s*over|no\s*cloth|take.*off|nothing\s*on)\b/i;
+    const nsfwRequestDetected = NSFW_KEYWORDS.test(args.userMessage);
+
     // ── Phase 1: Dynamic pre-message ──
     const preMessageId: Id<"messages"> = await ctx.runMutation(
       internal.llm.addCharacterMessage,
@@ -409,6 +412,7 @@ export const generateChatImage = action({
           chatId: args.chatId,
           userId: user._id,
           userMessage: args.userMessage,
+          isNSFW: args.isNSFW ?? false,
         },
       );
       await ctx.runMutation(internal.llm.updateCharacterMessage, {
@@ -546,6 +550,8 @@ export const generateChatImage = action({
             userId: user._id,
             imageDescription: rewrittenPrompt,
             userMessage: args.userMessage,
+            isNSFW: args.isNSFW ?? false,
+            nsfwRequestDetected,
           },
         );
         await ctx.runMutation(internal.llm.updateCharacterMessage, {
@@ -561,7 +567,7 @@ export const generateChatImage = action({
       }
 
       console.log("[ChatImageGen] 3-phase flow complete. imageMessageId:", imageMessageId);
-      return { success: true, imageUrl: finalImageUrl };
+      return { success: true, imageUrl: finalImageUrl, nsfwRequestDetected: nsfwRequestDetected && !args.isNSFW };
     } catch (error: any) {
       console.error("[ChatImageGen] Error:", error);
       await ctx.runMutation(internal.llm.updateCharacterMessage, {

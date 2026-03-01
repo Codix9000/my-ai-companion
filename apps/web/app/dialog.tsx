@@ -278,6 +278,7 @@ export function Dialog({
   const [showSuggestions, setShowSuggestions] = useState(true);
   const [showPhotoTip, setShowPhotoTip] = useState(false);
   const [isNSFW, setIsNSFW] = useState(false);
+  const [highlightNSFW, setHighlightNSFW] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
   // ── Full-screen image lightbox ──
@@ -345,12 +346,18 @@ export function Dialog({
           chatId,
           characterId,
         });
-        await generateChatImage({
+        const result = await generateChatImage({
           characterId,
           chatId,
           userMessage: messageText,
           isNSFW,
         });
+        if (result?.nsfwRequestDetected && !isNSFW) {
+          setHighlightNSFW(true);
+          setImageGenMode(true);
+          setShowSuggestions(true);
+          setTimeout(() => setHighlightNSFW(false), 12000);
+        }
       } catch (error: any) {
         console.error("[ChatImageGen] Error:", error);
         toast.error(error?.message || "Failed to generate image.");
@@ -564,21 +571,48 @@ export function Dialog({
                 animate={{ opacity: 1 }}
                 transition={{ delay: 0.15 }}
               >
-                <button
+                <motion.button
                   type="button"
-                  onClick={() => setIsNSFW(!isNSFW)}
+                  onClick={() => { setIsNSFW(!isNSFW); setHighlightNSFW(false); }}
+                  animate={highlightNSFW ? {
+                    scale: [1, 1.08, 1, 1.08, 1],
+                    boxShadow: [
+                      "0 0 0px rgba(239,68,68,0)",
+                      "0 0 16px rgba(239,68,68,0.6)",
+                      "0 0 6px rgba(239,68,68,0.2)",
+                      "0 0 16px rgba(239,68,68,0.6)",
+                      "0 0 0px rgba(239,68,68,0)",
+                    ],
+                  } : {}}
+                  transition={highlightNSFW ? { duration: 1.5, repeat: Infinity, ease: "easeInOut" } : {}}
                   className={`group flex items-center gap-2 rounded-full px-3.5 py-1.5 text-[12px] font-semibold tracking-wide transition-all duration-200 ${
-                    isNSFW
-                      ? "bg-gradient-to-r from-red-500 to-orange-500 text-white shadow-lg shadow-red-500/30 ring-1 ring-red-400/40"
-                      : "bg-gradient-to-r from-red-500/10 to-orange-500/10 text-orange-300/70 ring-1 ring-red-500/20 hover:from-red-500/20 hover:to-orange-500/20 hover:text-orange-300/90 hover:ring-red-500/30"
+                    highlightNSFW
+                      ? "bg-gradient-to-r from-red-500/30 to-orange-500/30 text-orange-200 ring-2 ring-red-400/60"
+                      : isNSFW
+                        ? "bg-gradient-to-r from-red-500 to-orange-500 text-white shadow-lg shadow-red-500/30 ring-1 ring-red-400/40"
+                        : "bg-gradient-to-r from-red-500/10 to-orange-500/10 text-orange-300/70 ring-1 ring-red-500/20 hover:from-red-500/20 hover:to-orange-500/20 hover:text-orange-300/90 hover:ring-red-500/30"
                   }`}
                 >
                   <motion.span
-                    animate={{ rotate: [0, -12, 12, -8, 0], scale: [1, 1.3, 1.2, 1.25, 1] }}
-                    transition={{ duration: 0.6, repeat: Infinity, repeatDelay: 4.5, ease: "easeInOut" }}
+                    animate={highlightNSFW ? {
+                      y: [0, -2, 1, -3, 0.5, -2, 0, -2.5, 1, -3.5, 0],
+                      scaleY: [1, 1.4, 1.05, 1.5, 1.1, 1.35, 1, 1.45, 1.05, 1.55, 1],
+                      scaleX: [1, 0.85, 1.05, 0.8, 1, 0.88, 1, 0.82, 1.02, 0.78, 1],
+                      opacity: [1, 0.8, 1, 0.7, 1, 0.85, 1, 0.75, 1, 0.65, 1],
+                    } : {
+                      y: [0, -1.5, 0.5, -2, 0.5, -1, 0, -1.5, 0.5, -2.5, 0],
+                      scaleY: [1, 1.25, 1.05, 1.35, 1.1, 1.2, 1, 1.3, 1.05, 1.4, 1],
+                      scaleX: [1, 0.9, 1.05, 0.85, 1, 0.92, 1, 0.88, 1.02, 0.85, 1],
+                      opacity: [1, 0.85, 1, 0.75, 1, 0.9, 1, 0.8, 1, 0.7, 1],
+                    }}
+                    transition={highlightNSFW
+                      ? { duration: 0.8, repeat: Infinity, ease: "easeInOut" }
+                      : { duration: 1.2, repeat: Infinity, repeatDelay: 4, ease: "easeInOut" }
+                    }
+                    style={{ originY: 1, filter: highlightNSFW ? "drop-shadow(0 0 6px rgba(239,68,68,0.8))" : isNSFW ? "drop-shadow(0 0 4px rgba(251,191,36,0.6))" : "drop-shadow(0 0 3px rgba(251,146,60,0.3))" }}
                     className="flex"
                   >
-                    <Flame className={`h-3.5 w-3.5 ${isNSFW ? "text-yellow-300" : "text-orange-400/60 group-hover:text-orange-400/80"}`} />
+                    <Flame className={`h-3.5 w-3.5 ${highlightNSFW ? "text-red-400" : isNSFW ? "text-yellow-300" : "text-orange-400/60 group-hover:text-orange-400/80"}`} />
                   </motion.span>
                   NSFW
                   <span className={`flex h-4 w-7 items-center rounded-full p-0.5 transition-colors duration-200 ${isNSFW ? "justify-end bg-white/25" : "justify-start bg-red-500/15"}`}>
@@ -588,7 +622,7 @@ export function Dialog({
                       className={`block h-3 w-3 rounded-full ${isNSFW ? "bg-white" : "bg-orange-400/40"}`}
                     />
                   </span>
-                </button>
+                </motion.button>
 
                 <button
                   type="button"
@@ -611,21 +645,48 @@ export function Dialog({
               transition={{ duration: 0.2, ease: [0.4, 0, 0.2, 1] }}
               className="mb-2 flex items-center justify-between overflow-hidden"
             >
-              <button
+              <motion.button
                 type="button"
-                onClick={() => setIsNSFW(!isNSFW)}
+                onClick={() => { setIsNSFW(!isNSFW); setHighlightNSFW(false); }}
+                animate={highlightNSFW ? {
+                  scale: [1, 1.08, 1, 1.08, 1],
+                  boxShadow: [
+                    "0 0 0px rgba(239,68,68,0)",
+                    "0 0 16px rgba(239,68,68,0.6)",
+                    "0 0 6px rgba(239,68,68,0.2)",
+                    "0 0 16px rgba(239,68,68,0.6)",
+                    "0 0 0px rgba(239,68,68,0)",
+                  ],
+                } : {}}
+                transition={highlightNSFW ? { duration: 1.5, repeat: Infinity, ease: "easeInOut" } : {}}
                 className={`group flex items-center gap-2 rounded-full px-3.5 py-1.5 text-[12px] font-semibold tracking-wide transition-all duration-200 ${
-                  isNSFW
-                    ? "bg-gradient-to-r from-red-500 to-orange-500 text-white shadow-lg shadow-red-500/30 ring-1 ring-red-400/40"
-                    : "bg-gradient-to-r from-red-500/10 to-orange-500/10 text-orange-300/70 ring-1 ring-red-500/20 hover:from-red-500/20 hover:to-orange-500/20 hover:text-orange-300/90 hover:ring-red-500/30"
+                  highlightNSFW
+                    ? "bg-gradient-to-r from-red-500/30 to-orange-500/30 text-orange-200 ring-2 ring-red-400/60"
+                    : isNSFW
+                      ? "bg-gradient-to-r from-red-500 to-orange-500 text-white shadow-lg shadow-red-500/30 ring-1 ring-red-400/40"
+                      : "bg-gradient-to-r from-red-500/10 to-orange-500/10 text-orange-300/70 ring-1 ring-red-500/20 hover:from-red-500/20 hover:to-orange-500/20 hover:text-orange-300/90 hover:ring-red-500/30"
                 }`}
               >
                 <motion.span
-                  animate={{ rotate: [0, -12, 12, -8, 0], scale: [1, 1.3, 1.2, 1.25, 1] }}
-                  transition={{ duration: 0.6, repeat: Infinity, repeatDelay: 4.5, ease: "easeInOut" }}
+                  animate={highlightNSFW ? {
+                    y: [0, -2, 1, -3, 0.5, -2, 0, -2.5, 1, -3.5, 0],
+                    scaleY: [1, 1.4, 1.05, 1.5, 1.1, 1.35, 1, 1.45, 1.05, 1.55, 1],
+                    scaleX: [1, 0.85, 1.05, 0.8, 1, 0.88, 1, 0.82, 1.02, 0.78, 1],
+                    opacity: [1, 0.8, 1, 0.7, 1, 0.85, 1, 0.75, 1, 0.65, 1],
+                  } : {
+                    y: [0, -1.5, 0.5, -2, 0.5, -1, 0, -1.5, 0.5, -2.5, 0],
+                    scaleY: [1, 1.25, 1.05, 1.35, 1.1, 1.2, 1, 1.3, 1.05, 1.4, 1],
+                    scaleX: [1, 0.9, 1.05, 0.85, 1, 0.92, 1, 0.88, 1.02, 0.85, 1],
+                    opacity: [1, 0.85, 1, 0.75, 1, 0.9, 1, 0.8, 1, 0.7, 1],
+                  }}
+                  transition={highlightNSFW
+                    ? { duration: 0.8, repeat: Infinity, ease: "easeInOut" }
+                    : { duration: 1.2, repeat: Infinity, repeatDelay: 4, ease: "easeInOut" }
+                  }
+                  style={{ originY: 1, filter: highlightNSFW ? "drop-shadow(0 0 6px rgba(239,68,68,0.8))" : isNSFW ? "drop-shadow(0 0 4px rgba(251,191,36,0.6))" : "drop-shadow(0 0 3px rgba(251,146,60,0.3))" }}
                   className="flex"
                 >
-                  <Flame className={`h-3.5 w-3.5 ${isNSFW ? "text-yellow-300" : "text-orange-400/60 group-hover:text-orange-400/80"}`} />
+                  <Flame className={`h-3.5 w-3.5 ${highlightNSFW ? "text-red-400" : isNSFW ? "text-yellow-300" : "text-orange-400/60 group-hover:text-orange-400/80"}`} />
                 </motion.span>
                 NSFW
                 <span className={`flex h-4 w-7 items-center rounded-full p-0.5 transition-colors duration-200 ${isNSFW ? "justify-end bg-white/25" : "justify-start bg-red-500/15"}`}>
@@ -635,7 +696,7 @@ export function Dialog({
                     className={`block h-3 w-3 rounded-full ${isNSFW ? "bg-white" : "bg-orange-400/40"}`}
                   />
                 </span>
-              </button>
+              </motion.button>
 
               <button
                 type="button"
