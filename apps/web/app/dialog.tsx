@@ -286,11 +286,12 @@ export function Dialog({
   // ── Full-screen image lightbox ──
   const [zoomedImageUrl, setZoomedImageUrl] = useState<string | null>(null);
 
-  const activateImageGenMode = () => {
+  const activateImageGenMode = (preserveInput = false) => {
     setImageGenMode(true);
-    setInput("Show me ");
+    if (!preserveInput) setInput("Show me ");
     setShowSuggestions(true);
     setShowPhotoTip(false);
+    setHighlightNSFW(false);
     setTimeout(() => {
       inputRef.current?.focus();
       if (inputRef.current) {
@@ -712,7 +713,7 @@ export function Dialog({
             >
               <button
                 type="button"
-                onClick={activateImageGenMode}
+                onClick={() => activateImageGenMode(true)}
                 className="flex w-full items-center gap-3 rounded-xl border border-pink-500/20 bg-gradient-to-r from-pink-500/10 to-purple-500/10 px-4 py-2.5 text-left transition-all hover:border-pink-500/40 hover:from-pink-500/15 hover:to-purple-500/15"
               >
                 <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-yellow-400/20 to-amber-500/20">
@@ -758,7 +759,7 @@ export function Dialog({
                 <button
                   type="button"
                   onClick={() => {
-                    activateImageGenMode();
+                    activateImageGenMode(true);
                     setIsNSFW(true);
                     setHighlightNSFW(false);
                   }}
@@ -791,13 +792,12 @@ export function Dialog({
                 if (!imageGenMode && !value.startsWith("Show me ")) {
                   const isPhotoRequest = PHOTO_REQUEST_PATTERN.test(value);
                   setShowPhotoTip(isPhotoRequest && value.length > 5);
-
-                  const hasNsfwWords = NSFW_DETECT_PATTERN.test(value);
-                  setHighlightNSFW(hasNsfwWords && value.length > 3 && !isNSFW);
                 } else {
                   setShowPhotoTip(false);
-                  if (!imageGenMode) setHighlightNSFW(false);
                 }
+
+                const hasNsfwWords = NSFW_DETECT_PATTERN.test(value);
+                setHighlightNSFW(hasNsfwWords && value.length > 3 && !isNSFW);
               }}
               onKeyDown={(e) => {
                 if (e.key === "Enter" && !e.shiftKey) {
