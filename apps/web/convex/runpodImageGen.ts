@@ -550,6 +550,7 @@ export const generateChatImage = action({
             userId: user._id,
             imageDescription: rewrittenPrompt,
             userMessage: args.userMessage,
+            preMessageText,
             isNSFW: args.isNSFW ?? false,
             nsfwRequestDetected,
           },

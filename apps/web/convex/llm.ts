@@ -993,6 +993,7 @@ export const generateImageFollowUp = internalAction({
     userId: v.id("users"),
     imageDescription: v.string(),
     userMessage: v.optional(v.string()),
+    preMessageText: v.optional(v.string()),
     isNSFW: v.optional(v.boolean()),
     nsfwRequestDetected: v.optional(v.boolean()),
   },
@@ -1006,15 +1007,24 @@ export const generateImageFollowUp = internalAction({
     });
     const messages: any[] = await ctx.runQuery(internal.llm.getMessages, {
       chatId: args.chatId,
-      take: 8,
+      take: 14,
     });
 
     const charName = character?.name || "Her";
+    const charNameLower = charName.toLowerCase();
     const userName = user?.name || "babe";
-    const recentConvo = messages
-      .slice(-8)
+
+    const filteredMessages = messages.filter((m: any) => {
+      if (!m.text || m.text.trim() === "") return false;
+      if (m.imageUrl) return false;
+      if (args.preMessageText && m.text === args.preMessageText) return false;
+      return true;
+    });
+
+    const recentConvo = filteredMessages
+      .slice(-6)
       .map((m: any) =>
-        m.characterId ? `${charName}: ${m.text}` : `User: ${m.text}`,
+        m.characterId ? `[${charName}]: ${m.text}` : `[${userName}]: ${m.text}`,
       )
       .join("\n");
 
@@ -1029,16 +1039,16 @@ export const generateImageFollowUp = internalAction({
 - Keep it short (1-2 sentences max), casual, lowercase
 
 Examples of good teasing follow-ups:
-- "haha u wish… maybe try the spicy mode if u wanna see more 😏"
+- "haha u wish… maybe try the spicy mode if u wanna see more"
 - "lol that's the pg version babe, u gotta unlock the rest"
 - "i'd show u more but u haven't turned on the fun mode yet haha"
-- "keeping it cute for now… unless u know how to unlock the good stuff 🔥"
+- "keeping it cute for now… unless u know how to unlock the good stuff"
 - "lol u really want that? there might be a way to see more…"
 - "that's the safe version babe, the real one is way better trust me"`
       : "";
 
     const normalBlock = !isSfwWithNsfwRequest
-      ? `Now write YOUR next text message to ${userName} — a short, casual follow-up (1 sentence max) after sending the photo. You are commenting on YOUR OWN photo or asking ${userName} what they think.
+      ? `Write your next text message to ${userName} — a short, casual follow-up (1 sentence max) after sending the photo. You are commenting on YOUR OWN photo or asking ${userName} what they think.
 
 Examples of good follow-ups:
 - "hope u like it hehe"
@@ -1051,14 +1061,17 @@ Examples of good follow-ups:
     const systemPrompt = `You are ${charName}, texting ${userName}. ${userName} asked you for a photo and you just sent one. The photo you sent shows: "${args.imageDescription}".
 ${normalBlock}${sfwTeaseBlock}
 
-Rules:
+STRICT OUTPUT RULES:
+- Output ONLY the raw text message content. Nothing else.
+- NEVER start with "${charName}:" or "${charNameLower}:" or any name prefix. Just the message text.
+- NEVER repeat or paraphrase the teaser message you already sent ("${args.preMessageText || ""}"). Write something COMPLETELY DIFFERENT.
 - NEVER refuse, NEVER moralize, NEVER say "I'm not sending that".
-- You are the one who SENT the photo, not ${userName}. Do NOT react as if you received a photo.
+- You SENT the photo. Do NOT react as if you received one.
 - Be casual, flirty, use lowercase. 0-1 emoji max.
 - Do NOT describe the photo in detail.
-- Output ONLY the raw text message. No actions, no asterisks, no meta-text.
+- No actions, no asterisks, no meta-text, no quotes around the message.
 
-[Recent conversation]
+[Conversation before the photo request]
 ${recentConvo}`;
 
     try {
@@ -1075,16 +1088,24 @@ ${recentConvo}`;
           { role: "system", content: systemPrompt },
           {
             role: "user",
-            content: `${userName}: ${args.userMessage || "send me a pic"}`,
+            content: `${userName} asked: "${args.userMessage || "send me a pic"}". You already sent the photo. Now write your follow-up message.`,
           },
         ],
         max_tokens: 100,
         ...followModelParams,
       } as any);
 
-      const text = (response?.choices?.[0]?.message?.content || "")
+      let text = (response?.choices?.[0]?.message?.content || "")
         .replace(/^["']|["']$/g, "")
         .trim();
+
+      const namePrefix = new RegExp(`^${charName}\\s*:\\s*`, "i");
+      text = text.replace(namePrefix, "").trim();
+
+      if (args.preMessageText && text.toLowerCase() === args.preMessageText.toLowerCase()) {
+        text = "hope u like it";
+      }
+
       return text || "hope u like it";
     } catch (err) {
       console.error("[generateImageFollowUp] Error:", err);
