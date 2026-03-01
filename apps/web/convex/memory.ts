@@ -49,9 +49,38 @@ export const insertFact = internalMutation({
 });
 
 /**
- * Action: Extract personal facts from recent messages using the same LLM model.
+ * Mutation: Update the text of an existing fact.
+ */
+export const updateFact = internalMutation({
+  args: {
+    factId: v.id("userFacts"),
+    fact: v.string(),
+  },
+  handler: async (ctx, { factId, fact }) => {
+    const existing = await ctx.db.get(factId);
+    if (!existing) return;
+    await ctx.db.patch(factId, { fact });
+  },
+});
+
+/**
+ * Mutation: Delete a fact by ID.
+ */
+export const deleteFact = internalMutation({
+  args: {
+    factId: v.id("userFacts"),
+  },
+  handler: async (ctx, { factId }) => {
+    const existing = await ctx.db.get(factId);
+    if (!existing) return;
+    await ctx.db.delete(factId);
+  },
+});
+
+/**
+ * Action: Smart CRUD memory manager.
  * Runs as a background job after each AI response.
- * Uses the default model (DEFAULT_MODEL) to keep things consistent (especially for sensitive content).
+ * Uses JSON mode to ADD, UPDATE, or DELETE facts — preventing bloat and contradictions.
  */
 export const extractFacts = internalAction({
   args: {
@@ -61,101 +90,158 @@ export const extractFacts = internalAction({
   },
   handler: async (ctx, { userId, characterId, chatId }) => {
     try {
-      // Get the last 6 messages from this chat for context
       const recentMessages = await ctx.runQuery(internal.llm.getMessages, {
         chatId,
-        take: 6,
+        take: 12,
       });
 
       if (!recentMessages || recentMessages.length < 2) return;
 
-      // Only look at user messages (no characterId = user message)
-      const userMessages = recentMessages
-        .filter((m: any) => !m.characterId)
-        .map((m: any) => m.text)
+      const chatHistory = recentMessages
+        .filter((m: any) => m.text && m.text.trim().length > 0)
+        .map((m: any) => (m.characterId ? `AI: ${m.text}` : `User: ${m.text}`))
         .join("\n");
 
-      if (!userMessages || userMessages.trim().length < 10) return;
+      if (!chatHistory || chatHistory.trim().length < 10) return;
 
-      // Get existing facts to avoid duplicates
       const existingFacts = await ctx.runQuery(internal.memory.getUserFacts, {
         userId,
         characterId,
       });
-      const existingFactStrings = existingFacts.map((f: any) => f.fact as string);
 
-      // Use the same model for extraction (consistent with sensitive content)
       const model = DEFAULT_MODEL;
       const baseURL = getBaseURL(model);
       const apiKey = getAPIKey(model);
       const openai = new OpenAI({ baseURL, apiKey });
 
-      // Simple, robust extraction prompt designed for creative/roleplay models
-      // Instead of asking for JSON, we ask for a simple line-by-line list
-      const extractionPrompt = `Read the user's messages below and list any personal facts about them.
-Write each fact on its own line starting with "FACT:" 
-Only include concrete facts (name, age, job, likes, dislikes, pets, hobbies, relationships, location, etc).
-If there are no personal facts, write "NONE"
+      const extractionPrompt = `You are an AI Memory Manager for a roleplay companion app. Your job is to maintain a highly accurate, concise, and up-to-date profile of the User.
+You will be provided with the CURRENT known facts about the user (each with an ID) and a RECENT conversation transcript.
 
-${existingFactStrings.length > 0 ? `Already known (skip these):\n${existingFactStrings.map((f: string) => `- ${f}`).join("\n")}\n\n` : ""}User's messages:
-${userMessages}`;
+Your goal is to output a JSON object containing three arrays: "add", "update", and "delete".
+
+CRITICAL RULES:
+1. CONSOLIDATE & UPDATE: If the user provides new information that supersedes an old fact (e.g., they got a new job, or finished a trip), use the "update" array to rewrite the existing fact.
+2. DELETE OUTDATED/TEMPORARY INFO: If an existing fact is temporary (e.g., "User is drinking coffee", "User is having a bad day") or no longer true, add its ID to the "delete" array.
+3. ADD ONLY PERMANENT INFO: Only "add" new facts if they are permanent, long-term traits (name, age, family, career, core hobbies, major life events) and DO NOT overlap with existing facts.
+4. IGNORE THE AI: NEVER extract facts about the AI's life or backstory. Only focus on the User.
+
+CURRENT FACTS:
+${existingFacts.length > 0 ? JSON.stringify(existingFacts.map((f: any) => ({ id: f._id, fact: f.fact }))) : "[]"}
+
+RECENT TRANSCRIPT:
+${chatHistory}
+
+You must return EXACTLY this JSON structure:
+{
+  "add": ["New permanent fact 1", "New permanent fact 2"],
+  "update": [
+    { "id": "fact_id_here", "fact": "Updated fact text incorporating new info" }
+  ],
+  "delete": ["fact_id_to_delete_1", "fact_id_to_delete_2"]
+}
+If no changes are needed, return empty arrays: {"add":[],"update":[],"delete":[]}`;
 
       const response = await openai.chat.completions.create({
         model,
         stream: false,
         messages: [
-          { role: "user", content: extractionPrompt },
+          { role: "system", content: extractionPrompt },
+          { role: "user", content: "Analyze the transcript and return the JSON." },
         ],
-        max_tokens: 200,
-      });
+        max_tokens: 512,
+        temperature: 0.1,
+        response_format: { type: "json_object" },
+      } as any);
 
       const content = response?.choices?.[0]?.message?.content?.trim();
-      console.log("Fact extraction raw response:", content);
-      if (!content || content.toUpperCase().includes("NONE")) return;
+      console.log("[Memory] Raw extraction response:", content);
 
-      // Parse line-by-line FACT: format (much more robust than JSON for creative models)
-      let newFacts: string[] = [];
-      const lines = content.split("\n");
-      for (const line of lines) {
-        const trimmed = line.trim();
-        // Match lines starting with "FACT:" or "- " or numbered lists
-        let fact = "";
-        if (trimmed.toUpperCase().startsWith("FACT:")) {
-          fact = trimmed.substring(5).trim();
-        } else if (trimmed.startsWith("- ")) {
-          fact = trimmed.substring(2).trim();
-        } else if (/^\d+[\.\)]\s/.test(trimmed)) {
-          fact = trimmed.replace(/^\d+[\.\)]\s*/, "").trim();
-        }
-        if (fact && fact.length > 5 && fact.length < 200) {
-          newFacts.push(fact);
+      if (!content) return;
+
+      let parsed: { add?: string[]; update?: { id: string; fact: string }[]; delete?: string[] };
+      try {
+        parsed = JSON.parse(content);
+      } catch (parseErr) {
+        console.error("[Memory] Failed to parse JSON response:", parseErr);
+        return;
+      }
+
+      const validFactIds = new Set(existingFacts.map((f: any) => f._id as string));
+
+      // Process deletes
+      if (Array.isArray(parsed.delete)) {
+        for (const factId of parsed.delete) {
+          if (typeof factId === "string" && validFactIds.has(factId)) {
+            try {
+              await ctx.runMutation(internal.memory.deleteFact, {
+                factId: factId as any,
+              });
+              console.log("[Memory] Deleted fact:", factId);
+            } catch (err) {
+              console.error("[Memory] Failed to delete fact:", factId, err);
+            }
+          }
         }
       }
 
-      if (newFacts.length === 0) return;
-
-      // Store each new fact (deduplicated against existing)
-      for (const fact of newFacts) {
-        if (
-          typeof fact === "string" &&
-          fact.trim().length > 3 &&
-          !existingFactStrings.some(
-            (existing: string) =>
-              existing.toLowerCase() === fact.toLowerCase()
-          )
-        ) {
-          await ctx.runMutation(internal.memory.insertFact, {
-            userId,
-            characterId,
-            fact: fact.trim(),
-          });
+      // Process updates
+      if (Array.isArray(parsed.update)) {
+        for (const entry of parsed.update) {
+          if (
+            entry &&
+            typeof entry.id === "string" &&
+            typeof entry.fact === "string" &&
+            entry.fact.trim().length > 3 &&
+            validFactIds.has(entry.id)
+          ) {
+            try {
+              await ctx.runMutation(internal.memory.updateFact, {
+                factId: entry.id as any,
+                fact: entry.fact.trim(),
+              });
+              console.log("[Memory] Updated fact:", entry.id, "→", entry.fact);
+            } catch (err) {
+              console.error("[Memory] Failed to update fact:", entry.id, err);
+            }
+          }
         }
       }
 
-      console.log(`Extracted ${newFacts.length} new facts for user-character pair`);
+      // Process adds
+      if (Array.isArray(parsed.add)) {
+        for (const fact of parsed.add) {
+          if (
+            typeof fact === "string" &&
+            fact.trim().length > 3 &&
+            fact.trim().length < 300
+          ) {
+            const isDuplicate = existingFacts.some(
+              (existing: any) =>
+                (existing.fact as string).toLowerCase() === fact.trim().toLowerCase()
+            );
+            if (!isDuplicate) {
+              try {
+                await ctx.runMutation(internal.memory.insertFact, {
+                  userId,
+                  characterId,
+                  fact: fact.trim(),
+                });
+                console.log("[Memory] Added fact:", fact.trim());
+              } catch (err) {
+                console.error("[Memory] Failed to add fact:", fact, err);
+              }
+            }
+          }
+        }
+      }
+
+      const addCount = parsed.add?.length ?? 0;
+      const updateCount = parsed.update?.length ?? 0;
+      const deleteCount = parsed.delete?.length ?? 0;
+      console.log(`[Memory] Done. Added: ${addCount}, Updated: ${updateCount}, Deleted: ${deleteCount}`);
     } catch (error) {
       // Memory extraction is non-critical — never let it crash the chat flow
-      console.error("Fact extraction failed (non-critical):", error);
+      console.error("[Memory] Fact extraction failed (non-critical):", error);
     }
   },
 });

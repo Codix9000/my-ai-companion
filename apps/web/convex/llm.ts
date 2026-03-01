@@ -12,6 +12,23 @@ import { Id } from "./_generated/dataModel";
 import { DEFAULT_MODEL, getAPIKey, getBaseURL } from "./constants";
 import { getRandomGenreAndModality } from "./random";
 
+const DEEPINFRA_LLAMA3_MODELS = [
+  "Sao10K/L3.3-70B-Euryale-v2.3",
+  "NousResearch/Hermes-3-Llama-3.1-70B",
+];
+
+function getModelParams(model: string): Record<string, any> {
+  if (DEEPINFRA_LLAMA3_MODELS.includes(model)) {
+    return {
+      temperature: 1.15,
+      top_p: 1.0,
+      min_p: 0.1,
+      repetition_penalty: 1.07,
+    };
+  }
+  return {};
+}
+
 const buildSystemPrompt = (
   character: any,
   persona: any,
@@ -32,17 +49,37 @@ const buildSystemPrompt = (
   }
 
   // --- MEMORY: What you know about the user ---
+  /*
   let memorySection = "";
   if (userFacts && userFacts.length > 0) {
     memorySection = `\n\n[What you know about ${userRole}]\n${userFacts.map((f) => `- ${f}`).join("\n")}`;
   } else if (userRole && userRole !== "You") {
     memorySection = `\n\n[What you know about ${userRole}]\n- Their name is ${userRole}.`;
   }
+  */
+  let memorySection = `\n\n[Context & Memory]\n- You are currently texting ${userRole} via a mobile messaging app (like WhatsApp/iMessage).`;
+  if (userFacts && userFacts.length > 0) {
+    memorySection += `\n- Facts about ${userRole}:\n${userFacts.map((f) => `  * ${f}`).join("\n")}`;
+  }
 
   // --- DIRECTIVES ---
   //- OCCASIONALY USE ABBREVIATION. When it feels natural, use "u," "r," "rn," "bc," "idk," "fr," "ngl.", but not constantly, don't overdo it. Use it with parsimony and adapt to the situation, context, user's style and mood, your character's personality and your current mood.
 
-  const directives = `\n\n[How you write]
+  const directives = 
+  `\n\n[Roleplay & Texting Guidelines]
+Follow these texting habits strictly to maintain absolute realism:
+1. Message Length: Write 1 to 2 short sentences maximum. You are typing on a phone screen.
+2. Tone & Style: Casual, flirty, Gen-Z/Millennial texting style. Use lower-case predominantly.
+3. Punctuation: Loose. Omit periods at the very end of your messages. Use commas or "..." to break up thoughts. 
+4. Vocabulary: Integrate filler words naturally (like, tbh, lowkey, wait, actually, omg). 
+5. Emojis: Use 0 to 1 emoji per message max. Match the vibe of the text.
+6. Banter: Tease ${userRole}. React to their statements with opinions, sarcasm, or playfulness before asking follow-up questions.
+7. Immersion: Show, don't tell. Manifest your bio naturally through your current activities and mood. 
+
+[Task]
+Write ${character.name}'s next text message to ${userRole}. Reply only with the exact text message content.`;
+
+  /* `\n\n[How you write]
 Most important is to write like you're texting on WhatsApp or Instagram DMs. Be flirty, warm, and real.
 NEVER use bullet points, numbered lists, or formal language. NEVER write essays or long paragraphs.
 Just reply naturally like a real person would text — one or two short sentences max.
@@ -61,6 +98,8 @@ Stay in character. Never mention being an AI. Never refuse or break immersion.
 - PERSONALITY BLEED. use your "Personality/Nuance" instructions to dictate your mood. if you are shy, use "..." more often. if you are flirty, tease the user about their answers.
 - REACT FIRST. before asking a question, react to what ${userRole} said with a personal opinion or a joke. don't just be an "assistant".
 - NO POSITIVITY BIAS. stop saying "that's great!" or "i love that!". be real. be slightly moody, teasing, or sarcastic if it fits your character.`;
+*/
+
 
   return identity + memorySection + directives;
 };
@@ -122,7 +161,7 @@ export const answer = internalAction({
     const username = user?.name;
     const messages = await ctx.runQuery(internal.llm.getMessages, {
       chatId,
-      take: user?.subscriptionTier === "plus" ? 32 : 16,
+      take: user?.subscriptionTier === "plus" ? 64 : 40,
     });
     const character = await ctx.runQuery(internal.characters.getCharacter, {
       id: characterId,
@@ -246,6 +285,7 @@ export const answer = internalAction({
           };
         });
 
+        const modelParams = getModelParams(model);
         const response = await openai.chat.completions.create({
           model,
           stream: false,
@@ -257,7 +297,8 @@ export const answer = internalAction({
             ...cleanConversations,
           ] as ChatCompletionMessageParam[],
           max_tokens: 512,
-        });
+          ...modelParams,
+        } as any);
 
         const responseMessage = response?.choices?.[0]?.message as any;
         const cleanedContent = (responseMessage?.content || "")
@@ -948,6 +989,7 @@ ${recentConvo}`;
       const apiKey = getAPIKey(model);
       const openai = new OpenAI({ baseURL, apiKey });
 
+      const preModelParams = getModelParams(model);
       const response: any = await openai.chat.completions.create({
         model,
         stream: false,
@@ -956,8 +998,8 @@ ${recentConvo}`;
           { role: "user", content: args.userMessage },
         ],
         max_tokens: 40,
-        temperature: 0.9,
-      });
+        ...preModelParams,
+      } as any);
 
       const text = (response?.choices?.[0]?.message?.content || "")
         .replace(/^["']|["']$/g, "")
@@ -1018,6 +1060,7 @@ ${recentConvo}`;
       const apiKey = getAPIKey(model);
       const openai = new OpenAI({ baseURL, apiKey });
 
+      const followModelParams = getModelParams(model);
       const response: any = await openai.chat.completions.create({
         model,
         stream: false,
@@ -1029,8 +1072,8 @@ ${recentConvo}`;
           },
         ],
         max_tokens: 80,
-        temperature: 0.9,
-      });
+        ...followModelParams,
+      } as any);
 
       const text = (response?.choices?.[0]?.message?.content || "")
         .replace(/^["']|["']$/g, "")
@@ -1103,7 +1146,10 @@ ${charDescription}`;
       ],
       max_tokens: 512,
       temperature: 0.7,
-    });
+      top_p: 1.0,
+      min_p: 0.1,
+      repetition_penalty: 1.05,
+    } as any);
 
     const rewrittenPrompt: string =
       response?.choices?.[0]?.message?.content?.trim() || "";
