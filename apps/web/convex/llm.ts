@@ -20,9 +20,9 @@ const DEEPINFRA_LLAMA3_MODELS = [
 function getModelParams(model: string): Record<string, any> {
   if (DEEPINFRA_LLAMA3_MODELS.includes(model)) {
     return {
-      temperature: 0.8,
+      temperature: 1.1,
       top_p: 0.9,
-      frequency_penalty: 0.2,
+      frequency_penalty: 0.1,
       presence_penalty: 0.2,
     };
   }
