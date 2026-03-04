@@ -211,7 +211,7 @@ function buildWorkflowNSFW({
     "71": {
       inputs: {
         lora_name: `${loraName}.safetensors`,
-        strength_model: loraStrength,
+        strength_model: loraStrength + 0.3,
         model: ["66", 0],
       },
       class_type: "LoraLoaderModelOnly",
