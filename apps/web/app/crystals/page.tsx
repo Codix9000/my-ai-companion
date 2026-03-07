@@ -20,37 +20,31 @@ import {
   Sparkles,
   Crown,
 } from "lucide-react";
-import Image from "next/image";
 import { MovingBorder } from "../../components/ui/moving-border";
 
+const PLACEHOLDER_IMG =
+  "https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=1000&auto=format&fit=crop";
+
 /* ─── Sparks balance (mock) ─── */
-function SparksHeader({
-  sparks,
-}: {
-  sparks: number;
-}) {
+function SparksHeader({ sparks }: { sparks: number }) {
   const { t } = useTranslation();
   return (
-    <div className="mb-8 flex items-center gap-2">
-      <Zap className="h-5 w-5 text-yellow-400" />
-      <span className="text-sm font-medium text-foreground/70">
-        {t("Your Sparks")}:
-      </span>
-      <span className="font-display text-lg font-bold text-yellow-400">
-        {sparks.toLocaleString()}
-      </span>
+    <div className="mb-8">
+      <div className="inline-flex items-center gap-2.5 rounded-full border border-white/10 bg-white/5 px-4 py-1.5 backdrop-blur-sm">
+        <Zap className="h-4 w-4 text-yellow-400" />
+        <span className="text-sm font-medium text-foreground/60">
+          {t("Your Sparks")}
+        </span>
+        <span className="font-display text-sm font-bold text-yellow-400">
+          {sparks.toLocaleString()}
+        </span>
+      </div>
     </div>
   );
 }
 
 /* ─── Feature row ─── */
-function Feature({
-  icon,
-  text,
-}: {
-  icon: React.ReactNode;
-  text: string;
-}) {
+function Feature({ icon, text }: { icon: React.ReactNode; text: string }) {
   return (
     <li className="flex items-start gap-3 text-sm text-foreground/80">
       <span className="mt-0.5 shrink-0">{icon}</span>
@@ -63,20 +57,22 @@ function Feature({
 function MonthlyCard({ onSubscribe }: { onSubscribe: () => void }) {
   const { t } = useTranslation();
   return (
-    <div className="relative overflow-hidden rounded-2xl border border-white/[0.08] bg-white/[0.03] p-6 backdrop-blur-sm transition-all duration-300 hover:border-white/[0.15] hover:bg-white/[0.05]">
-      <div className="mb-4 flex items-center gap-3">
-        <Crown className="h-5 w-5 text-pink-400" />
-        <h3 className="font-display text-lg font-semibold text-foreground">
-          {t("1 Month")}
-        </h3>
+    <div className="flex flex-col overflow-hidden rounded-2xl border border-white/[0.08] bg-white/[0.03] p-6 backdrop-blur-sm transition-all duration-300 hover:border-white/[0.15] hover:bg-white/[0.05]">
+      {/* Fixed-height header zone for alignment */}
+      <div className="min-h-[130px]">
+        <div className="mb-4 flex items-center gap-3">
+          <Crown className="h-5 w-5 text-pink-400" />
+          <h3 className="font-display text-lg font-semibold text-foreground">
+            {t("1 Month")}
+          </h3>
+        </div>
+        <div>
+          <span className="font-display text-4xl font-bold text-foreground">$13.99</span>
+          <span className="ml-1 text-sm text-foreground/50">/ {t("month")}</span>
+        </div>
       </div>
 
-      <div className="mb-6">
-        <span className="font-display text-4xl font-bold text-foreground">$13.99</span>
-        <span className="ml-1 text-sm text-foreground/50">/ {t("month")}</span>
-      </div>
-
-      <ul className="mb-8 flex flex-col gap-3">
+      <ul className="mb-8 flex flex-1 flex-col gap-3">
         <Feature
           icon={<Unlock className="h-4 w-4 text-pink-500" />}
           text={t("Remove all Image & Video Blurs")}
@@ -97,7 +93,7 @@ function MonthlyCard({ onSubscribe }: { onSubscribe: () => void }) {
 
       <Button
         onClick={onSubscribe}
-        className="w-full rounded-xl bg-white/10 py-3 font-semibold text-foreground transition-all hover:bg-white/20"
+        className="w-full rounded-xl border border-white/20 bg-white/5 py-3 font-semibold text-foreground transition-all hover:bg-white/10"
       >
         {t("Subscribe")}
       </Button>
@@ -110,7 +106,7 @@ function YearlyCard({ onSubscribe }: { onSubscribe: () => void }) {
   const { t } = useTranslation();
   return (
     <MovingBorder containerClassName="w-full">
-      <div className="relative p-6">
+      <div className="flex flex-col p-6">
         {/* Best value badge */}
         <div className="absolute -top-px right-6 z-10">
           <div className="rounded-b-lg bg-gradient-to-r from-pink-500 to-purple-500 px-3 py-1.5">
@@ -120,22 +116,24 @@ function YearlyCard({ onSubscribe }: { onSubscribe: () => void }) {
           </div>
         </div>
 
-        <div className="mb-4 flex items-center gap-3 pt-2">
-          <Sparkles className="h-5 w-5 text-purple-400" />
-          <h3 className="font-display text-lg font-semibold text-foreground">
-            {t("Yearly")}
-          </h3>
+        {/* Fixed-height header zone for alignment */}
+        <div className="min-h-[130px]">
+          <div className="mb-4 flex items-center gap-3 pt-2">
+            <Sparkles className="h-5 w-5 text-purple-400" />
+            <h3 className="font-display text-lg font-semibold text-foreground">
+              {t("Yearly")}
+            </h3>
+          </div>
+          <div className="mb-1">
+            <span className="font-display text-4xl font-bold text-foreground">$4.19</span>
+            <span className="ml-1 text-sm text-foreground/50">/ {t("month")}</span>
+          </div>
+          <p className="text-xs text-foreground/40">
+            {t("Billed")} $49.99 {t("annually")}
+          </p>
         </div>
 
-        <div className="mb-1">
-          <span className="font-display text-4xl font-bold text-foreground">$4.19</span>
-          <span className="ml-1 text-sm text-foreground/50">/ {t("month")}</span>
-        </div>
-        <p className="mb-6 text-xs text-foreground/40">
-          {t("Billed")} $49.99 {t("annually")}
-        </p>
-
-        <ul className="mb-8 flex flex-col gap-3">
+        <ul className="mb-8 flex flex-1 flex-col gap-3">
           <Feature
             icon={<Unlock className="h-4 w-4 text-pink-500" />}
             text={t("Remove all Image & Video Blurs")}
@@ -185,18 +183,26 @@ function SparkPackage({
 }) {
   const { t } = useTranslation();
   return (
-    <div className="group relative overflow-hidden rounded-2xl border border-white/[0.08] bg-white/[0.03] p-5 backdrop-blur-sm transition-all duration-300 hover:border-white/[0.15] hover:bg-white/[0.06]">
+    <div
+      className={`group relative overflow-hidden rounded-2xl border bg-white/[0.03] p-5 backdrop-blur-sm transition-all duration-300 hover:bg-white/[0.06] ${
+        isBestValue
+          ? "border-pink-500/50 shadow-[0_0_15px_rgba(236,72,153,0.3)] hover:border-pink-500/70 hover:shadow-[0_0_25px_rgba(236,72,153,0.4)]"
+          : "border-white/[0.08] hover:border-white/[0.15]"
+      }`}
+    >
       {isBestValue && (
         <div className="absolute right-3 top-3">
-          <span className="rounded-full bg-yellow-400/10 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-yellow-400">
+          <span className="rounded-full bg-pink-500/15 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-pink-400">
             {t("Best Value")}
           </span>
         </div>
       )}
 
       <div className="mb-4 flex items-center gap-3">
-        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-yellow-400/10">
-          <Zap className="h-5 w-5 text-yellow-400" />
+        <div className={`flex h-10 w-10 items-center justify-center rounded-xl ${
+          isBestValue ? "bg-pink-500/15" : "bg-yellow-400/10"
+        }`}>
+          <Zap className={`h-5 w-5 ${isBestValue ? "text-pink-400" : "text-yellow-400"}`} />
         </div>
         <div>
           <p className="font-display text-xl font-bold text-foreground">
@@ -210,7 +216,11 @@ function SparkPackage({
 
       <Button
         onClick={onPurchase}
-        className="w-full rounded-xl bg-white/10 font-semibold text-foreground transition-all hover:bg-white/20"
+        className={`w-full rounded-xl font-semibold transition-all ${
+          isBestValue
+            ? "bg-pink-500/15 text-pink-300 hover:bg-pink-500/25"
+            : "bg-white/10 text-foreground hover:bg-white/20"
+        }`}
       >
         {price}
       </Button>
@@ -218,28 +228,23 @@ function SparkPackage({
   );
 }
 
-/* ─── Character image / placeholder column ─── */
+/* ─── Character image column ─── */
 function CharacterColumn() {
-  const [imgError, setImgError] = useState(false);
+  const [imgSrc, setImgSrc] = useState("/store/vip-character.png");
 
   return (
-    <div className="relative h-full w-full overflow-hidden">
-      {!imgError ? (
-        <Image
-          src="/store/vip-character.png"
-          alt="VIP Character"
-          fill
-          className="object-cover object-top"
-          priority
-          onError={() => setImgError(true)}
-        />
-      ) : (
-        <div className="h-full w-full bg-gradient-to-b from-[#1a0a1e] via-[#0d0610] to-[#050505]" />
-      )}
-      {/* Vignette overlays */}
-      <div className="absolute inset-0 bg-gradient-to-r from-transparent to-[#050505]/80" />
-      <div className="absolute inset-0 bg-gradient-to-t from-[#050505] via-transparent to-[#050505]/40" />
-      <div className="absolute inset-0 bg-gradient-to-l from-transparent to-[#050505]/50" />
+    <div className="relative h-full w-full overflow-hidden bg-[#050505]">
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src={imgSrc}
+        alt=""
+        className="h-full w-full object-cover object-top"
+        onError={() => setImgSrc(PLACEHOLDER_IMG)}
+      />
+      {/* Vignette overlays for seamless blending */}
+      <div className="absolute inset-0 bg-gradient-to-r from-transparent via-transparent to-[#050505]" />
+      <div className="absolute inset-0 bg-gradient-to-t from-[#050505] via-transparent to-[#050505]/50" />
+      <div className="absolute inset-0 bg-gradient-to-l from-transparent via-transparent to-[#050505]/40" />
     </div>
   );
 }
@@ -276,7 +281,7 @@ export default function Page() {
 
   return (
     <div className="relative flex min-h-screen w-full bg-[#050505] lg:mr-4 lg:overflow-hidden lg:rounded-xl">
-      {/* ─── Left: Character image (desktop only) ─── */}
+      {/* ─── Left: Character image (desktop sticky, mobile fixed bg) ─── */}
       <div className="fixed inset-0 z-0 lg:relative lg:block lg:w-[45%]">
         <div className="sticky top-0 h-screen">
           <CharacterColumn />
@@ -287,7 +292,6 @@ export default function Page() {
       <div className="relative z-10 min-h-screen w-full lg:w-[55%]">
         <BackgroundGradient />
 
-        {/* Mobile glassmorphism overlay */}
         <div className="relative z-10 min-h-screen px-5 pb-24 pt-8 lg:bg-transparent lg:px-10 lg:pt-12">
           {/* Mobile glass background */}
           <div className="fixed inset-0 z-[-1] bg-black/60 backdrop-blur-xl lg:hidden" />
