@@ -116,6 +116,14 @@ module.exports = {
             opacity: "0",
           },
         },
+        "spin-border": {
+          to: { "--border-angle": "360deg" },
+        },
+        "bg-drift": {
+          "0%, 100%": { transform: "translate(0%, 0%) rotate(0deg)" },
+          "33%": { transform: "translate(5%, -3%) rotate(2deg)" },
+          "66%": { transform: "translate(-3%, 5%) rotate(-1deg)" },
+        },
       },
       animation: {
         // Fade up and down
@@ -128,6 +136,8 @@ module.exports = {
         "accordion-up": "accordion-up 0.2s ease-out",
         // Custom spinner animation (for loading-spinner)
         spinner: "spinner 1.2s linear infinite",
+        "spin-border": "spin-border 4s linear infinite",
+        "bg-drift": "bg-drift 20s ease-in-out infinite",
       },
     },
   },

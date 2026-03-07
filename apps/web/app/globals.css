@@ -153,3 +153,30 @@ body {
 .scrollbar-hide::-webkit-scrollbar {
   display: none;
 }
+
+/* Moving border spin for VIP card */
+@property --border-angle {
+  syntax: "<angle>";
+  initial-value: 0deg;
+  inherits: false;
+}
+
+@keyframes spin-border {
+  to {
+    --border-angle: 360deg;
+  }
+}
+
+/* Background gradient drift for store page */
+@keyframes bg-drift {
+  0%,
+  100% {
+    transform: translate(0%, 0%) rotate(0deg);
+  }
+  33% {
+    transform: translate(5%, -3%) rotate(2deg);
+  }
+  66% {
+    transform: translate(-3%, 5%) rotate(-1deg);
+  }
+}
