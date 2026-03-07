@@ -28,7 +28,7 @@ export default async function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html suppressHydrationWarning={true} lang="en">
+    <html suppressHydrationWarning={true} lang="en" className="dark">
       <body className={cx(calSans.variable, inter.variable)}>
         <Suspense fallback={<Spinner />}>
           <Providers>

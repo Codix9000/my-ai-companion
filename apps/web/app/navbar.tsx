@@ -6,18 +6,20 @@ import useScroll from "@repo/ui/src/hooks/use-scroll";
 import UserDropdown from "../components/user/user-dropdown";
 import { Button } from "@repo/ui/src/components";
 import { useConvexAuth } from "convex/react";
-import { Gem, Menu } from "lucide-react";
+import { Gem, LogIn, Menu, UserPlus } from "lucide-react";
 import useCurrentUser from "./lib/hooks/use-current-user";
 import useMediaQuery from "@repo/ui/src/hooks/use-media-query";
 import { useSidebarStore } from "./lib/hooks/use-sidebar-store";
+import { useTranslation } from "react-i18next";
 
 export default function NavBar({}: {}) {
   const scrolled = useScroll(50);
-  const { isAuthenticated } = useConvexAuth();
+  const { isAuthenticated, isLoading } = useConvexAuth();
   const currentUser = useCurrentUser();
   const isPlus = currentUser?.subscriptionTier === "plus";
   const { isMobile } = useMediaQuery();
   const { toggleCollapsed } = useSidebarStore();
+  const { t } = useTranslation();
 
   return (
     <>
@@ -28,7 +30,6 @@ export default function NavBar({}: {}) {
       >
         <div className="mx-5 flex h-16 w-full items-center justify-between">
           <div className="flex items-center gap-3 font-display text-2xl">
-            {/* Hamburger menu toggle - Desktop Only */}
             {!isMobile && (
               <Button
                 variant="ghost"
@@ -44,7 +45,6 @@ export default function NavBar({}: {}) {
             </Link>
           </div>
           <div className="flex items-center gap-3">
-            {/* Premium 70% OFF button */}
             {isAuthenticated && !isPlus && (
               <Link href="/subscriptions">
                 <Button
@@ -60,7 +60,29 @@ export default function NavBar({}: {}) {
               </Link>
             )}
 
-            <UserDropdown />
+            {isAuthenticated ? (
+              <UserDropdown />
+            ) : (
+              !isLoading && (
+                <div className="flex items-center gap-2">
+                  <Link href="/sign-in">
+                    <Button
+                      variant="ghost"
+                      className="gap-1.5 rounded-full border border-border/50 px-4 py-2 text-sm font-medium text-foreground/80 transition-all hover:border-primary/40 hover:bg-primary/10 hover:text-foreground"
+                    >
+                      <LogIn className="h-4 w-4" />
+                      <span>{t("Log in")}</span>
+                    </Button>
+                  </Link>
+                  <Link href="/sign-up">
+                    <Button className="gap-1.5 rounded-full bg-gradient-to-r from-pink-600 to-purple-600 px-4 py-2 text-sm font-semibold text-white shadow-lg shadow-pink-500/25 transition-all hover:from-pink-500 hover:to-purple-500 hover:shadow-pink-500/40">
+                      <UserPlus className="h-4 w-4" />
+                      <span>{t("Sign up")}</span>
+                    </Button>
+                  </Link>
+                </div>
+              )
+            )}
           </div>
         </div>
       </div>

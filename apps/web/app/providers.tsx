@@ -7,7 +7,7 @@ import { PHProvider } from "./ph-provider";
 export function Providers({ children }: { children: React.ReactNode }) {
   useInAppBrowserBypassing();
   return (
-    <ThemeProvider defaultTheme="system" enableSystem={true} attribute="class">
+    <ThemeProvider defaultTheme="dark" forcedTheme="dark" attribute="class">
       <PHProvider>
         <AuthenticationProvider>{children}</AuthenticationProvider>
       </PHProvider>

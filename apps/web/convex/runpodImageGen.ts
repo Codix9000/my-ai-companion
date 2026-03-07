@@ -166,7 +166,7 @@ function buildWorkflowNSFW({
     },
     "66": {
       inputs: {
-        unet_name: "moodyPornMix_zitV9.safetensors",
+        unet_name: "z_image_turbo_bf16.safetensors", // moodyPornMix_zitV9 
         weight_dtype: "default",
       },
       class_type: "UNETLoader",
@@ -211,7 +211,7 @@ function buildWorkflowNSFW({
     "71": {
       inputs: {
         lora_name: `${loraName}.safetensors`,
-        strength_model: loraStrength + 0.3,
+        strength_model: loraStrength,
         model: ["66", 0],
       },
       class_type: "LoraLoaderModelOnly",
