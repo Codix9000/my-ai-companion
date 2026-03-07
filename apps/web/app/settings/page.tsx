@@ -161,23 +161,20 @@ export default function SettingsPage() {
           </div>
         </div>
 
-        {/* Danger Zone */}
-        <div className="rounded-2xl border border-border/60 bg-card p-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-semibold text-red-400">{t("Danger Zone")}</p>
-              <p className="text-xs text-muted-foreground">
-                {t("If you want to permanently delete this account and all of its data.")}
-              </p>
-            </div>
-            <Button
-              variant="outline"
-              className="rounded-lg border-red-500/50 text-red-400 hover:bg-red-500/10"
-              onClick={() => toast.info("Coming soon!")}
-            >
-              {t("Delete account")}
-            </Button>
-          </div>
+        {/* Spacer to push danger zone to the bottom */}
+        <div className="pt-16" />
+
+        {/* Account deletion — intentionally understated */}
+        <div className="flex items-center justify-between border-t border-border/20 pt-4">
+          <p className="text-xs text-muted-foreground/60">
+            {t("If you want to permanently delete this account and all of its data.")}
+          </p>
+          <button
+            onClick={() => toast.info("Coming soon!")}
+            className="shrink-0 text-xs text-muted-foreground/50 underline decoration-muted-foreground/20 transition-colors hover:text-muted-foreground/70"
+          >
+            {t("Delete account")}
+          </button>
         </div>
       </div>
     </div>
