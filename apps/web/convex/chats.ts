@@ -1,5 +1,5 @@
-import { mutation, query } from "./_generated/server";
-import { v } from "convex/values";
+import { internalMutation, mutation, query } from "./_generated/server";
+import { ConvexError, v } from "convex/values";
 import { getUser } from "./users";
 import { paginationOptsValidator } from "convex/server";
 import { internal } from "./_generated/api";
@@ -28,14 +28,18 @@ export const create = mutation({
         return chat._id;
       }
     }
+    const character = await ctx.db.get(args.characterId);
+    if (!character) {
+      throw new ConvexError({ message: "CHARACTER_DELETED" });
+    }
+
     const { isNew, ...rest } = args;
     const newChat = await ctx.db.insert("chats", {
       ...rest,
       userId: user._id,
       tokenIdentifier: user?.tokenIdentifier,
     });
-    const character = await ctx.db.get(args.characterId);
-    const greeting = character?.greetings
+    const greeting = character.greetings
       ? (character.greetings[0] as string)
       : ("" as string);
     const persona = user?.primaryPersonaId
@@ -51,14 +55,14 @@ export const create = mutation({
     if (replacedText && replacedText.length > 5) {
       speech = await ctx.db
         .query("speeches")
-        .filter((q) => q.eq(q.field("voiceId"), character?.voiceId))
+        .filter((q) => q.eq(q.field("voiceId"), character.voiceId))
         .filter((q) => q.eq(q.field("text"), replacedText))
         .first();
     }
     const messageId = await ctx.db.insert("messages", {
       text: formattedText,
       chatId: newChat,
-      characterId: character?._id,
+      characterId: character._id,
       speechUrl: speech ? speech.speechUrl : undefined,
     });
 
@@ -80,7 +84,7 @@ export const create = mutation({
         messageId,
       });
     }
-    const numUsers = character?.numUsers ? character?.numUsers : 0;
+    const numUsers = character.numUsers ? character.numUsers : 0;
     ctx.db.patch(args.characterId, {
       numUsers: numUsers + 1,
     });
@@ -141,5 +145,98 @@ export const remove = mutation({
       await Promise.all(messages.map((message) => ctx.db.delete(message._id)));
       return await ctx.db.delete(args.id);
     }
+  },
+});
+
+export const cleanupDeletedCharacter = internalMutation({
+  args: {
+    characterId: v.id("characters"),
+  },
+  handler: async (ctx, { characterId }) => {
+    const chats = await ctx.db
+      .query("chats")
+      .withIndex("byCharacterId", (q) => q.eq("characterId", characterId))
+      .collect();
+
+    for (const chat of chats) {
+      const messages = await ctx.db
+        .query("messages")
+        .withIndex("byChatId", (q) => q.eq("chatId", chat._id))
+        .collect();
+      for (const msg of messages) {
+        await ctx.db.delete(msg._id);
+      }
+
+      const followUps = await ctx.db
+        .query("followUps")
+        .withIndex("byChatId", (q) => q.eq("chatId", chat._id))
+        .collect();
+      for (const fu of followUps) {
+        await ctx.db.delete(fu._id);
+      }
+
+      await ctx.db.delete(chat._id);
+    }
+
+    const stories = await ctx.db
+      .query("stories")
+      .withIndex("byCharacterId", (q) => q.eq("characterId", characterId))
+      .collect();
+    for (const story of stories) {
+      await ctx.db.delete(story._id);
+    }
+
+    const customizations = await ctx.db
+      .query("characterCustomizations")
+      .withIndex("byCharacterId", (q) => q.eq("characterId", characterId))
+      .collect();
+    for (const c of customizations) {
+      await ctx.db.delete(c._id);
+    }
+
+    const userFacts = await ctx.db
+      .query("userFacts")
+      .filter((q) => q.eq(q.field("characterId"), characterId))
+      .collect();
+    for (const uf of userFacts) {
+      await ctx.db.delete(uf._id);
+    }
+
+    const posts = await ctx.db
+      .query("posts")
+      .withIndex("byAuthorId", (q) => q.eq("authorId", characterId))
+      .collect();
+    for (const post of posts) {
+      const likes = await ctx.db
+        .query("postLikes")
+        .withIndex("byPostId", (q) => q.eq("postId", post._id))
+        .collect();
+      for (const like of likes) {
+        await ctx.db.delete(like._id);
+      }
+      await ctx.db.delete(post._id);
+    }
+
+    const userMedia = await ctx.db
+      .query("userMedia")
+      .filter((q) => q.eq(q.field("characterId"), characterId))
+      .collect();
+    for (const um of userMedia) {
+      await ctx.db.delete(um._id);
+    }
+
+    const charMessages = await ctx.db
+      .query("messages")
+      .withIndex("byCharacterId", (q) => q.eq("characterId", characterId))
+      .collect();
+    for (const msg of charMessages) {
+      await ctx.db.delete(msg._id);
+    }
+
+    return {
+      chatsRemoved: chats.length,
+      storiesRemoved: stories.length,
+      postsRemoved: posts.length,
+    };
   },
 });

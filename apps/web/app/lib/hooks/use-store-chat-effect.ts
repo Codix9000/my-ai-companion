@@ -26,12 +26,20 @@ export default function useStoreChatEffect(
     }
 
     async function createChatForUser() {
-      const id = await createChat({
-        characterId,
-        storyId,
-      });
-      setChatId(id);
-      await translate({ id: characterId });
+      try {
+        const id = await createChat({
+          characterId,
+          storyId,
+        });
+        setChatId(id);
+        await translate({ id: characterId });
+      } catch (error: any) {
+        const msg = error?.data?.message || error?.message || "";
+        if (msg.includes("CHARACTER_DELETED")) {
+          return;
+        }
+        throw error;
+      }
     }
 
     createChatForUser();

@@ -497,9 +497,10 @@ export const get = query({
   },
   handler: async (ctx, args) => {
     const character = await ctx.db.get(args.id);
-    if (character?.visibility !== "public") {
+    if (!character) return null;
+    if (character.visibility !== "public") {
       const user = await getUser(ctx);
-      if (character?.creatorId !== user._id) {
+      if (character.creatorId !== user._id) {
         throw new ConvexError({
           message: "You do not have permission to view this character.",
         });
@@ -507,12 +508,12 @@ export const get = query({
     }
     return {
       ...character,
-      cardImageUrl: character?.cardImageStorageId
+      cardImageUrl: character.cardImageStorageId
         ? ((await ctx.storage.getUrl(character.cardImageStorageId)) as string)
-        : character?.cardImageUrl,
-      bannerImageUrl: character?.bannerImageStorageId
+        : character.cardImageUrl,
+      bannerImageUrl: character.bannerImageStorageId
         ? ((await ctx.storage.getUrl(character.bannerImageStorageId)) as string)
-        : character?.bannerImageUrl,
+        : character.bannerImageUrl,
     };
   },
 });
@@ -778,6 +779,7 @@ export const translate = mutation({
   handler: async (ctx, args) => {
     const user = await getUser(ctx);
     const character = await ctx.db.get(args.id);
+    if (!character) return;
     const userLanguage =
       user.languageTag === "en"
         ? "en-US"
@@ -787,18 +789,38 @@ export const translate = mutation({
     const existingTranslation = await ctx.db
       .query("translations")
       .withIndex("byLanguage", (q) => q.eq("languageTag", userLanguage))
-      .filter((q) => q.eq(q.field("text"), character?.name))
+      .filter((q) => q.eq(q.field("text"), character.name))
       .first();
     if (userLanguage && !existingTranslation && userLanguage !== "en-US") {
       await ctx.scheduler.runAfter(0, internal.translate.string, {
-        text: character?.name as string,
+        text: character.name as string,
         targetLanguage: userLanguage,
       });
       await ctx.scheduler.runAfter(0, internal.translate.string, {
-        text: character?.description as string,
+        text: character.description as string,
         targetLanguage: userLanguage,
       });
     }
+  },
+});
+
+export const deleteCharacter = mutation({
+  args: {
+    id: v.id("characters"),
+  },
+  handler: async (ctx, args) => {
+    const user = await getUser(ctx);
+    const character = await ctx.db.get(args.id);
+    if (!character) return;
+    if (character.creatorId !== user._id) {
+      throw new ConvexError({
+        message: "You do not have permission to delete this character.",
+      });
+    }
+    await ctx.db.delete(args.id);
+    await ctx.scheduler.runAfter(0, internal.chats.cleanupDeletedCharacter, {
+      characterId: args.id,
+    });
   },
 });
 
@@ -818,9 +840,12 @@ export const removeOldCharacters = internalMutation({
         ),
       )
       .take(4000);
-    await Promise.all(
-      oldCharacters.map((character) => ctx.db.delete(character._id)),
-    );
+    for (const character of oldCharacters) {
+      await ctx.db.delete(character._id);
+      await ctx.scheduler.runAfter(0, internal.chats.cleanupDeletedCharacter, {
+        characterId: character._id,
+      });
+    }
     return { removed: oldCharacters.length };
   },
 });

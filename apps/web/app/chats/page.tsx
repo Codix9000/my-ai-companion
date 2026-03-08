@@ -35,6 +35,29 @@ function ActiveChat({ characterId }: { characterId: Id<"characters"> }) {
 
   const { chatId } = useStoreChatEffect(characterId);
 
+  if (data === null) {
+    return (
+      <div className="flex h-full w-full flex-col items-center justify-center gap-4 text-center">
+        <div className="flex h-20 w-20 items-center justify-center rounded-full bg-white/5">
+          <Heart className="h-10 w-10 text-white/20" />
+        </div>
+        <div>
+          <h2 className="text-lg font-semibold text-foreground">
+            Character no longer available
+          </h2>
+          <p className="mt-1 text-sm text-muted-foreground">
+            This character has been removed. Choose another from the sidebar or explore new ones.
+          </p>
+        </div>
+        <Link href="/characters">
+          <Button className="mt-2 bg-gradient-to-r from-pink-500 to-purple-500 hover:from-pink-600 hover:to-purple-600">
+            Explore Characters
+          </Button>
+        </Link>
+      </div>
+    );
+  }
+
   if (!data || !chatId) {
     return (
       <div className="flex h-full w-full items-center justify-center">

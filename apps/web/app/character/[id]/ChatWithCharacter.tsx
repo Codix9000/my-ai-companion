@@ -97,6 +97,25 @@ export default function ChatWithCharacter({
     params.storyId ? (params.storyId as Id<"stories">) : undefined,
     urlChatId as Id<"chats">,
   );
+  if (data === null) {
+    return (
+      <div className="flex h-full min-h-[60vh] w-full flex-col items-center justify-center gap-4 text-center">
+        <h2 className="text-lg font-semibold text-foreground">
+          Character no longer available
+        </h2>
+        <p className="text-sm text-muted-foreground">
+          This character has been removed.
+        </p>
+        <Link
+          href="/characters"
+          className="rounded-lg bg-gradient-to-r from-pink-500 to-purple-500 px-4 py-2 text-sm text-white hover:from-pink-600 hover:to-purple-600"
+        >
+          Explore Characters
+        </Link>
+      </div>
+    );
+  }
+
   const content = (
     <>
       {params.storyId && !isUnlocked ? (

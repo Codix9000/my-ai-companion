@@ -150,9 +150,16 @@ export const answer = internalAction({
           characterId,
         });
 
+    if (!character) {
+      await ctx.runMutation(internal.llm.updateCharacterMessage, {
+        messageId,
+        text: "This character is no longer available.",
+      });
+      return;
+    }
     if (
-      character?.creatorId !== userId &&
-      character?.visibility === "private"
+      character.creatorId !== userId &&
+      character.visibility === "private"
     ) {
       await ctx.runMutation(internal.llm.updateCharacterMessage, {
         messageId,
@@ -160,14 +167,14 @@ export const answer = internalAction({
       });
       return;
     }
-    if (character?.isArchived) {
+    if (character.isArchived) {
       await ctx.runMutation(internal.llm.updateCharacterMessage, {
         messageId,
         text: "Sorry, the character is archived by the creator.",
       });
       return;
     }
-    if (character?.isBlacklisted) {
+    if (character.isBlacklisted) {
       await ctx.runMutation(internal.llm.updateCharacterMessage, {
         messageId,
         text: "This character is automatically classified as violating our community guidelines and content policy. You can ask questions on our Discord if this classification is a false positive.",

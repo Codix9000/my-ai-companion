@@ -103,12 +103,14 @@ export const send = mutation({
     });
 
     const character = await ctx.db.get(characterId);
-    const updatedAt = new Date().toISOString();
-    const newNumChats = character?.numChats ? character?.numChats + 1 : 1;
-    await ctx.db.patch(characterId, {
-      numChats: newNumChats,
-      updatedAt,
-    });
+    if (character) {
+      const updatedAt = new Date().toISOString();
+      const newNumChats = character.numChats ? character.numChats + 1 : 1;
+      await ctx.db.patch(characterId, {
+        numChats: newNumChats,
+        updatedAt,
+      });
+    }
     await ctx.db.insert("followUps", { chatId });
   },
 });
@@ -133,12 +135,14 @@ export const sendImageRequest = mutation({
     }
 
     const character = await ctx.db.get(characterId);
-    const updatedAt = new Date().toISOString();
-    const newNumChats = character?.numChats ? character?.numChats + 1 : 1;
-    await ctx.db.patch(characterId, {
-      numChats: newNumChats,
-      updatedAt,
-    });
+    if (character) {
+      const updatedAt = new Date().toISOString();
+      const newNumChats = character.numChats ? character.numChats + 1 : 1;
+      await ctx.db.patch(characterId, {
+        numChats: newNumChats,
+        updatedAt,
+      });
+    }
     await ctx.db.insert("followUps", { chatId });
   },
 });
