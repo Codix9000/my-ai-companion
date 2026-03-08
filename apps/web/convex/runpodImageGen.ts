@@ -395,6 +395,16 @@ export const generateChatImage = action({
     });
     if (!user) throw new Error("User not found");
 
+    const cost = args.isNSFW ? 25 : 10;
+    const currentBalance = user.crystals || 0;
+    if (currentBalance < cost) {
+      throw new Error("INSUFFICIENT_SPARKS");
+    }
+    await ctx.runMutation(internal.users.deductCrystals, {
+      userId: user._id,
+      amount: cost,
+    });
+
     const NSFW_KEYWORDS = /\b(naked|nude|topless|nsfw|sexy|strip|undress|lingerie|panties|bra|ass|boobs|tits|pussy|dick|cock|blowjob|sex|fuck|horny|naughty|explicit|xxx|porn|erotic|thong|bikini|nipple|orgasm|cum|wet|spread|bent\s*over|no\s*cloth|take.*off|nothing\s*on)\b/i;
     const nsfwRequestDetected = NSFW_KEYWORDS.test(args.userMessage);
 

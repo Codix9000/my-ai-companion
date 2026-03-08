@@ -1,7 +1,7 @@
 "use client";
 import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import { api } from "../convex/_generated/api";
-import { useAction, useMutation } from "convex/react";
+import { useAction, useMutation, useQuery } from "convex/react";
 import { Id } from "../convex/_generated/dataModel";
 import {
   Image as ImageIcon,
@@ -22,6 +22,7 @@ import {
   Dices,
 } from "lucide-react";
 import { Progress } from "@repo/ui/src/components/progress";
+import { Skeleton } from "@repo/ui/src/components/skeleton";
 import { Switch } from "@repo/ui/src/components/switch";
 import { AnimatePresence, motion, useInView } from "framer-motion";
 import { Button } from "@repo/ui/src/components";
@@ -255,6 +256,8 @@ export function Dialog({
   isAuthenticated: boolean;
 }) {
   const { t } = useTranslation();
+  const router = useRouter();
+  const currentUser = useQuery(api.users.me);
   const { results, loadMore } = useStablePaginatedQuery(
     api.messages.list,
     chatId && isAuthenticated ? { chatId } : "skip",
@@ -366,8 +369,20 @@ export function Dialog({
           isNSFW,
         });
       } catch (error: any) {
-        console.error("[ChatImageGen] Error:", error);
-        toast.error(error?.message || "Failed to generate image.");
+        const errorMsg =
+          error?.data?.message || error?.message || String(error);
+        if (errorMsg.includes("INSUFFICIENT_SPARKS")) {
+          toast.error("Out of Sparks! ⚡", {
+            description: "You need more Sparks to generate this image.",
+            action: {
+              label: "Top Up",
+              onClick: () => router.push("/vip"),
+            },
+          });
+        } else {
+          console.error("[ChatImageGen] Error:", error);
+          toast.error(errorMsg || "Failed to generate image.");
+        }
       } finally {
         setIsGeneratingImage(false);
       }
@@ -506,10 +521,19 @@ export function Dialog({
           >
             <Phone className="h-4 w-4" />
           </button>
-          <div className="flex items-center gap-1.5 rounded-full border border-white/10 bg-white/5 px-3 py-1.5">
+          <Link
+            href="/vip"
+            className="flex items-center gap-1.5 rounded-full border border-white/10 bg-white/5 px-3 py-1.5 transition-colors hover:bg-white/10"
+          >
             <Zap className="h-3.5 w-3.5 fill-yellow-400 text-yellow-400" />
-            <span className="text-sm font-semibold text-white">850</span>
-          </div>
+            {currentUser === undefined ? (
+              <Skeleton className="h-4 w-8" />
+            ) : (
+              <span className="text-sm font-semibold text-white">
+                {currentUser?.crystals ?? 0}
+              </span>
+            )}
+          </Link>
           <ChatOptionsPopover
             characterId={characterId}
             chatId={chatId}

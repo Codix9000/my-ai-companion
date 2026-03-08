@@ -1,5 +1,5 @@
 import { mutation, query } from "./_generated/server";
-import { internalQuery } from "./_generated/server";
+import { internalMutation, internalQuery } from "./_generated/server";
 import { v } from "convex/values";
 import { SIGN_UP_FREE_CRYSTALS } from "./constants";
 
@@ -64,6 +64,20 @@ export const store = mutation({
           ? 0
           : SIGN_UP_FREE_CRYSTALS,
     });
+  },
+});
+
+export const deductCrystals = internalMutation({
+  args: {
+    userId: v.id("users"),
+    amount: v.number(),
+  },
+  handler: async (ctx, { userId, amount }) => {
+    const user = await ctx.db.get(userId);
+    if (!user) throw new Error("User not found");
+    const current = user.crystals || 0;
+    if (current < amount) throw new Error("INSUFFICIENT_SPARKS");
+    await ctx.db.patch(userId, { crystals: current - amount });
   },
 });
 
