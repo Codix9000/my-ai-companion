@@ -30,12 +30,12 @@ function SparksHeader({ sparks }: { sparks: number }) {
   const { t } = useTranslation();
   return (
     <div className="mb-8">
-      <div className="inline-flex items-center gap-2.5 rounded-full border border-white/10 bg-white/5 px-4 py-1.5 backdrop-blur-sm">
+      <div className="inline-flex items-center justify-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-1.5 backdrop-blur-sm">
         <Zap className="h-4 w-4 text-yellow-400" />
-        <span className="text-sm font-medium text-foreground/60">
+        <span className="text-sm font-medium leading-none text-foreground/60">
           {t("Your Sparks")}
         </span>
-        <span className="font-display text-sm font-bold text-yellow-400">
+        <span className="font-display text-sm font-bold leading-none text-yellow-400">
           {sparks.toLocaleString()}
         </span>
       </div>
@@ -59,8 +59,8 @@ function MonthlyCard({ onSubscribe }: { onSubscribe: () => void }) {
   return (
     <div className="flex flex-col overflow-hidden rounded-2xl border border-white/[0.08] bg-white/[0.03] p-6 backdrop-blur-sm transition-all duration-300 hover:border-white/[0.15] hover:bg-white/[0.05]">
       {/* Fixed-height header zone for alignment */}
-      <div className="min-h-[130px]">
-        <div className="mb-4 flex items-center gap-3">
+      <div className="h-[120px] flex flex-col justify-start">
+        <div className="mb-4 flex items-center gap-2">
           <Crown className="h-5 w-5 text-pink-400" />
           <h3 className="font-display text-lg font-semibold text-foreground">
             {t("1 Month")}
@@ -93,7 +93,7 @@ function MonthlyCard({ onSubscribe }: { onSubscribe: () => void }) {
 
       <Button
         onClick={onSubscribe}
-        className="w-full rounded-xl border border-white/20 bg-white/5 py-3 font-semibold text-foreground transition-all hover:bg-white/10"
+        className="w-full rounded-xl border border-white/10 bg-white/5 py-3 font-semibold text-foreground transition-colors hover:bg-white/5"
       >
         {t("Subscribe")}
       </Button>
@@ -106,10 +106,10 @@ function YearlyCard({ onSubscribe }: { onSubscribe: () => void }) {
   const { t } = useTranslation();
   return (
     <MovingBorder containerClassName="w-full">
-      <div className="flex flex-col p-6">
-        {/* Best value badge */}
-        <div className="absolute -top-px right-6 z-10">
-          <div className="rounded-b-lg bg-gradient-to-r from-pink-500 to-purple-500 px-3 py-1.5">
+      <div className="relative flex flex-col p-6">
+        {/* Best value badge — absolutely positioned so it doesn't push content down */}
+        <div className="absolute top-4 right-4 z-10">
+          <div className="rounded-lg bg-gradient-to-r from-pink-500 to-purple-500 px-3 py-1.5">
             <span className="text-xs font-bold uppercase tracking-wider text-white">
               {t("Best Value")} — 70% OFF
             </span>
@@ -117,8 +117,8 @@ function YearlyCard({ onSubscribe }: { onSubscribe: () => void }) {
         </div>
 
         {/* Fixed-height header zone for alignment */}
-        <div className="min-h-[130px]">
-          <div className="mb-4 flex items-center gap-3 pt-2">
+        <div className="h-[120px] flex flex-col justify-start">
+          <div className="mb-4 flex items-center gap-2">
             <Sparkles className="h-5 w-5 text-purple-400" />
             <h3 className="font-display text-lg font-semibold text-foreground">
               {t("Yearly")}
@@ -191,14 +191,14 @@ function SparkPackage({
       }`}
     >
       {isBestValue && (
-        <div className="absolute right-3 top-3">
-          <span className="rounded-full bg-pink-500/15 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-pink-400">
+        <div className="absolute top-3 right-3">
+          <span className="rounded-full bg-pink-500/15 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-pink-400">
             {t("Best Value")}
           </span>
         </div>
       )}
 
-      <div className="mb-4 flex items-center gap-3">
+      <div className="mb-4 flex items-center gap-2">
         <div className={`flex h-10 w-10 items-center justify-center rounded-xl ${
           isBestValue ? "bg-pink-500/15" : "bg-yellow-400/10"
         }`}>
@@ -334,7 +334,7 @@ export default function Page() {
                 <YearlyCard onSubscribe={handleSubscribe} />
               </div>
 
-              <div className="mt-8 flex items-center justify-center gap-2 text-xs text-foreground/30">
+              <div className="mt-8 flex items-center justify-center gap-2 text-xs text-gray-400">
                 <Check className="h-3 w-3" />
                 <span>{t("Cancel anytime. No hidden fees.")}</span>
               </div>
