@@ -42,10 +42,10 @@ export const FormattedMessage = ({
       }`}
     >
       <div
-        className={`w-fit whitespace-pre-wrap rounded-xl ${
+        className={`w-fit whitespace-pre-wrap rounded-2xl ${
           message?.characterId
-            ? "bg-gradient-to-b from-background to-muted shadow-lg"
-            : "dark bg-gradient-to-t from-blue-400 to-blue-500 shadow-lg"
+            ? "border border-white/10 bg-white/5 text-gray-100 shadow-lg backdrop-blur-md"
+            : "bg-gradient-to-br from-purple-600 to-pink-600 text-white shadow-md"
         } px-3 py-2 md:max-w-[36rem] lg:max-w-[48rem]`}
       >
         <MemoizedReactMarkdown

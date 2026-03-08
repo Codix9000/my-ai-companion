@@ -6,6 +6,7 @@ import { Id } from "../convex/_generated/dataModel";
 import {
   Image as ImageIcon,
   Flame,
+  Heart,
   Lightbulb,
   MoreHorizontal,
   Send,
@@ -18,6 +19,7 @@ import {
   X,
   Dices,
 } from "lucide-react";
+import { Progress } from "@repo/ui/src/components/progress";
 import { AnimatePresence, motion, useInView } from "framer-motion";
 import { Button } from "@repo/ui/src/components";
 import {
@@ -474,7 +476,20 @@ export function Dialog({
               {name?.[0] || "?"}
             </AvatarFallback>
           </Avatar>
-          <span className="text-[22px] font-bold text-white">{name}</span>
+          <div className="flex flex-col gap-1">
+            <span className="text-[22px] font-bold leading-tight text-white">{name}</span>
+            <div className="flex items-center gap-2">
+              <Heart className="h-3.5 w-3.5 fill-pink-500 text-pink-500" />
+              <span className="text-xs font-medium text-gray-400">
+                {t("Intimacy Lvl 3")}
+              </span>
+              <Progress
+                value={80}
+                className="h-1.5 w-24"
+                indicatorClassName="bg-gradient-to-r from-pink-500 to-purple-500"
+              />
+            </div>
+          </div>
         </Link>
         <ChatOptionsPopover
           characterId={characterId}
@@ -525,7 +540,7 @@ export function Dialog({
       </div>
 
       {/* ── Input Area ── */}
-      <div className="shrink-0 px-8 pb-5 pt-2 lg:px-12">
+      <div className="relative mx-4 mb-4 shrink-0 pt-2">
         {/* ── Pose suggestions bar (visible in image gen mode) ── */}
         <AnimatePresence mode="wait">
           {imageGenMode && showSuggestions && (
@@ -784,7 +799,7 @@ export function Dialog({
           )}
         </AnimatePresence>
 
-        <div className="overflow-hidden rounded-2xl border border-white/[0.08] bg-white/[0.06]">
+        <div className="overflow-hidden rounded-full border border-white/10 bg-white/5 shadow-[0_0_15px_rgba(236,72,153,0.1)] backdrop-blur-xl transition-all duration-300 focus-within:shadow-[0_0_25px_rgba(236,72,153,0.25)]">
           {/* Text input row */}
           <form onSubmit={handleSend}>
             <input
