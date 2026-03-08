@@ -16,7 +16,7 @@ export const FormattedMessage = ({
 
   const formatBaseText = (message: any) => {
     return message?.text?.startsWith("Not enough crystals.")
-      ? `${message?.text} [${t("Crystal Top-up")}](/crystals)`
+      ? `${message?.text} [${t("Crystal Top-up")}](/vip)`
       : message?.text;
   };
 

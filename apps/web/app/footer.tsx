@@ -22,7 +22,7 @@ export default function Footer() {
   const pathname = usePathname();
   const showFooter =
     pathname === "/" ||
-    pathname === "/crystals" ||
+    pathname === "/vip" ||
     pathname === "/safety" ||
     pathname === "/dmca";
   if (!showFooter) return null;

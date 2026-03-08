@@ -7,7 +7,7 @@ import { useTheme } from "next-themes";
 import { I18nextProvider } from "react-i18next";
 import i18n from "./i18n";
 import CrystalDialog from "./crystal-dialog";
-import PaymentDialog from "./crystals/payment-dialog";
+import PaymentDialog from "./vip/payment-dialog";
 import { dark } from "@clerk/themes";
 
 const convex = new ConvexReactClient(

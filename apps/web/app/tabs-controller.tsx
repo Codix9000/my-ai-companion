@@ -32,7 +32,7 @@ function TabsController() {
   const currentSection =
     firstDir === "/feed" ? "/" :
     firstDir === "/my" ? "/my" :
-    firstDir === "/crystals" ? "/subscriptions" :
+    firstDir === "/vip" ? "/subscriptions" :
     firstDir;
 
   // Nav item component

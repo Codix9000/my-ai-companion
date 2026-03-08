@@ -6,7 +6,7 @@ const CurrentCrystals = () => {
   const currentUser = useCurrentUser();
   const crystals = currentUser?.crystals;
   return (
-    <Link href="/crystals">
+    <Link href="/vip">
       <div className={`flex gap-0.5 text-xs font-medium`}>
         <Crystal className="h-4 w-4" />
         {Math.floor(crystals)}

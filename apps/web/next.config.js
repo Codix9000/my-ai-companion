@@ -56,7 +56,12 @@ const nextConfig = {
     return [
       {
         source: "/shop",
-        destination: "/crystals",
+        destination: "/vip",
+        permanent: true,
+      },
+      {
+        source: "/crystals",
+        destination: "/vip",
         permanent: true,
       },
       {

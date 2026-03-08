@@ -10,8 +10,8 @@ import { useTranslation } from "react-i18next";
 import { Button } from "@repo/ui/src/components";
 import CurrentCrystals from "./current-crystals";
 import { DialogPortal } from "@repo/ui/src/components/dialog";
-import { MobilePackageWrapper } from "./crystals/mobile-package";
-import { packages } from "./crystals/packages";
+import { MobilePackageWrapper } from "./vip/mobile-package";
+import { packages } from "./vip/packages";
 import Link from "next/link";
 import useCurrentUser from "./lib/hooks/use-current-user";
 
@@ -54,7 +54,7 @@ const CrystalDialog: React.FC = () => {
           </div>
           <div className="mt-4 flex items-center justify-between">
             <CurrentCrystals />
-            <Link href="/crystals">
+            <Link href="/vip">
               <Button className="w-fit" onClick={closeDialog} variant="ghost">
                 {t("Shop")}
               </Button>
