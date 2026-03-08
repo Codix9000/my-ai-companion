@@ -5,7 +5,6 @@ import { internal } from "./_generated/api";
 import { getUser } from "./users";
 import { paginationOptsValidator } from "convex/server";
 import { Id } from "./_generated/dataModel";
-import { getCrystalPrice } from "./constants";
 
 export const get = internalQuery({
   args: {
@@ -104,19 +103,13 @@ export const send = mutation({
     });
 
     const character = await ctx.db.get(characterId);
-    const crystalPrice = getCrystalPrice(character?.model as string);
-    if (user?.crystals < crystalPrice) {
-      throw new ConvexError("Not enough crystals.");
-    }
     const updatedAt = new Date().toISOString();
     const newNumChats = character?.numChats ? character?.numChats + 1 : 1;
     await ctx.db.patch(characterId, {
       numChats: newNumChats,
       updatedAt,
     });
-    if (crystalPrice >= 1) {
-      await ctx.db.insert("followUps", { chatId });
-    }
+    await ctx.db.insert("followUps", { chatId });
   },
 });
 
@@ -140,19 +133,13 @@ export const sendImageRequest = mutation({
     }
 
     const character = await ctx.db.get(characterId);
-    const crystalPrice = getCrystalPrice(character?.model as string);
-    if (user?.crystals < crystalPrice) {
-      throw new ConvexError("Not enough crystals.");
-    }
     const updatedAt = new Date().toISOString();
     const newNumChats = character?.numChats ? character?.numChats + 1 : 1;
     await ctx.db.patch(characterId, {
       numChats: newNumChats,
       updatedAt,
     });
-    if (crystalPrice >= 1) {
-      await ctx.db.insert("followUps", { chatId });
-    }
+    await ctx.db.insert("followUps", { chatId });
   },
 });
 

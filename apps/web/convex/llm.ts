@@ -85,14 +85,8 @@ Keep your answer very very short. Respond as ${userRole} would.`;
   return buildSystemPrompt(character, persona, username);
 };
 
-const initializeModel = async (character: any, userId: string, ctx: any) => {
-  // 2. Initiailize model
+const initializeModel = async (character: any) => {
   const model = character?.model ? character.model : DEFAULT_MODEL;
-  const { currentCrystals } = await ctx.runMutation(internal.serve.useCrystal, {
-    userId,
-    name: model,
-    creatorId: character?.creatorId,
-  });
   const baseURL = getBaseURL(model);
   const apiKey = getAPIKey(model);
   const openai = new OpenAI({
@@ -105,7 +99,7 @@ const initializeModel = async (character: any, userId: string, ctx: any) => {
   } else if (model === "gpt-3.5-turbo-1106") {
     updatedModel = "gpt-3.5-turbo";
   }
-  return { openai, model: updatedModel, currentCrystals };
+  return { openai, model: updatedModel };
 };
 
 export const answer = internalAction({
@@ -183,11 +177,7 @@ export const answer = internalAction({
 
     let model;
     try {
-      const { openai, model, currentCrystals } = await initializeModel(
-        character,
-        userId,
-        ctx,
-      );
+      const { openai, model } = await initializeModel(character);
       console.log("model:::", model);
 
       // Fetch user facts for this character-user pair (memory system)
@@ -303,11 +293,6 @@ export const answer = internalAction({
           });
         }
       } catch (error) {
-        await ctx.runMutation(internal.serve.refundCrystal, {
-          userId,
-          currentCrystals,
-          name: model,
-        });
         throw error;
       }
     } catch (error) {

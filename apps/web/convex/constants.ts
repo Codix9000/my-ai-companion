@@ -1,5 +1,4 @@
 export const SIGN_UP_FREE_CRYSTALS = 50;
-export const DIVIDEND_RATE = 0.25;
 export const DEFAULT_MODEL = "NousResearch/Hermes-3-Llama-3.1-70B";
 export const PERPLEXITY_API_URL = "https://api.perplexity.ai";
 export const OPENAI_API_URL = "https://api.openai.com/v1";

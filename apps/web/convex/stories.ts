@@ -3,7 +3,6 @@ import { mutation, query } from "./_generated/server";
 import { getUser } from "./users";
 import { paginationOptsValidator } from "convex/server";
 import { Id } from "./_generated/dataModel";
-import { DIVIDEND_RATE } from "./constants";
 
 export const create = mutation({
   args: {
@@ -199,21 +198,6 @@ export const unlock = mutation({
     const messages = await Promise.all(
       (story?.messageIds ?? []).map((messageId) => ctx.db.get(messageId)),
     );
-    const price = messages?.length;
-    const user = await getUser(ctx);
-    const userCrystals = user?.crystals || 0;
-    const creator = await ctx.db.get(story?.userId as Id<"users">);
-    const creatorCrystals = creator?.crystals || 0;
-    const dividend = price * DIVIDEND_RATE;
-
-    if (story?.userId !== user?._id) {
-      await ctx.db.patch(story?.userId as Id<"users">, {
-        crystals: creatorCrystals + dividend,
-      });
-      await ctx.db.patch(user?._id as Id<"users">, {
-        crystals: userCrystals - price,
-      });
-    }
     await Promise.all(
       messages.map((message) =>
         ctx.db.insert("messages", {

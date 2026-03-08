@@ -22,6 +22,7 @@ import {
   Dices,
 } from "lucide-react";
 import { Progress } from "@repo/ui/src/components/progress";
+import { Switch } from "@repo/ui/src/components/switch";
 import { AnimatePresence, motion, useInView } from "framer-motion";
 import { Button } from "@repo/ui/src/components";
 import {
@@ -285,7 +286,10 @@ export function Dialog({
   const [showPhotoTip, setShowPhotoTip] = useState(false);
   const [isNSFW, setIsNSFW] = useState(false);
   const [highlightNSFW, setHighlightNSFW] = useState(false);
+  const [selectedPose, setSelectedPose] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+
+  const imageCost = isNSFW ? 25 : 10;
 
   // ── Full-screen image lightbox ──
   const [zoomedImageUrl, setZoomedImageUrl] = useState<string | null>(null);
@@ -312,7 +316,8 @@ export function Dialog({
     setShowPhotoTip(false);
   };
 
-  const handlePoseSuggestionClick = (promptText: string) => {
+  const handlePoseSuggestionClick = (label: string, promptText: string) => {
+    setSelectedPose(label);
     setInput(`Show me ${promptText}`);
     inputRef.current?.focus();
   };
@@ -320,6 +325,7 @@ export function Dialog({
   const handleRandomPose = () => {
     const random = POSE_SUGGESTIONS[Math.floor(Math.random() * POSE_SUGGESTIONS.length)];
     if (random) {
+      setSelectedPose("Random");
       setInput(`Show me ${random.promptText}`);
     }
     inputRef.current?.focus();
@@ -566,110 +572,88 @@ export function Dialog({
               transition={{ duration: 0.25, ease: [0.4, 0, 0.2, 1] }}
               className="overflow-hidden"
             >
-              <div className="flex items-center gap-4 overflow-x-auto pb-1 scrollbar-hide">
-                {/* Dice / Random button */}
+              {/* Style chips */}
+              <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-hide">
                 <motion.button
                   type="button"
                   onClick={handleRandomPose}
-                  className="flex shrink-0 flex-col items-center gap-1.5"
+                  className={`flex shrink-0 items-center gap-2 rounded-xl border px-3.5 py-2.5 transition-all ${
+                    selectedPose === "Random"
+                      ? "border-pink-500 bg-pink-500/10 shadow-[0_0_10px_rgba(236,72,153,0.3)]"
+                      : "border-white/10 bg-white/5 hover:bg-white/10"
+                  }`}
                   initial={{ opacity: 0, y: -8 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.2, delay: 0.05 }}
                 >
-                  <div className="flex h-[80px] w-[72px] items-center justify-center rounded-xl border border-white/10 bg-white/[0.06] transition-colors hover:bg-white/[0.12]">
-                    <Dices className="h-7 w-7 text-white/60" />
-                  </div>
-                  <span className="text-[11px] text-white/40">Random</span>
+                  <Dices className={`h-4 w-4 ${selectedPose === "Random" ? "text-pink-400" : "text-white/50"}`} />
+                  <span className={`text-[13px] font-medium ${selectedPose === "Random" ? "text-pink-300" : "text-white/60"}`}>Random</span>
                 </motion.button>
 
-                {/* Pose thumbnails */}
                 {POSE_SUGGESTIONS.map((pose, i) => (
                   <motion.button
                     key={pose.label}
                     type="button"
-                    onClick={() => handlePoseSuggestionClick(pose.promptText)}
-                    className="flex shrink-0 flex-col items-center gap-1.5"
+                    onClick={() => handlePoseSuggestionClick(pose.label, pose.promptText)}
+                    className={`flex shrink-0 items-center gap-2 rounded-xl border px-3.5 py-2.5 transition-all ${
+                      selectedPose === pose.label
+                        ? "border-pink-500 bg-pink-500/10 shadow-[0_0_10px_rgba(236,72,153,0.3)]"
+                        : "border-white/10 bg-white/5 hover:bg-white/10"
+                    }`}
                     initial={{ opacity: 0, y: -8 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.2, delay: 0.05 + i * 0.03 }}
                   >
-                    <div className="flex h-[80px] w-[72px] items-center justify-center overflow-hidden rounded-xl border border-white/10 bg-white/[0.06] transition-colors hover:bg-white/[0.12]">
-                      <span className="text-2xl text-white/30">{pose.label[0]}</span>
-                    </div>
-                    <span className="text-[11px] text-white/40">{pose.label}</span>
+                    <span className={`text-[13px] font-medium ${selectedPose === pose.label ? "text-pink-300" : "text-white/60"}`}>{pose.label}</span>
                   </motion.button>
                 ))}
               </div>
 
               {/* Bottom row: NSFW toggle (left) + Hide suggestions (right) */}
               <motion.div
-                className="mt-2 flex items-center justify-between"
+                className="flex items-center justify-between pt-1"
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ delay: 0.15 }}
               >
-                <motion.button
-                  type="button"
-                  onClick={() => { setIsNSFW(!isNSFW); setHighlightNSFW(false); }}
-                  animate={highlightNSFW ? {
-                    scale: [1, 1.04, 1],
-                    boxShadow: [
-                      "0 0 0px rgba(251,146,60,0), 0 0 0px rgba(239,68,68,0)",
-                      "0 0 12px rgba(251,146,60,0.4), 0 0 24px rgba(239,68,68,0.15)",
-                      "0 0 0px rgba(251,146,60,0), 0 0 0px rgba(239,68,68,0)",
-                    ],
-                  } : {}}
-                  transition={highlightNSFW ? { duration: 2.5, repeat: Infinity, ease: "easeInOut" } : {}}
-                  className={`group flex items-center gap-2 rounded-full px-3.5 py-1.5 text-[12px] font-semibold tracking-wide transition-all duration-300 ${
-                    highlightNSFW
-                      ? "bg-gradient-to-r from-red-500/25 to-orange-500/25 text-orange-200 ring-1 ring-orange-400/50"
-                      : isNSFW
-                        ? "bg-gradient-to-r from-red-500 to-orange-500 text-white shadow-lg shadow-red-500/30 ring-1 ring-red-400/40"
-                        : "bg-gradient-to-r from-red-500/10 to-orange-500/10 text-orange-300/70 ring-1 ring-red-500/20 hover:from-red-500/20 hover:to-orange-500/20 hover:text-orange-300/90 hover:ring-red-500/30"
-                  }`}
-                >
-                  <motion.span
-                    animate={highlightNSFW ? {
-                      y: [0, -1, 0],
-                      scale: [1, 1.15, 1],
-                      opacity: [0.85, 1, 0.85],
-                    } : {
-                      y: [0, -1.5, 0.5, -2, 0.5, -1, 0, -1.5, 0.5, -2.5, 0],
-                      scaleY: [1, 1.25, 1.05, 1.35, 1.1, 1.2, 1, 1.3, 1.05, 1.4, 1],
-                      scaleX: [1, 0.9, 1.05, 0.85, 1, 0.92, 1, 0.88, 1.02, 0.85, 1],
-                      opacity: [1, 0.85, 1, 0.75, 1, 0.9, 1, 0.8, 1, 0.7, 1],
+                <div className="flex items-center gap-2.5">
+                  <motion.div
+                    animate={{
+                      filter: isNSFW
+                        ? ["drop-shadow(0 0 4px rgba(251,146,60,0.6))", "drop-shadow(0 0 8px rgba(239,68,68,0.4))", "drop-shadow(0 0 4px rgba(251,146,60,0.6))"]
+                        : highlightNSFW
+                          ? ["drop-shadow(0 0 3px rgba(251,146,60,0.3))", "drop-shadow(0 0 6px rgba(251,146,60,0.5))", "drop-shadow(0 0 3px rgba(251,146,60,0.3))"]
+                          : "drop-shadow(0 0 0px transparent)",
                     }}
-                    transition={highlightNSFW
-                      ? { duration: 2, repeat: Infinity, ease: "easeInOut" }
-                      : { duration: 1.2, repeat: Infinity, repeatDelay: 4, ease: "easeInOut" }
-                    }
-                    style={{ originY: 1, filter: highlightNSFW ? "drop-shadow(0 0 5px rgba(251,146,60,0.5))" : isNSFW ? "drop-shadow(0 0 4px rgba(251,191,36,0.6))" : "drop-shadow(0 0 3px rgba(251,146,60,0.3))" }}
+                    transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
                     className="flex"
                   >
-                    <Flame className={`h-3.5 w-3.5 ${highlightNSFW ? "text-orange-400" : isNSFW ? "text-yellow-300" : "text-orange-400/60 group-hover:text-orange-400/80"}`} />
-                  </motion.span>
-                  NSFW
-                  <span className={`flex h-4 w-7 items-center rounded-full p-0.5 transition-colors duration-200 ${isNSFW ? "justify-end bg-white/25" : "justify-start bg-red-500/15"}`}>
-                    <motion.span
-                      layout
-                      transition={{ type: "spring", stiffness: 500, damping: 30 }}
-                      className={`block h-3 w-3 rounded-full ${isNSFW ? "bg-white" : "bg-orange-400/40"}`}
-                    />
-                  </span>
-                </motion.button>
+                    <Flame className={`h-4 w-4 transition-colors duration-300 ${
+                      isNSFW ? "text-orange-400" : highlightNSFW ? "text-orange-400/80" : "text-white/30"
+                    }`} />
+                  </motion.div>
+                  <span className={`text-[12px] font-semibold tracking-wide transition-colors ${
+                    isNSFW ? "text-orange-300" : "text-white/40"
+                  }`}>NSFW</span>
+                  <Switch
+                    checked={isNSFW}
+                    onCheckedChange={(checked) => { setIsNSFW(checked); setHighlightNSFW(false); }}
+                    className="data-[state=checked]:bg-gradient-to-r data-[state=checked]:from-red-500 data-[state=checked]:to-orange-500 data-[state=unchecked]:bg-white/10"
+                  />
+                </div>
 
                 <button
                   type="button"
                   onClick={() => setShowSuggestions(false)}
                   className="flex items-center gap-1 text-[11px] text-white/30 transition-colors hover:text-white/50"
                 >
-                  <span>▸</span> Hide suggestions
+                  Hide
                 </button>
               </motion.div>
             </motion.div>
           )}
 
-          {/* Show suggestions toggle + NSFW (collapsed) */}
+          {/* Collapsed: NSFW toggle + show suggestions */}
           {imageGenMode && !showSuggestions && (
             <motion.div
               key="suggestions-collapsed"
@@ -679,62 +663,22 @@ export function Dialog({
               transition={{ duration: 0.2, ease: [0.4, 0, 0.2, 1] }}
               className="mb-2 flex items-center justify-between overflow-hidden"
             >
-              <motion.button
-                type="button"
-                onClick={() => { setIsNSFW(!isNSFW); setHighlightNSFW(false); }}
-                animate={highlightNSFW ? {
-                  scale: [1, 1.04, 1],
-                  boxShadow: [
-                    "0 0 0px rgba(251,146,60,0), 0 0 0px rgba(239,68,68,0)",
-                    "0 0 12px rgba(251,146,60,0.4), 0 0 24px rgba(239,68,68,0.15)",
-                    "0 0 0px rgba(251,146,60,0), 0 0 0px rgba(239,68,68,0)",
-                  ],
-                } : {}}
-                transition={highlightNSFW ? { duration: 2.5, repeat: Infinity, ease: "easeInOut" } : {}}
-                className={`group flex items-center gap-2 rounded-full px-3.5 py-1.5 text-[12px] font-semibold tracking-wide transition-all duration-300 ${
-                  highlightNSFW
-                    ? "bg-gradient-to-r from-red-500/25 to-orange-500/25 text-orange-200 ring-1 ring-orange-400/50"
-                    : isNSFW
-                      ? "bg-gradient-to-r from-red-500 to-orange-500 text-white shadow-lg shadow-red-500/30 ring-1 ring-red-400/40"
-                      : "bg-gradient-to-r from-red-500/10 to-orange-500/10 text-orange-300/70 ring-1 ring-red-500/20 hover:from-red-500/20 hover:to-orange-500/20 hover:text-orange-300/90 hover:ring-red-500/30"
-                }`}
-              >
-                <motion.span
-                  animate={highlightNSFW ? {
-                    y: [0, -1, 0],
-                    scale: [1, 1.15, 1],
-                    opacity: [0.85, 1, 0.85],
-                  } : {
-                    y: [0, -1.5, 0.5, -2, 0.5, -1, 0, -1.5, 0.5, -2.5, 0],
-                    scaleY: [1, 1.25, 1.05, 1.35, 1.1, 1.2, 1, 1.3, 1.05, 1.4, 1],
-                    scaleX: [1, 0.9, 1.05, 0.85, 1, 0.92, 1, 0.88, 1.02, 0.85, 1],
-                    opacity: [1, 0.85, 1, 0.75, 1, 0.9, 1, 0.8, 1, 0.7, 1],
-                  }}
-                  transition={highlightNSFW
-                    ? { duration: 2, repeat: Infinity, ease: "easeInOut" }
-                    : { duration: 1.2, repeat: Infinity, repeatDelay: 4, ease: "easeInOut" }
-                  }
-                  style={{ originY: 1, filter: highlightNSFW ? "drop-shadow(0 0 5px rgba(251,146,60,0.5))" : isNSFW ? "drop-shadow(0 0 4px rgba(251,191,36,0.6))" : "drop-shadow(0 0 3px rgba(251,146,60,0.3))" }}
-                  className="flex"
-                >
-                  <Flame className={`h-3.5 w-3.5 ${highlightNSFW ? "text-orange-400" : isNSFW ? "text-yellow-300" : "text-orange-400/60 group-hover:text-orange-400/80"}`} />
-                </motion.span>
-                NSFW
-                <span className={`flex h-4 w-7 items-center rounded-full p-0.5 transition-colors duration-200 ${isNSFW ? "justify-end bg-white/25" : "justify-start bg-red-500/15"}`}>
-                  <motion.span
-                    layout
-                    transition={{ type: "spring", stiffness: 500, damping: 30 }}
-                    className={`block h-3 w-3 rounded-full ${isNSFW ? "bg-white" : "bg-orange-400/40"}`}
-                  />
-                </span>
-              </motion.button>
+              <div className="flex items-center gap-2.5">
+                <Flame className={`h-4 w-4 ${isNSFW ? "text-orange-400" : "text-white/30"}`} />
+                <span className={`text-[12px] font-semibold tracking-wide ${isNSFW ? "text-orange-300" : "text-white/40"}`}>NSFW</span>
+                <Switch
+                  checked={isNSFW}
+                  onCheckedChange={(checked) => { setIsNSFW(checked); setHighlightNSFW(false); }}
+                  className="data-[state=checked]:bg-gradient-to-r data-[state=checked]:from-red-500 data-[state=checked]:to-orange-500 data-[state=unchecked]:bg-white/10"
+                />
+              </div>
 
               <button
                 type="button"
                 onClick={() => setShowSuggestions(true)}
                 className="flex items-center gap-1 text-[11px] text-white/30 transition-colors hover:text-white/50"
               >
-                <span>▸</span> Show suggestions
+                Show styles
               </button>
             </motion.div>
           )}
@@ -917,17 +861,34 @@ export function Dialog({
               </div>
 
               {/* Send / Generate button */}
-              <button
-                type="submit"
-                disabled={!input.trim() || isGeneratingImage}
-                className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-gradient-to-r from-pink-500 to-purple-500 text-white shadow-lg shadow-pink-500/25 transition-all disabled:opacity-25 hover:from-pink-600 hover:to-purple-600"
-              >
-                {isGeneratingImage ? (
-                  <Spinner className="h-4 w-4" />
-                ) : (
+              {imageGenMode ? (
+                <button
+                  type="submit"
+                  disabled={!input.trim() || isGeneratingImage}
+                  className="flex h-11 shrink-0 items-center gap-2 rounded-full bg-gradient-to-r from-pink-500 to-purple-500 px-5 text-white shadow-lg shadow-pink-500/25 transition-all disabled:opacity-25 hover:from-pink-600 hover:to-purple-600"
+                >
+                  {isGeneratingImage ? (
+                    <Spinner className="h-4 w-4" />
+                  ) : (
+                    <>
+                      <ImageIcon className="h-4 w-4" />
+                      <span className="text-[13px] font-semibold">Generate</span>
+                      <span className="flex items-center gap-0.5 rounded-full bg-white/15 px-1.5 py-0.5 text-[11px] font-bold">
+                        <Zap className="h-3 w-3 text-yellow-300" />
+                        {imageCost}
+                      </span>
+                    </>
+                  )}
+                </button>
+              ) : (
+                <button
+                  type="submit"
+                  disabled={!input.trim() || isGeneratingImage}
+                  className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-gradient-to-r from-pink-500 to-purple-500 text-white shadow-lg shadow-pink-500/25 transition-all disabled:opacity-25 hover:from-pink-600 hover:to-purple-600"
+                >
                   <Send className="h-[18px] w-[18px]" />
-                )}
-              </button>
+                </button>
+              )}
             </div>
           </form>
         </div>
