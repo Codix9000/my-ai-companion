@@ -9,9 +9,11 @@ import {
   Heart,
   Lightbulb,
   MoreHorizontal,
+  Phone,
   Send,
   Video,
   Sparkles,
+  Zap,
   Delete,
   Edit,
   Repeat,
@@ -468,35 +470,47 @@ export function Dialog({
       </AnimatePresence>
 
       {/* ── Header ── */}
-      <div className="flex shrink-0 items-center justify-between border-b border-white/[0.08] px-6 py-4">
-        <Link href={`/character/${characterId}`} className="flex items-center gap-4">
-          <Avatar className="h-[52px] w-[52px]">
+      <div className="flex shrink-0 items-center justify-between border-b border-white/[0.08] px-6 py-3">
+        <Link href={`/character/${characterId}`} className="flex items-center gap-3">
+          <Avatar className="h-10 w-10">
             <AvatarImage src={cardImageUrl || ""} alt={name} className="object-cover" />
-            <AvatarFallback className="bg-gradient-to-br from-pink-400 to-purple-500 text-lg text-white">
+            <AvatarFallback className="bg-gradient-to-br from-pink-400 to-purple-500 text-sm text-white">
               {name?.[0] || "?"}
             </AvatarFallback>
           </Avatar>
-          <div className="flex flex-col gap-1">
-            <span className="text-[22px] font-bold leading-tight text-white">{name}</span>
-            <div className="flex items-center gap-2">
-              <Heart className="h-3.5 w-3.5 fill-pink-500 text-pink-500" />
-              <span className="text-xs font-medium text-gray-400">
-                {t("Intimacy Lvl 3")}
-              </span>
-              <Progress
-                value={80}
-                className="h-1.5 w-24"
-                indicatorClassName="bg-gradient-to-r from-pink-500 to-purple-500"
-              />
-            </div>
+          <h2 className="text-lg font-bold text-white">{name}</h2>
+          <div className="mx-1 h-4 w-px bg-white/20" />
+          <div className="flex items-center gap-2">
+            <Heart className="h-3 w-3 fill-pink-500 text-pink-500" />
+            <span className="text-[11px] font-medium text-gray-400">
+              {t("Lvl 3")}
+            </span>
+            <Progress
+              value={80}
+              className="h-1 w-16"
+              indicatorClassName="bg-gradient-to-r from-pink-500 to-purple-500"
+            />
           </div>
         </Link>
-        <ChatOptionsPopover
-          characterId={characterId}
-          chatId={chatId}
-          name={name}
-          showEdit={userId === creatorId}
-        />
+
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            className="flex h-9 w-9 items-center justify-center rounded-full text-pink-500/70 transition-colors hover:bg-white/5 hover:text-pink-400"
+          >
+            <Phone className="h-4 w-4" />
+          </button>
+          <div className="flex items-center gap-1.5 rounded-full border border-white/10 bg-white/5 px-3 py-1.5">
+            <Zap className="h-3.5 w-3.5 fill-yellow-400 text-yellow-400" />
+            <span className="text-sm font-semibold text-white">850</span>
+          </div>
+          <ChatOptionsPopover
+            characterId={characterId}
+            chatId={chatId}
+            name={name}
+            showEdit={userId === creatorId}
+          />
+        </div>
       </div>
 
       {/* ── Messages ── */}
@@ -540,7 +554,7 @@ export function Dialog({
       </div>
 
       {/* ── Input Area ── */}
-      <div className="relative mx-4 mb-4 shrink-0 pt-2">
+      <div className="relative shrink-0 px-5 pb-4 pt-2 lg:px-8">
         {/* ── Pose suggestions bar (visible in image gen mode) ── */}
         <AnimatePresence mode="wait">
           {imageGenMode && showSuggestions && (
@@ -799,7 +813,7 @@ export function Dialog({
           )}
         </AnimatePresence>
 
-        <div className="overflow-hidden rounded-full border border-white/10 bg-white/5 shadow-[0_0_15px_rgba(236,72,153,0.1)] backdrop-blur-xl transition-all duration-300 focus-within:shadow-[0_0_25px_rgba(236,72,153,0.25)]">
+        <div className="overflow-hidden rounded-2xl border border-white/[0.06] bg-[#13131A] shadow-[0_0_10px_rgba(236,72,153,0.08)] transition-all duration-300 focus-within:shadow-[0_0_15px_rgba(236,72,153,0.15)]">
           {/* Text input row */}
           <form onSubmit={handleSend}>
             <input
